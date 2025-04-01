@@ -116,7 +116,7 @@ class GenerateSiteCommand {
                     .replace(".yaml", "")
                     .replace(" ", "-") + ".html";
             final var countryFlag = getCountryCodeFromName(event.location().country());
-            renderToFile(new EventModel(event.name(), event, countryFlag, decks),
+            renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty()),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
@@ -158,7 +158,7 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record EventModel(String title, Event event, String countryFlag,
-                      List<DeckWithRank> decks) implements TemplateSupport {
+                      List<DeckWithRank> decks, boolean noDeck) implements TemplateSupport {
     }
 
     record DeckWithRank(int rank, Deck deck, List<Card.Aspect> aspects) {

@@ -10,8 +10,14 @@
     / {{event.players}}
     players</p>
   <p class="m-0 mb-1"><span class="text-secondary">
-    Source:</span>&nbsp;<i class="bi bi-card-list source me-2"></i><a class="source" href="{{event.melee}}">Melee.gg</a></p>
+    Source:</span>&nbsp;<i class="bi bi-card-list source me-2"></i><a class="source" href="{{event.melee}}">Melee.gg</a>
+  </p>
 
+  {{#noDeck}}
+    <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill"></i>
+      <strong>No deck found</strong>: please try again later</p>
+  {{/noDeck}}
+  {{^noDeck}}
   <div class="table-responsive">
     <table class="table table-hover sw-table mt-4">
       <thead>
@@ -22,6 +28,7 @@
         <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
         <th scope="col" class="text-end">Player</th>
       </tr>
+      </thead>
       <tbody>
       {{#decks}}
         <tr>
@@ -45,9 +52,9 @@
         </tr>
       {{/decks}}
       </tbody>
-      </thead>
     </table>
-  </div>
+  {{/noDeck}}
+</div>
 </section>
 
 {{>templates/footer.mustache}}
