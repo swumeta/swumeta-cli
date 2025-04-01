@@ -1,0 +1,53 @@
+{{>templates/header.mustache}}
+
+<section class="container">
+  <h2 class="section-title">
+    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i class="fi fi-{{countryFlag}}"></i>
+  </h2>
+  <p class="m-0"><span class="text-secondary">Location:</span>&nbsp;<span class="fw-bold">{{event.location}}</span></p>
+  <p class="m-0"><span class="text-secondary">Date:</span>&nbsp;<span class="fw-bold">{{event.date}}</span></p>
+  <p class="m-0"><span class="text-secondary">Type:</span>&nbsp;<span class="fw-bold">{{event.type}}</span>
+    / {{event.players}}
+    players</p>
+  <p class="m-0 mb-1"><span class="text-secondary">
+    Source:</span>&nbsp;<i class="bi bi-card-list source me-2"></i><a class="source" href="{{event.melee}}">Melee.gg</a></p>
+
+  <div class="table-responsive">
+    <table class="table table-hover sw-table mt-4">
+      <thead>
+      <tr>
+        <th scope="col" class="text-end">#</th>
+        <th scope="col">Decklist</th>
+        <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
+        <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
+        <th scope="col" class="text-end">Player</th>
+      </tr>
+      <tbody>
+      {{#decks}}
+        <tr>
+          <td class="align-middle text-end fit">
+            <span class="align-middle text-secondary" style="font-size: 80%">{{rank}}</span></td>
+          <td class="align-middle d-none d-md-table-cell fit">
+            <img src="{{deck.leader.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block me-2"/>
+            <img src="{{deck.base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
+          </td>
+          <td class="align-middle">
+            <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{deck.name}}</a></span>
+          </td>
+          <td class="align-middle text-center d-none d-md-table-cell fit">
+            {{#aspects}}
+              <img src="/images/{{.}}" width="32" height="32"/>
+            {{/aspects}}
+          </td>
+          <td class="align-middle text-end fit">
+            <span class="align-middle">{{deck.author}}</span>
+          </td>
+        </tr>
+      {{/decks}}
+      </tbody>
+      </thead>
+    </table>
+  </div>
+</section>
+
+{{>templates/footer.mustache}}

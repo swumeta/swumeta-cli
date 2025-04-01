@@ -1,0 +1,41 @@
+{{>templates/header.mustache}}
+
+<section class="container">
+  <h2 class="section-title">{{title}}</h2>
+
+  <div class="table-responsive">
+    <table class="table table-hover sw-table mt-4">
+      <thead>
+      <tr>
+        <th scope="col">Date</th>
+        <th scope="col">Name</th>
+        <th scope="col" class="d-none d-md-table-cell">Type</th>
+        <th scope="col" class="text-center">Country</th>
+        <th scope="col" class="text-end">Players</th>
+      </tr>
+      <tbody>
+      {{#events}}
+        <tr>
+          <td class="align-middle fit">
+            <span class="align-middle text-secondary" style="font-size: 80%">{{event.date}}</span></td>
+          <td class="align-middle">
+            <span class="align-middle"><a href="{{page}}">{{event.name}}</a></span>
+          </td>
+          <td class="align-middle fit d-none d-md-table-cell">
+            <span class="align-middle">{{event.type}}</span>
+          </td>
+          <td class="align-middle text-center fit">
+            <i class="fi fi-{{countryFlag}}"></i>
+          </td>
+          <td class="align-middle text-end fit">
+            <span class="align-middle">{{event.players}}</span>
+          </td>
+        </tr>
+      {{/events}}
+      </tbody>
+      </thead>
+    </table>
+  </div>
+</section>
+
+{{>templates/footer.mustache}}

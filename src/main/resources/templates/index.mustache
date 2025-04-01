@@ -1,0 +1,98 @@
+{{>templates/header.mustache}}
+
+<!-- Hero Section -->
+<div class="hero">
+  <div class="container">
+    <h1 class="text-uppercase">Welcome to swumeta.net</h1>
+    <p>Your ultimate resource for Star Wars Unlimited card game meta analysis, deck building, and tournament
+      insights</p>
+    <a class="btn btn-sw" href="/events.html">Explore Tournaments Results</a>
+  </div>
+</div>
+
+<!-- Meta Overview Section -->
+<section class="container my-5">
+  <h2 class="section-title text-center mb-4">Current Meta Overview</h2>
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="meta-stats mb-4">
+        <h4>Meta Snapshot - March 2025</h4>
+        <p>Based on data from <span class="fw-bolder">3,457</span> tournament matches from the past 30 days.</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table sw-table">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Leader</th>
+            <th>Base</th>
+            <th>Meta</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>1</td>
+            <td>Darth Vader Control</td>
+            <td><span class="card-faction faction-sith">Sith</span></td>
+            <td>68.4%</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Luke Skywalker Aggro</td>
+            <td><span class="card-faction faction-rebel">Rebel</span></td>
+            <td>65.2%</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Obi-Wan Midrange</td>
+            <td><span class="card-faction faction-jedi">Jedi</span></td>
+            <td>59.7%</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Emperor Palpatine Combo</td>
+            <td><span class="card-faction faction-imperial">Imperial</span></td>
+            <td>57.5%</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Ahsoka Tano Tempo</td>
+            <td><span class="card-faction faction-jedi">Jedi</span></td>
+            <td>54.3%</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header bg-dark">
+          <h5 class="card-title mb-0">Most Played Cards</h5>
+        </div>
+        <div class="card-body">
+          <ol class="list-group list-group-flush bg-transparent">
+            <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
+              Force Push <span class="text-secondary">(76.2% of decks)</span>
+            </li>
+            <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
+              Lightsaber Duel <span class="text-secondary">(68.4% of decks)</span>
+            </li>
+            <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
+              Force Lightning <span class="text-secondary">(59.1% of decks)</span>
+            </li>
+            <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
+              Imperial Star Destroyer <span class="text-secondary">(52.8% of decks)</span>
+            </li>
+            <li class="list-group-item bg-transparent text-light">
+              X-Wing Squadron <span class="text-secondary">(48.5% of decks)</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{{>templates/footer.mustache}}

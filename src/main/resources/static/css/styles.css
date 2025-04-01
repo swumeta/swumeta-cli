@@ -1,0 +1,164 @@
+:root {
+    --sw-yellow: #fdb933;
+    --sw-red: #d2232a;
+    --sw-blue: #2E67F8;
+    --sw-dark: #121212;
+    --sw-darker: #0A0A0A;
+    --sw-light-text: #E1E1E1;
+}
+
+body {
+    background-color: var(--sw-dark);
+    color: var(--sw-light-text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 75rem;
+    padding-top: 4.5rem;
+}
+
+.navbar {
+    background-color: var(--sw-darker);
+    box-shadow: 0 2px 10px rgba(255, 232, 31, 0.15);
+}
+
+.navbar-brand {
+    color: var(--sw-yellow) !important;
+    font-weight: bold;
+    letter-spacing: 1px;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    color: var(--sw-light-text) !important;
+    transition: color 0.3s;
+    margin: 0 10px;
+}
+
+.nav-link:hover {
+    color: var(--sw-yellow) !important;
+}
+
+.hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/starfield.jpg') center/cover no-repeat;
+    padding: 6em 0;
+    margin-top: -1.5em;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--sw-yellow);
+}
+
+.hero h1 {
+    color: var(--sw-yellow);
+    font-size: 3em;
+    margin-bottom: 20px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 232, 31, 0.6);
+}
+
+.hero p {
+    color: var(--sw-light-text);
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.btn-sw {
+    background-color: var(--sw-yellow);
+    color: var(--sw-darker);
+    font-weight: bold;
+    border: none;
+    padding: 10px 25px;
+    transition: all 0.3s;
+    margin-top: 20px;
+}
+
+.btn-sw:hover {
+    background-color: var(--sw-darker);
+    color: var(--sw-yellow);
+    box-shadow: 0 0 15px rgba(255, 232, 31, 0.7);
+}
+
+.card {
+    background-color: var(--sw-darker);
+    border: 1px solid rgba(255, 232, 31, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    color: var(--sw-yellow);
+}
+
+.section-title {
+    color: var(--sw-yellow);
+    position: relative;
+    display: inline-block;
+    padding-bottom: 0.5em;
+}
+
+footer {
+    background-color: var(--sw-darker);
+    padding: 2em 0;
+    margin-top: 1.5em;
+    border-top: 1px solid rgba(255, 232, 31, 0.3);
+}
+
+.meta-stats {
+    background-color: rgba(46, 103, 248, 0.1);
+    border-left: 3px solid var(--sw-blue);
+    padding: 10px 15px;
+    margin-bottom: 10px;
+}
+
+.card-faction {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.faction-sith {
+    background-color: #940000;
+    color: white;
+}
+
+.faction-rebel {
+    background-color: #FF4500;
+    color: white;
+}
+
+.faction-jedi {
+    background-color: #32CD32;
+    color: white;
+}
+
+.faction-imperial {
+    background-color: #708090;
+    color: white;
+}
+
+.sw-table th {
+    color: var(--sw-yellow);
+    border-bottom: 2px solid var(--sw-yellow);
+}
+
+.table td.fit,
+.table th.fit {
+   white-space: nowrap;
+   width: 1%;
+}
+
+h2 a, .sw-table a, #about a, .source {
+    color: var(--sw-yellow) !important;
+}
