@@ -39,6 +39,19 @@ class CommandConfig {
     }
 
     @Bean
+    CommandRegistration serve(ServeFilesCommand cmd) {
+        return CommandRegistration.builder()
+                .command("serve")
+                .description("Serve files over HTTP")
+                .withOption().longNames("directory").shortNames('d').description("Base directory").type(File.class).defaultValue("public").required(false).and()
+                .withTarget().consumer(ctx -> {
+                    final var dir = (File) ctx.getOptionValue("directory");
+                    cmd.run(dir);
+                })
+                .and().build();
+    }
+
+    @Bean
     CommandRegistration downloadCards(DownloadCardsCommand cmd) {
         return CommandRegistration.builder()
                 .command("download-cards")
