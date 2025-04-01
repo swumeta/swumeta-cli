@@ -172,7 +172,7 @@ class GenerateSiteCommand {
     }
 
     private void renderToFile(Object model, File output) {
-        logger.debug("Generating file: {}", output.getName());
+        logger.info("Generating file: {}", output.getName());
         final var content = jStachio.execute(model);
         try (final var out = new FileWriter(output, StandardCharsets.UTF_8)) {
             FileCopyUtils.copy(content, out);

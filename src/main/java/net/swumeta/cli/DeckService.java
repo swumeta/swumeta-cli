@@ -61,7 +61,7 @@ public class DeckService {
                 logger.debug("Loading deck from cache: {}", uri);
                 return objectMapper.readerFor(Deck.class).readValue(deckFile);
             } catch (IOException e) {
-                logger.warn("Unable to read cached deck file: {}", deckFile, e);
+                logger.debug("Unable to read cached deck file: {}", deckFile, e);
             }
         }
 
