@@ -78,6 +78,7 @@ class GenerateSiteCommand {
 
         renderToFile(new IndexModel("Home"), new File(outputDir, "index.html"));
         renderToFile(new AboutModel("About"), new File(outputDir, "about.html"));
+        renderToFile(new VersionModel(), new File(outputDir, "version.txt"));
 
         final var dbDir = config.database();
         final var eventFiles = new ArrayList<File>(16);
@@ -130,6 +131,11 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/about.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record AboutModel(String title) implements TemplateSupport {
+    }
+
+    @JStache(path = "/templates/version.mustache")
+    @JStacheConfig(formatter = CustomFormatter.class)
+    record VersionModel() implements TemplateSupport {
     }
 
     @JStache(path = "/templates/events.mustache")
