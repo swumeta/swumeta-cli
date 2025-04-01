@@ -2,7 +2,7 @@
 
 <section class="container">
   <h2 class="section-title">
-    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i class="fi fi-{{countryFlag}}"></i>
+    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i class="ms-1 fi fi-{{countryFlag}}"></i>
   </h2>
   <p class="m-0"><span class="text-secondary">Location:</span>&nbsp;<span class="fw-bold">{{event.location}}</span></p>
   <p class="m-0"><span class="text-secondary">Date:</span>&nbsp;<span class="fw-bold">{{event.date}}</span></p>
@@ -10,12 +10,12 @@
     / {{event.players}}
     players</p>
   <p class="m-0 mb-1"><span class="text-secondary">
-    Source:</span>&nbsp;<i class="bi bi-card-list source me-2"></i>
+    Source:</span>&nbsp;<i class="bi bi-card-list source mx-1"></i>
     <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
   </p>
 
   {{#noDeck}}
-    <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill"></i>
+    <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill me-1"></i>
       <strong>No deck found</strong>: please try again later</p>
   {{/noDeck}}
   {{^noDeck}}
