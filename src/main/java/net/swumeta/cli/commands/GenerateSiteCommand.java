@@ -21,7 +21,10 @@ import io.jstach.jstache.JStacheConfig;
 import io.jstach.jstache.JStacheFormatter;
 import io.jstach.jstache.JStacheFormatterTypes;
 import io.jstach.jstachio.JStachio;
-import net.swumeta.cli.*;
+import net.swumeta.cli.AppConfig;
+import net.swumeta.cli.CardDatabaseService;
+import net.swumeta.cli.DeckService;
+import net.swumeta.cli.EventService;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.Event;
@@ -40,7 +43,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
@@ -78,7 +81,7 @@ class GenerateSiteCommand {
 
         renderToFile(new IndexModel("Home"), new File(outputDir, "index.html"));
         renderToFile(new AboutModel("About"), new File(outputDir, "about.html"));
-        renderToFile(new VersionModel(), new File(outputDir, "version.txt"));
+        renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
         final var dbDir = config.database();
         final var eventFiles = new ArrayList<File>(16);
@@ -166,8 +169,8 @@ class GenerateSiteCommand {
             return LocalDate.now().getYear();
         }
 
-        default LocalDateTime now() {
-            return LocalDateTime.now();
+        default ZonedDateTime now() {
+            return ZonedDateTime.now();
         }
     }
 
@@ -228,7 +231,7 @@ class GenerateSiteCommand {
     }
 
     @JStacheFormatter
-    @JStacheFormatterTypes(types = {Location.class, Event.Type.class, LocalDate.class, LocalDateTime.class, Card.Aspect.class, net.swumeta.cli.model.Set.class, CharSequence.class})
+    @JStacheFormatterTypes(types = {Location.class, Event.Type.class, LocalDate.class, ZonedDateTime.class, Card.Aspect.class, net.swumeta.cli.model.Set.class, CharSequence.class})
     static class CustomFormatter {
         public static Function<Object, String> provider() {
             return o -> {
@@ -251,8 +254,8 @@ class GenerateSiteCommand {
                 if (o instanceof LocalDate d) {
                     return d.format(DateTimeFormatter.ISO_LOCAL_DATE);
                 }
-                if (o instanceof LocalDateTime dt) {
-                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                if (o instanceof ZonedDateTime dt) {
+                    return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dt);
                 }
                 if (o instanceof Card.Aspect aspect) {
                     return switch (aspect) {
