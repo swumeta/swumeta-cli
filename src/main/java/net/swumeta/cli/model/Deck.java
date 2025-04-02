@@ -34,30 +34,30 @@ public record Deck(
         List<Card> sideboard
 ) {
     public CharSequence name() {
-        return new StringBuffer(64).append(formatLeader(leader)).append(" - ").append(formatBase(base));
+        return new StringBuffer(64).append(formatLeader()).append(" - ").append(formatBase());
     }
 
     public boolean isValid() {
         return leader != null && base != null && main != null && !main.isEmpty();
     }
 
-    private static CharSequence formatLeader(Card card) {
-        return new StringBuffer(32).append(card.name()).append(" (").append(card.set()).append(")");
+    public String formatLeader() {
+        return new StringBuffer(32).append(leader.name()).append(" (").append(leader.set()).append(")").toString();
     }
 
-    private static String formatBase(Card card) {
-        if (card.rarity().equals(Card.Rarity.COMMON)) {
-            if (card.aspects().isEmpty()) {
-                return card.name();
+    public String formatBase() {
+        if (base.rarity().equals(Card.Rarity.COMMON)) {
+            if (base.aspects().isEmpty()) {
+                return base.name();
             }
-            return switch (card.aspects().get(0)) {
+            return switch (base.aspects().get(0)) {
                 case VIGILANCE -> "Blue";
                 case COMMAND -> "Green";
                 case AGGRESSION -> "Red";
                 case CUNNING -> "Yellow";
-                default -> card.name();
+                default -> base.name();
             };
         }
-        return card.name();
+        return base.name();
     }
 }

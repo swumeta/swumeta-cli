@@ -29,6 +29,12 @@ import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.Event;
 import net.swumeta.cli.model.Location;
+import org.eclipse.collections.api.bag.MutableBag;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.api.tuple.primitive.ObjectIntPair;
+import org.eclipse.collections.impl.bag.mutable.HashBag;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -92,6 +98,8 @@ class GenerateSiteCommand {
             final var event = eventService.load(eventFile.toURI());
 
             final List<DeckWithRank> decks;
+            final MutableBag<String> leaderBag = HashBag.newBag();
+            final MutableBag<String> baseBag = HashBag.newBag();
             if (event.decks() == null) {
                 decks = List.of();
             } else {
@@ -101,6 +109,8 @@ class GenerateSiteCommand {
                             try {
                                 final var deck = deckService.load(d.url());
                                 if (deck.isValid()) {
+                                    leaderBag.add(deck.formatLeader());
+                                    baseBag.add(deck.formatBase());
                                     return new DeckWithRank(d.rank(), deck, getAspects(deck));
                                 }
                             } catch (Exception e) {
@@ -116,7 +126,8 @@ class GenerateSiteCommand {
                     .replace(".yaml", "")
                     .replace(" ", "-") + ".html";
             final var countryFlag = getCountryCodeFromName(event.location().country());
-            renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty()),
+            renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty(),
+                            nMostResults(leaderBag, 4), nMostResults(baseBag, 4)),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
@@ -124,6 +135,24 @@ class GenerateSiteCommand {
         Collections.sort(eventPages, Comparator.reverseOrder());
         renderToFile(new EventIndexModel("Events", eventPages),
                 new File(outputDir, "events.html"));
+    }
+
+    private List<KeyValue> nMostResults(MutableBag<String> bag, int n) {
+        MutableList<ObjectIntPair<String>> allItemsRanked = bag.topOccurrences(bag.sizeDistinct());
+        MutableMap<String, Integer> result = UnifiedMap.newMap();
+        int topCount = Math.min(n, allItemsRanked.size());
+        for (int i = 0; i < topCount; i++) {
+            ObjectIntPair<String> pair = allItemsRanked.get(i);
+            result.put(pair.getOne(), pair.getTwo());
+        }
+        int othersTotal = 0;
+        for (int i = topCount; i < allItemsRanked.size(); i++) {
+            othersTotal += allItemsRanked.get(i).getTwo();
+        }
+        if (othersTotal > 0) {
+            result.put("Others", othersTotal);
+        }
+        return result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).toList();
     }
 
     @JStache(path = "/templates/index.mustache")
@@ -158,7 +187,15 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record EventModel(String title, Event event, String countryFlag,
-                      List<DeckWithRank> decks, boolean noDeck) implements TemplateSupport {
+                      List<DeckWithRank> decks, boolean noDeck,
+                      List<KeyValue> leaderSerie,
+                      List<KeyValue> baseSerie) implements TemplateSupport {
+    }
+
+    record KeyValue(
+            String key,
+            int value
+    ) {
     }
 
     record DeckWithRank(int rank, Deck deck, List<Card.Aspect> aspects) {

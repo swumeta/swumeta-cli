@@ -2,60 +2,139 @@
 
 <section class="container">
   <h2 class="section-title">
-    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i class="ms-1 fi fi-{{countryFlag}}"></i>
+    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i
+    class="ms-1 fi fi-{{countryFlag}}"></i>
   </h2>
-  <p class="m-0"><span class="text-secondary">Location:</span>&nbsp;<span class="fw-bold">{{event.location}}</span></p>
-  <p class="m-0"><span class="text-secondary">Date:</span>&nbsp;<span class="fw-bold">{{event.date}}</span></p>
-  <p class="m-0"><span class="text-secondary">Type:</span>&nbsp;<span class="fw-bold">{{event.type}}</span>
-    / {{event.players}}
-    players</p>
-  <p class="m-0 mb-1"><span class="text-secondary">
-    Source:</span>&nbsp;<i class="bi bi-card-list source mx-1"></i>
-    <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
-  </p>
 
-  {{#noDeck}}
-    <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill me-1"></i>
-      <strong>No deck found</strong>: please try again later</p>
-  {{/noDeck}}
+  <div class="row">
+    <div class="col">
+      <p class="m-0"><span class="text-secondary">Location:</span>&nbsp;<span class="fw-bold">{{event.location}}</span>
+      </p>
+      <p class="m-0"><span class="text-secondary">Date:</span>&nbsp;<span class="fw-bold">{{event.date}}</span></p>
+      <p class="m-0"><span class="text-secondary">Type:</span>&nbsp;<span class="fw-bold">{{event.type}}</span>
+        / {{event.players}}
+        players</p>
+      <p class="m-0 mb-1"><span class="text-secondary">
+    Source:</span>&nbsp;<i class="bi bi-card-list source mx-1"></i>
+        <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
+      </p>
+    </div>
+  </div>
+
   {{^noDeck}}
-  <div class="table-responsive">
-    <table class="table table-hover sw-table mt-4">
-      <thead>
-      <tr>
-        <th scope="col" class="text-end">#</th>
-        <th scope="col">Decklist</th>
-        <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
-        <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
-        <th scope="col" class="text-end">Player</th>
-      </tr>
-      </thead>
-      <tbody>
-      {{#decks}}
-        <tr>
-          <td class="align-middle text-end fit">
-            <span class="align-middle text-secondary" style="font-size: 80%">{{rank}}</span></td>
-          <td class="align-middle d-none d-md-table-cell fit">
-            <img src="{{deck.leader.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block me-2"/>
-            <img src="{{deck.base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
-          </td>
-          <td class="align-middle">
-            <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{deck.name}}</a></span>
-          </td>
-          <td class="align-middle text-center d-none d-md-table-cell fit">
-            {{#aspects}}
-              <img src="/images/{{.}}" width="32" height="32"/>
-            {{/aspects}}
-          </td>
-          <td class="align-middle text-end fit">
-            <span class="align-middle">{{deck.author}}</span>
-          </td>
-        </tr>
-      {{/decks}}
-      </tbody>
-    </table>
+    <div class="row mt-4">
+      <div class="col">
+        <div id="chart-leaders" style="width: 98%; height: 400px"></div>
+      </div>
+      <div class="col">
+        <div id="chart-bases" style="width: 98%; height: 400px"></div>
+      </div>
+    </div>
   {{/noDeck}}
-</div>
+
+  <div class="row">
+    <div class="col-12">
+      {{#noDeck}}
+        <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill me-1"></i>
+          <strong>No deck found</strong>: please try again later</p>
+      {{/noDeck}}
+      {{^noDeck}}
+        <div class="table-responsive">
+          <table class="table table-hover sw-table">
+            <thead>
+            <tr>
+              <th scope="col" class="text-end">#</th>
+              <th scope="col">Decklist</th>
+              <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
+              <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
+              <th scope="col" class="text-end">Player</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#decks}}
+              <tr>
+                <td class="align-middle text-end fit">
+                  <span class="align-middle text-secondary" style="font-size: 80%">{{rank}}</span></td>
+                <td class="align-middle d-none d-md-table-cell fit">
+                  <img src="{{deck.leader.thumbnail}}" width="120" height="40"
+                       class="rounded rounded-1 d-inline-block me-2"/>
+                  <img src="{{deck.base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
+                </td>
+                <td class="align-middle">
+                  <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{deck.name}}</a></span>
+                </td>
+                <td class="align-middle text-center d-none d-md-table-cell fit">
+                  {{#aspects}}
+                    <img src="/images/{{.}}" width="32" height="32"/>
+                  {{/aspects}}
+                </td>
+                <td class="align-middle text-end fit">
+                  <span class="align-middle">{{deck.author}}</span>
+                </td>
+              </tr>
+            {{/decks}}
+            </tbody>
+          </table>
+        </div>
+      {{/noDeck}}
+    </div>
+  </div>
 </section>
+
+{{^noDeck}}
+  <script type="text/javascript">
+    const leadersChart = echarts.init(document.getElementById('chart-leaders'));
+    const leadersOption = {
+      backgroundColor: '#121212',
+      title: {
+        text: 'Leaders',
+        left: 'center',
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter(params) {
+          return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
+        }
+      },
+      series: [
+        {
+          type: 'pie',
+          data: [
+    {{#leaderSerie}}
+      { value: {{value}}, name: '{{key}}' },
+    {{/leaderSerie}}
+    ],
+  }
+]
+};
+leadersChart.setOption(leadersOption);
+
+const basesChart = echarts.init(document.getElementById('chart-bases'));
+const basesOption = {
+backgroundColor: '#121212',
+title: {
+  text: 'Bases',
+  left: 'center',
+},
+tooltip: {
+  trigger: 'item',
+  formatter(params) {
+    return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
+  }
+},
+series: [
+  {
+    type: 'pie',
+    data: [
+    {{#baseSerie}}
+      { value: {{value}}, name: '{{key}}' },
+    {{/baseSerie}}
+    ],
+  }
+]
+};
+basesChart.setOption(basesOption);
+  </script>
+{{/noDeck}}
 
 {{>templates/footer.mustache}}
