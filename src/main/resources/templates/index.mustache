@@ -1,6 +1,5 @@
 {{>templates/header.mustache}}
 
-<!-- Hero Section -->
 <div class="hero">
   <div class="container">
     <h1 class="text-uppercase">Welcome to swumeta.net</h1>
@@ -10,16 +9,14 @@
   </div>
 </div>
 
-<!-- Meta Overview Section -->
 <section class="container my-5">
-  <h2 class="section-title text-center mb-4">Current Meta Overview</h2>
+  <h2 class="section-title text-center mb-2">Current Meta Overview</h2>
   <div class="row">
     <div class="col-lg-8">
       <div class="meta-stats mb-4">
-        <h4>Meta Snapshot - {{lastEventDate}}</h4>
+        <h3>Meta Snapshot - {{lastEventDate}}</h3>
         <p>Based on data from <span class="fw-bolder">{{totalDecks}}</span> decks.</p>
       </div>
-
       <div class="table-responsive">
         <table class="table sw-table">
           <thead>
@@ -39,20 +36,34 @@
         </table>
       </div>
     </div>
-
     <div class="col-lg-4">
-      <div class="card">
-        <div class="card-header bg-dark">
-          <h5 class="card-title mb-0">Most Played Cards</h5>
+      <div class="row>">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header bg-dark">
+              <h5 class="card-title mb-0">Most Played Cards</h5>
+            </div>
+            <div class="card-body">
+              <ol id="top-cards" class="list-group list-group-flush bg-transparent">
+                {{#topCards}}
+                  <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
+                    {{key}}
+                  </li>
+                {{/topCards}}
+              </ol>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <ol id="top-cards" class="list-group list-group-flush bg-transparent">
-            {{#topCards}}
-              <li class="list-group-item bg-transparent text-light border-bottom border-secondary">
-                {{key}}
-              </li>
-            {{/topCards}}
-          </ol>
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header bg-dark">
+              <h5 class="card-title mb-0"><i class="bi bi-chat-dots-fill"></i> We want to hear from you!</h5>
+            </div>
+            <div class="card-body">
+              <p>This is the <strong>beta version</strong> of this website.</p>
+              <p>Should you have any ideas to improve this website, please feel free to reach out!</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

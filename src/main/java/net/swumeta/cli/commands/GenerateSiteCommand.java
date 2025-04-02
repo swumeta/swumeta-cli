@@ -168,7 +168,7 @@ class GenerateSiteCommand {
                 .sorted(Comparator.comparingInt(KeyValue::value).reversed())
                 .toList();
 
-        renderToFile(new IndexModel("Home",
+        renderToFile(new IndexModel("Meta Overview",
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
                         totalDecks, topDecks, topCards),
                 new File(outputDir, "index.html"));
