@@ -46,6 +46,7 @@
               <th scope="col" class="text-end">#</th>
               <th scope="col">Decklist</th>
               <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
+              <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
               <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
               <th scope="col" class="text-end">Player</th>
             </tr>
@@ -62,6 +63,12 @@
                 </td>
                 <td class="align-middle">
                   <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{deck.name}}</a></span>
+                </td>
+                <td class="align-middle text-center fit">
+                  <button class="btn-copy align-middle ms-2 btn btn-outline-secondary btn-sm"
+                          onclick="copyDeck('swudb-deck-{{deck.id}}');">
+                    <i class="bi bi-copy me-1"></i>.json
+                  </button>
                 </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
                   {{#aspects}}
@@ -176,5 +183,31 @@ series: [
 basesChart.setOption(basesOption);
   </script>
 {{/noDeck}}
+
+{{#decks}}
+  <pre class="d-none" id="swudb-deck-{{deck.id}}">
+    {{{swudbFormat}}}
+  </pre>
+{{/decks}}
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="copy-toast" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+    <div class="d-flex">
+      <div class="toast-body">Copied deck to clipboard.</div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  function copyDeck(deckId) {
+    const text = document.getElementById(deckId).textContent;
+    navigator.clipboard.writeText(text)
+    .then(() => {
+      bootstrap.Toast.getOrCreateInstance(document.getElementById("copy-toast")).show();
+    }).catch(err => {
+      console.error('Error during copy: ', err);
+    });
+  }
+</script>
 
 {{>templates/footer.mustache}}

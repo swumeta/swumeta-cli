@@ -162,3 +162,11 @@ footer {
 h2 a, .sw-table a, #about a, .source {
     color: var(--sw-yellow) !important;
 }
+
+tr .btn-copy {
+    display: none;
+}
+
+tr:hover .btn-copy {
+    display: inline-block;
+}

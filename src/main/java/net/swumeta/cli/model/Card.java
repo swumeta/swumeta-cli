@@ -79,7 +79,7 @@ public record Card(
         return number < o.number ? -1 : 1;
     }
 
-    public CharSequence id() {
+    public String id() {
         return "%s-%03d".formatted(set.name(), number);
     }
 }

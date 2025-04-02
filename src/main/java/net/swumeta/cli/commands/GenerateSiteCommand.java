@@ -16,6 +16,7 @@
 
 package net.swumeta.cli.commands;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jstach.jstache.JStache;
 import io.jstach.jstache.JStacheConfig;
 import io.jstach.jstache.JStacheFormatter;
@@ -45,9 +46,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -63,6 +61,7 @@ class GenerateSiteCommand {
     private final JStachio jStachio;
     private final AppConfig config;
     private final StaticResources staticResources;
+    private final ObjectMapper objectMapper;
 
     GenerateSiteCommand(CardDatabaseService cardDatabaseService, EventService eventService, DeckService deckService, AppConfig config, StaticResources staticResources) {
         this.eventService = eventService;
@@ -71,6 +70,8 @@ class GenerateSiteCommand {
         this.config = config;
         this.staticResources = staticResources;
         this.jStachio = JStachio.of();
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.findAndRegisterModules();
     }
 
     void run(File outputDir) {
@@ -111,7 +112,7 @@ class GenerateSiteCommand {
                                 if (deck.isValid()) {
                                     leaderBag.add(deck.formatLeader());
                                     baseBag.add(deck.formatBase());
-                                    return new DeckWithRank(d.rank(), deck, getAspects(deck));
+                                    return new DeckWithRank(d.rank(), deck, getAspects(deck), deck.toSwudbJson(objectMapper));
                                 }
                             } catch (Exception e) {
                                 logger.warn("Failed to load deck: {}", d.url(), e);
@@ -198,7 +199,7 @@ class GenerateSiteCommand {
     ) {
     }
 
-    record DeckWithRank(int rank, Deck deck, List<Card.Aspect> aspects) {
+    record DeckWithRank(int rank, Deck deck, List<Card.Aspect> aspects, String swudbFormat) {
     }
 
     interface TemplateSupport {
@@ -255,16 +256,6 @@ class GenerateSiteCommand {
             }
         }
         throw new RuntimeException("Unable to find country code: " + countryName);
-    }
-
-    private static String md5(File file) {
-        try {
-            final var md = MessageDigest.getInstance("MD5");
-            final var digest = md.digest(Files.readAllBytes(file.toPath()));
-            return HexFormat.of().formatHex(digest);
-        } catch (IOException | NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unable to calculate MD5 sum for file " + file, e);
-        }
     }
 
     @JStacheFormatter
