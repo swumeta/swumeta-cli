@@ -24,10 +24,10 @@
   {{^noDeck}}
     <div class="row mt-4">
       <div class="col">
-        <div id="chart-leaders" style="width: 98%; height: 400px"></div>
+        <div id="chart-leaders" style="width: 100%; height: 400px"></div>
       </div>
       <div class="col">
-        <div id="chart-bases" style="width: 98%; height: 400px"></div>
+        <div id="chart-bases" style="width: 100%; height: 400px"></div>
       </div>
     </div>
   {{/noDeck}}
@@ -86,24 +86,42 @@
     const leadersChart = echarts.init(document.getElementById('chart-leaders'));
     const leadersOption = {
       backgroundColor: '#121212',
-      title: {
-        text: 'Leaders',
-        left: 'center',
-      },
-      tooltip: {
-        trigger: 'item',
-        formatter(params) {
-          return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
-        }
-      },
-      series: [
-        {
-          type: 'pie',
-          data: [
+      legend: {
+        data: [
+    {{#leaderSerie}}
+      '{{key}}',
+    {{/leaderSerie}}
+    ],
+    icon: 'rect',
+    orient: 'vertical',
+    top: 'center',
+    right: 'right',
+    textStyle: {
+      color: '#fff',
+    },
+  },
+title: {
+  text: 'Leaders',
+  left: 'center',
+},
+  tooltip: {
+    trigger: 'item',
+    formatter(params) {
+      return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
+    }
+  },
+  series: [
+    {
+      type: 'pie',
+      data: [
     {{#leaderSerie}}
       { value: {{value}}, name: '{{key}}' },
     {{/leaderSerie}}
     ],
+    label: {
+        show: false,
+        position: 'center'
+      },
   }
 ]
 };
@@ -112,6 +130,20 @@ leadersChart.setOption(leadersOption);
 const basesChart = echarts.init(document.getElementById('chart-bases'));
 const basesOption = {
 backgroundColor: '#121212',
+      legend: {
+        data: [
+    {{#baseSerie}}
+      '{{key}}',
+    {{/baseSerie}}
+    ],
+    icon: 'rect',
+    orient: 'vertical',
+    top: 'center',
+    right: 'right',
+    textStyle: {
+      color: '#fff',
+    },
+  },
 title: {
   text: 'Bases',
   left: 'center',
@@ -130,6 +162,10 @@ series: [
       { value: {{value}}, name: '{{key}}' },
     {{/baseSerie}}
     ],
+    label: {
+        show: false,
+        position: 'center'
+      },
   }
 ]
 };
