@@ -119,35 +119,6 @@ footer {
     margin-bottom: 10px;
 }
 
-.card-faction {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    margin-right: 5px;
-}
-
-.faction-sith {
-    background-color: #940000;
-    color: white;
-}
-
-.faction-rebel {
-    background-color: #FF4500;
-    color: white;
-}
-
-.faction-jedi {
-    background-color: #32CD32;
-    color: white;
-}
-
-.faction-imperial {
-    background-color: #708090;
-    color: white;
-}
-
 .sw-table th {
     color: var(--sw-yellow);
     border-bottom: 2px solid var(--sw-yellow);

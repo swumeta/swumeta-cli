@@ -13,32 +13,62 @@
   <h2 class="section-title text-center mb-2">Current Meta Overview</h2>
   <div class="row">
     <div class="col-lg-8">
-      <div class="meta-stats mb-4">
-        <h3>Meta Snapshot - {{lastEventDate}}</h3>
-        <p>Based on data from <span class="fw-bolder">{{totalDecks}}</span> decks.</p>
+      <div class="row">
+        <div class="col">
+          <div class="meta-stats mb-4">
+            <h3>Meta Snapshot - {{lastEventDate}}</h3>
+            <p>Based on data from <span class="fw-bolder">{{totalDecks}}</span> decks.</p>
+          </div>
+        </div>
       </div>
-      <div class="table-responsive">
-        <table class="table sw-table">
-          <thead>
-          <tr>
-            <th>Leader - Base</th>
-            <th class="text-end">Meta</th>
-          </tr>
-          </thead>
-          <tbody>
-          {{#topDecks}}
-            <tr>
-              <td>{{key}}</td>
-              <td class="text-end fit">{{value}}%</td>
-            </tr>
-          {{/topDecks}}
-          </tbody>
-        </table>
+      <div class="row">
+        <div class="col">
+          <div class="table-responsive">
+            <table class="table sw-table">
+              <thead>
+              <tr>
+                <th>Leader - Base</th>
+                <th class="text-end">Meta</th>
+              </tr>
+              </thead>
+              <tbody>
+              {{#topDecks}}
+                <tr>
+                  <td>{{key}}</td>
+                  <td class="text-end fit">{{value}}%</td>
+                </tr>
+              {{/topDecks}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <div class="table-responsive">
+            <table class="table sw-table">
+              <thead>
+              <tr>
+                <th>Top 8 - Leader - Base</th>
+                <th class="text-end">Meta</th>
+              </tr>
+              </thead>
+              <tbody>
+              {{#top8Decks}}
+                <tr>
+                  <td>{{key}}</td>
+                  <td class="text-end fit">{{value}}%</td>
+                </tr>
+              {{/top8Decks}}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-4">
-      <div class="row>">
-        <div class="col-12">
+      <div class="row">
+        <div class="col">
           <div class="card">
             <div class="card-header bg-dark">
               <h5 class="card-title mb-0">Most Played Cards</h5>
@@ -54,7 +84,9 @@
             </div>
           </div>
         </div>
-        <div class="col-12">
+      </div>
+      <div class="row">
+        <div class="col">
           <div class="card">
             <div class="card-header bg-dark">
               <h5 class="card-title mb-0"><i class="bi bi-chat-dots-fill"></i> We want to hear from you!</h5>

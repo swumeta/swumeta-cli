@@ -35,6 +35,7 @@ import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.tuple.primitive.ObjectIntPair;
 import org.eclipse.collections.impl.bag.mutable.HashBag;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +96,7 @@ class GenerateSiteCommand {
 
         LocalDate lastEventDate = null;
         final MutableBag<String> deckBag = HashBag.newBag(128);
+        final MutableBag<String> deckTop8Bag = HashBag.newBag(128);
         final MutableBag<String> cardBag = HashBag.newBag(256);
 
         final var eventPages = new ArrayList<EventPage>(eventFiles.size());
@@ -111,6 +113,8 @@ class GenerateSiteCommand {
             if (event.decks() == null) {
                 decks = List.of();
             } else {
+                FastList.newList(event.decks()).take(8).stream()
+                        .map(d -> deckService.load(d.url()).name()).forEach(deckTop8Bag::add);
                 decks = event.decks().stream()
                         .filter(d -> d.url() != null)
                         .map(d -> {
@@ -156,6 +160,7 @@ class GenerateSiteCommand {
                 new File(outputDir, "events.html"));
 
         final int totalDecks = deckBag.size();
+        final int totalTop8Decks = deckTop8Bag.size();
         final int totalCards = cardBag.size();
         final var topDecks = deckBag.topOccurrences(5).stream()
                 .limit(5)
@@ -167,10 +172,15 @@ class GenerateSiteCommand {
                 .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalCards * 100)))
                 .sorted(Comparator.comparingInt(KeyValue::value).reversed())
                 .toList();
+        final var top8Decks = deckTop8Bag.topOccurrences(5).stream()
+                .limit(5)
+                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
+                .toList();
 
         renderToFile(new IndexModel("Meta Overview",
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
-                        totalDecks, topDecks, topCards),
+                        totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
     }
 
@@ -195,7 +205,8 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record IndexModel(String title, String lastEventDate, int totalDecks,
-                      List<KeyValue> topDecks, List<KeyValue> topCards) implements TemplateSupport {
+                      List<KeyValue> topDecks, List<KeyValue> topCards,
+                      List<KeyValue> top8Decks) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/about.mustache")
