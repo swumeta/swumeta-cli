@@ -170,3 +170,7 @@ tr .btn-copy {
 tr:hover .btn-copy {
     display: inline-block;
 }
+
+#top-cards li:last-child {
+    border: none !important;
+}

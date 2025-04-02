@@ -86,7 +86,6 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
-        renderToFile(new IndexModel("Home"), new File(outputDir, "index.html"));
         renderToFile(new AboutModel("About"), new File(outputDir, "about.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
@@ -94,9 +93,17 @@ class GenerateSiteCommand {
         final var eventFiles = new ArrayList<File>(16);
         listFilesRecursively(new File(dbDir, "events"), eventFiles);
 
+        LocalDate lastEventDate = null;
+        final MutableBag<String> deckBag = HashBag.newBag(128);
+        final MutableBag<String> cardBag = HashBag.newBag(256);
+
         final var eventPages = new ArrayList<EventPage>(eventFiles.size());
         for (final var eventFile : eventFiles) {
             final var event = eventService.load(eventFile.toURI());
+
+            if (lastEventDate == null || event.date().isAfter(lastEventDate)) {
+                lastEventDate = event.date();
+            }
 
             final List<DeckWithRank> decks;
             final MutableBag<String> leaderBag = HashBag.newBag();
@@ -112,6 +119,17 @@ class GenerateSiteCommand {
                                 if (deck.isValid()) {
                                     leaderBag.add(deck.formatLeader());
                                     baseBag.add(deck.formatBase());
+                                    deckBag.add(deck.name());
+
+                                    for (final var c : deck.main()) {
+                                        cardBag.add(c.name());
+                                    }
+                                    if (deck.sideboard() != null) {
+                                        for (final var c : deck.sideboard()) {
+                                            cardBag.add(c.name());
+                                        }
+                                    }
+
                                     return new DeckWithRank(d.rank(), deck, getAspects(deck), deck.toSwudbJson(objectMapper));
                                 }
                             } catch (Exception e) {
@@ -136,6 +154,24 @@ class GenerateSiteCommand {
         Collections.sort(eventPages, Comparator.reverseOrder());
         renderToFile(new EventIndexModel("Events", eventPages),
                 new File(outputDir, "events.html"));
+
+        final int totalDecks = deckBag.size();
+        final int totalCards = cardBag.size();
+        final var topDecks = deckBag.topOccurrences(5).stream()
+                .limit(5)
+                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalDecks * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
+                .toList();
+        final var topCards = cardBag.topOccurrences(5).stream()
+                .limit(5)
+                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalCards * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
+                .toList();
+
+        renderToFile(new IndexModel("Home",
+                        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
+                        totalDecks, topDecks, topCards),
+                new File(outputDir, "index.html"));
     }
 
     private List<KeyValue> nMostResults(MutableBag<String> bag, int n) {
@@ -158,7 +194,8 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record IndexModel(String title) implements TemplateSupport {
+    record IndexModel(String title, String lastEventDate, int totalDecks,
+                      List<KeyValue> topDecks, List<KeyValue> topCards) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/about.mustache")
