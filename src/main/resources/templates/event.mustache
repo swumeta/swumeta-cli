@@ -200,7 +200,7 @@ basesChart.setOption(basesOption);
 
 <script type="text/javascript">
   function copyDeck(deckId) {
-    const text = document.getElementById(deckId).textContent;
+    const text = document.getElementById(deckId).textContent.trim();
     navigator.clipboard.writeText(text)
     .then(() => {
       bootstrap.Toast.getOrCreateInstance(document.getElementById("copy-toast")).show();
