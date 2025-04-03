@@ -50,6 +50,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 class GenerateSiteCommand {
@@ -149,13 +151,19 @@ class GenerateSiteCommand {
             final var countryFlag = getCountryCodeFromName(event.location().country());
             final List<Link> twitchLinks = event.links() != null ?
                     event.links().stream()
-                            .filter(link -> link.url().getHost().equals("twitch.tv"))
+                            .filter(link -> link.url().getHost().contains("twitch.tv"))
                             .map(link -> new Link(disableTwitchAutoplay(link.url()), link.title()))
+                            .toList()
+                    : List.of();
+            final List<Link> ytLinks = event.links() != null ?
+                    event.links().stream()
+                            .filter(link -> link.url().getHost().contains("youtube.com"))
+                            .map(link -> new Link(createYoutubeEmbedLink(link.url()), link.title()))
                             .toList()
                     : List.of();
             renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty(),
                             nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
-                            twitchLinks),
+                            twitchLinks, ytLinks),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
@@ -244,7 +252,8 @@ class GenerateSiteCommand {
                       List<DeckWithRank> decks, boolean noDeck,
                       List<KeyValue> leaderSerie,
                       List<KeyValue> baseSerie,
-                      List<Link> twitchLinks) implements TemplateSupport {
+                      List<Link> twitchLinks,
+                      List<Link> youtubeLinks) implements TemplateSupport {
     }
 
     record KeyValue(
@@ -368,5 +377,31 @@ class GenerateSiteCommand {
 
     private static URI disableTwitchAutoplay(URI uri) {
         return UriComponentsBuilder.fromUri(uri).replaceQueryParam("autoplay", "false").build().toUri();
+    }
+
+    private static URI createYoutubeEmbedLink(URI uri) {
+        // Different YouTube URL patterns
+        final String[] patterns = {
+                "(?<=watch\\?v=)[a-zA-Z0-9_-]+",            // Standard: https://www.youtube.com/watch?v=VIDEO_ID
+                "(?<=youtu.be/)[a-zA-Z0-9_-]+",             // Shortened: https://youtu.be/VIDEO_ID
+                "(?<=embed/)[a-zA-Z0-9_-]+",                // Already embedded: https://www.youtube.com/embed/VIDEO_ID
+                "(?<=v/)[a-zA-Z0-9_-]+",                    // Old format: https://www.youtube.com/v/VIDEO_ID
+                "(?<=youtube.com/shorts/)[a-zA-Z0-9_-]+"    // Shorts format: https://www.youtube.com/shorts/VIDEO_ID
+        };
+        final var youtubeUrl = uri.toASCIIString();
+        String embedId = null;
+        for (String patternStr : patterns) {
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(youtubeUrl);
+            if (matcher.find()) {
+                embedId = matcher.group();
+                break;
+            }
+        }
+        if (embedId == null) {
+            return uri;
+        }
+        return UriComponentsBuilder.fromUriString("https://www.youtube.com/embed/")
+                .pathSegment(embedId).queryParam("autoplay", "0").build().toUri();
     }
 }
