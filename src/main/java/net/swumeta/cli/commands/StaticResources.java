@@ -65,6 +65,8 @@ public class StaticResources {
     private Resource favicon32Png;
     @Value("classpath:/static/site.webmanifest")
     private Resource siteManifest;
+    @Value("classpath:/static/js/ga.js")
+    private Resource gaJs;
 
     public void copyToDirectory(File targetDir) throws IOException {
         final var cssDir = new File(targetDir, "css");
@@ -90,6 +92,10 @@ public class StaticResources {
         copyResourceToFile(favicon16Png, targetDir);
         copyResourceToFile(favicon32Png, targetDir);
         copyResourceToFile(siteManifest, targetDir);
+
+        final var jsDir = new File(targetDir, "js");
+        jsDir.mkdirs();
+        copyResourceToFile(gaJs, jsDir);
     }
 
     private void copyResourceToFile(Resource res, File targetDir) throws IOException {

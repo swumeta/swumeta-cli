@@ -145,3 +145,16 @@ tr:hover .btn-copy {
 #top-cards li:last-child {
     border: none !important;
 }
+
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    display: block;
+}
+
+.cookie-banner.hidden {
+    display: none;
+}
