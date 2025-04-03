@@ -112,7 +112,7 @@ footer {
     border-top: 1px solid rgba(255, 232, 31, 0.3);
 }
 
-.meta-stats {
+.info-banner {
     background-color: rgba(46, 103, 248, 0.1);
     border-left: 3px solid var(--sw-blue);
     padding: 10px 15px;
