@@ -88,6 +88,24 @@
   </div>
 </section>
 
+<section class="container">
+  <div class="d-flex flex-wrap gap-3 mt-2">
+    {{#twitchLinks}}
+      <div>
+        <h3 class="text-secondary fs-6">{{title}}</h3>
+        <iframe
+          src="{{{url}}}&parent=swumeta.net"
+          height="400"
+          width="620"
+          frameborder="0"
+          scrolling="no"
+          allowfullscreen="true">
+        </iframe>
+      </div>
+    {{/twitchLinks}}
+  </div>
+</section>
+
 {{^noDeck}}
   <script type="text/javascript">
     const leadersChart = echarts.init(document.getElementById('chart-leaders'));
@@ -191,7 +209,8 @@ basesChart.setOption(basesOption);
 {{/decks}}
 
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
-  <div id="copy-toast" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+  <div id="copy-toast" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true"
+       data-bs-delay="2000">
     <div class="d-flex">
       <div class="toast-body">Copied deck to clipboard.</div>
     </div>

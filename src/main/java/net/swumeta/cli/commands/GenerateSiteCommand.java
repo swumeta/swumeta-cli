@@ -26,10 +26,7 @@ import net.swumeta.cli.AppConfig;
 import net.swumeta.cli.CardDatabaseService;
 import net.swumeta.cli.DeckService;
 import net.swumeta.cli.EventService;
-import net.swumeta.cli.model.Card;
-import net.swumeta.cli.model.Deck;
-import net.swumeta.cli.model.Event;
-import net.swumeta.cli.model.Location;
+import net.swumeta.cli.model.*;
 import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
@@ -41,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -149,8 +147,15 @@ class GenerateSiteCommand {
                     .replace(".yaml", "")
                     .replace(" ", "-") + ".html";
             final var countryFlag = getCountryCodeFromName(event.location().country());
+            final List<Link> twitchLinks = event.links() != null ?
+                    event.links().stream()
+                            .filter(link -> link.url().getHost().equals("twitch.tv"))
+                            .map(link -> new Link(disableTwitchAutoplay(link.url()), link.title()))
+                            .toList()
+                    : List.of();
             renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty(),
-                            nMostResults(leaderBag, 4), nMostResults(baseBag, 4)),
+                            nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
+                            twitchLinks),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
@@ -238,7 +243,8 @@ class GenerateSiteCommand {
     record EventModel(String title, Event event, String countryFlag,
                       List<DeckWithRank> decks, boolean noDeck,
                       List<KeyValue> leaderSerie,
-                      List<KeyValue> baseSerie) implements TemplateSupport {
+                      List<KeyValue> baseSerie,
+                      List<Link> twitchLinks) implements TemplateSupport {
     }
 
     record KeyValue(
@@ -358,5 +364,9 @@ class GenerateSiteCommand {
                 throw new RuntimeException("Unable to format instance: " + o);
             };
         }
+    }
+
+    private static URI disableTwitchAutoplay(URI uri) {
+        return UriComponentsBuilder.fromUri(uri).replaceQueryParam("autoplay", "false").build().toUri();
     }
 }
