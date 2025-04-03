@@ -24,6 +24,7 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "swu")
 public record AppConfig(
+        String domain,
         File database,
         File cache,
         List<URI> cards

@@ -152,7 +152,7 @@ class GenerateSiteCommand {
             final List<Link> twitchLinks = event.links() != null ?
                     event.links().stream()
                             .filter(link -> link.url().getHost().contains("twitch.tv"))
-                            .map(link -> new Link(disableTwitchAutoplay(link.url()), link.title()))
+                            .map(link -> new Link(createTwitchEmbedLink(link.url()), link.title()))
                             .toList()
                     : List.of();
             final List<Link> ytLinks = event.links() != null ?
@@ -375,11 +375,14 @@ class GenerateSiteCommand {
         }
     }
 
-    private static URI disableTwitchAutoplay(URI uri) {
-        return UriComponentsBuilder.fromUri(uri).replaceQueryParam("autoplay", "false").build().toUri();
+    private URI createTwitchEmbedLink(URI uri) {
+        return UriComponentsBuilder.fromUri(uri).host("player.twitch.tv")
+                .replaceQueryParam("autoplay", "false")
+                .queryParam("parent", config.domain())
+                .build().toUri();
     }
 
-    private static URI createYoutubeEmbedLink(URI uri) {
+    private URI createYoutubeEmbedLink(URI uri) {
         // Different YouTube URL patterns
         final String[] patterns = {
                 "(?<=watch\\?v=)[a-zA-Z0-9_-]+",            // Standard: https://www.youtube.com/watch?v=VIDEO_ID
