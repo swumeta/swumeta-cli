@@ -2,8 +2,8 @@
 
 <section class="container">
   <h2 class="section-title">
-    <a href="events.html" class="text-decoration-none">Events</a> &gt; {{title}} <i
-    class="ms-1 fi fi-{{countryFlag}}"></i>
+    <span class="fs-6"><a href="events.html" class="text-decoration-none">Events</a> &gt;</span><br/>
+    {{title}} <i class="ms-1 fi fi-{{countryFlag}}"></i>
   </h2>
 
   <div class="row">
@@ -83,7 +83,9 @@
             </tbody>
             <tfooter>
               <tr class="text-center" id="showMoreSection">
-                <td colspan="6"><button class="btn btn-sw m-2" onclick="showMoreDecks();">Show more</button></td>
+                <td colspan="6">
+                  <button class="btn btn-sw m-2" onclick="showMoreDecks();">Show more</button>
+                </td>
               </tr>
             </tfooter>
           </table>
