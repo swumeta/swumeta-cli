@@ -169,7 +169,7 @@ class GenerateSiteCommand {
             leaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> leaderSerie.add(new KeyValue(name, count)));
 
             final var statsFileName = eventFileName.replace(".html", "-stats.html");
-            renderToFile(new EventStatsModel(event.name(), event, countryFlag, leaderSerie),
+            renderToFile(new EventStatsModel("Statistics from " + event.name(), event, countryFlag, leaderSerie),
                     new File(outputDir, statsFileName));
 
             renderToFile(new EventModel(event.name(), event, countryFlag, statsFileName, decks, decks.isEmpty(),
