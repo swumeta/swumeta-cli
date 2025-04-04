@@ -32,6 +32,7 @@ import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.tuple.primitive.ObjectIntPair;
 import org.eclipse.collections.impl.bag.mutable.HashBag;
+import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.slf4j.Logger;
@@ -161,9 +162,10 @@ class GenerateSiteCommand {
                             .map(link -> new Link(createYoutubeEmbedLink(link.url()), link.title()))
                             .toList()
                     : List.of();
+            final List<Link> videoLinks = Lists.mutable.withAll(twitchLinks).withAll(ytLinks);
             renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty(),
                             nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
-                            twitchLinks, ytLinks),
+                            videoLinks),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
@@ -252,8 +254,7 @@ class GenerateSiteCommand {
                       List<DeckWithRank> decks, boolean noDeck,
                       List<KeyValue> leaderSerie,
                       List<KeyValue> baseSerie,
-                      List<Link> twitchLinks,
-                      List<Link> youtubeLinks) implements TemplateSupport {
+                      List<Link> videoLinks) implements TemplateSupport {
     }
 
     record KeyValue(
@@ -376,10 +377,27 @@ class GenerateSiteCommand {
     }
 
     private URI createTwitchEmbedLink(URI uri) {
-        return UriComponentsBuilder.fromUri(uri).host("player.twitch.tv")
-                .replaceQueryParam("autoplay", "false")
+        final var uriBuilder = UriComponentsBuilder.fromUriString("https://player.twitch.tv/")
                 .queryParam("parent", config.domain())
-                .build().toUri();
+                .queryParam("autoplay", "false");
+
+        final var inputUri = UriComponentsBuilder.fromUri(uri).build();
+        final var qParams = inputUri.getQueryParams();
+        final var pathSegments = inputUri.getPathSegments();
+        if (qParams.containsKey("channel")) {
+            uriBuilder.queryParam("channel", qParams.getFirst("channel"));
+        } else if (qParams.containsKey("videos")) {
+            uriBuilder.queryParam("videos", qParams.getFirst("videos"));
+        } else if (pathSegments.size() > 1 && pathSegments.get(0).equals("channel")) {
+            uriBuilder.queryParam("channel", pathSegments.get(1));
+        } else if (pathSegments.size() > 1 && pathSegments.get(0).equals("videos")) {
+            uriBuilder.queryParam("videos", pathSegments.get(1));
+        } else if (pathSegments.size() == 1) {
+            uriBuilder.queryParam("channel", pathSegments.get(0));
+        } else {
+            throw new RuntimeException("Invalid Twitch URL: " + uri);
+        }
+        return uriBuilder.build().toUri();
     }
 
     private URI createYoutubeEmbedLink(URI uri) {
