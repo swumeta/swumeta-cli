@@ -40,7 +40,7 @@
       {{/noDeck}}
       {{^noDeck}}
         <div class="table-responsive">
-          <table class="table table-hover sw-table">
+          <table id="decks" class="table table-hover sw-table">
             <thead>
             <tr>
               <th scope="col" class="text-end">#</th>
@@ -53,7 +53,7 @@
             </thead>
             <tbody>
             {{#decks}}
-              <tr>
+              <tr class="d-none">
                 <td class="align-middle text-end fit">
                   <span class="align-middle text-secondary" style="font-size: 80%">{{rank}}</span></td>
                 <td class="align-middle d-none d-md-table-cell fit">
@@ -81,6 +81,11 @@
               </tr>
             {{/decks}}
             </tbody>
+            <tfooter>
+              <tr class="text-center" id="showMoreSection">
+                <td colspan="6"><button class="btn btn-sw m-2" onclick="showMoreDecks();">Show more</button></td>
+              </tr>
+            </tfooter>
           </table>
         </div>
       {{/noDeck}}
@@ -223,6 +228,29 @@ basesChart.setOption(basesOption);
       console.error('Error during copy: ', err);
     });
   }
+
+  function showMoreDecks() {
+    const table = document.getElementById("decks");
+    const rows = table.querySelectorAll("tr");
+    let i = 0;
+    for (const row of rows) {
+      row.classList.remove("d-none");
+      i++;
+    }
+    const showMoreSection = document.getElementById("showMoreSection");
+    showMoreSection.classList.toggle("d-none", true);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById("decks");
+    const rows = table.querySelectorAll("tr");
+    let i = 0;
+    for (const row of rows) {
+      if (i > 8) break;
+      row.classList.remove("d-none");
+      i++;
+    }
+  });
 </script>
 
 {{>templates/footer.mustache}}
