@@ -1,25 +1,7 @@
 {{>templates/header.mustache}}
 
 <section class="container">
-  <h2 class="section-title">
-    <span class="fs-6"><a href="events.html" class="text-decoration-none">Events</a> &gt;</span><br/>
-    {{event.name}} <i class="ms-1 fi fi-{{countryFlag}}"></i>
-  </h2>
-
-  <div class="row">
-    <div class="col">
-      <p class="m-0"><span class="text-secondary">Location:</span>&nbsp;<span class="fw-bold">{{event.location}}</span>
-      </p>
-      <p class="m-0"><span class="text-secondary">Date:</span>&nbsp;<span class="fw-bold">{{event.date}}</span></p>
-      <p class="m-0"><span class="text-secondary">Type:</span>&nbsp;<span class="fw-bold">{{event.type}}</span>
-        / {{event.players}}
-        players</p>
-      <p class="m-0 mb-1"><span class="text-secondary">
-    Source:</span>&nbsp;<i class="bi bi-card-list source mx-1"></i>
-        <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
-      </p>
-    </div>
-  </div>
+  {{>templates/event-header.mustache}}
 
   <div class="row mt-4">
     <div class="col">
