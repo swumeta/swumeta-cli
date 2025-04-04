@@ -28,6 +28,7 @@ import net.swumeta.cli.DeckService;
 import net.swumeta.cli.EventService;
 import net.swumeta.cli.model.*;
 import org.eclipse.collections.api.bag.MutableBag;
+import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.tuple.primitive.ObjectIntPair;
@@ -122,7 +123,7 @@ class GenerateSiteCommand {
                             try {
                                 final var deck = deckService.load(d.url());
                                 if (deck.isValid()) {
-                                    leaderBag.add(deck.formatLeader());
+                                    leaderBag.add(deck.formatLeader().replace("'", " "));
                                     baseBag.add(deck.formatBase());
                                     deckBag.add(deck.name());
 
@@ -163,7 +164,15 @@ class GenerateSiteCommand {
                             .toList()
                     : List.of();
             final List<Link> videoLinks = Lists.mutable.withAll(twitchLinks).withAll(ytLinks);
-            renderToFile(new EventModel(event.name(), event, countryFlag, decks, decks.isEmpty(),
+
+            final var leaderSerie = new ArrayList<KeyValue>(leaderBag.size());
+            leaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> leaderSerie.add(new KeyValue(name, count)));
+
+            final var statsFileName = eventFileName.replace(".html", "-stats.html");
+            renderToFile(new EventStatsModel(event.name(), event, countryFlag, leaderSerie),
+                    new File(outputDir, statsFileName));
+
+            renderToFile(new EventModel(event.name(), event, countryFlag, statsFileName, decks, decks.isEmpty(),
                             nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
                             videoLinks),
                     new File(outputDir, eventFileName));
@@ -250,7 +259,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventModel(String title, Event event, String countryFlag,
+    record EventModel(String title, Event event, String countryFlag, String statsPage,
                       List<DeckWithRank> decks, boolean noDeck,
                       List<KeyValue> leaderSerie,
                       List<KeyValue> baseSerie,
@@ -264,6 +273,12 @@ class GenerateSiteCommand {
     }
 
     record DeckWithRank(int rank, Deck deck, List<Card.Aspect> aspects, String swudbFormat) {
+    }
+
+    @JStache(path = "/templates/event-stats.mustache")
+    @JStacheConfig(formatter = CustomFormatter.class)
+    record EventStatsModel(String title, Event event, String countryFlag,
+                           List<KeyValue> leaderSerie) implements TemplateSupport {
     }
 
     interface TemplateSupport {

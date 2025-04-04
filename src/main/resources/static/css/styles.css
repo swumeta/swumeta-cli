@@ -130,7 +130,7 @@ footer {
    width: 1%;
 }
 
-h2 a, .sw-table a, #about a, .source {
+h2 a, .sw-table a, #about a, .source, .sw-link {
     color: var(--sw-yellow) !important;
 }
 
