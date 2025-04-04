@@ -387,11 +387,11 @@ class GenerateSiteCommand {
         if (qParams.containsKey("channel")) {
             uriBuilder.queryParam("channel", qParams.getFirst("channel"));
         } else if (qParams.containsKey("videos")) {
-            uriBuilder.queryParam("videos", qParams.getFirst("videos"));
+            uriBuilder.queryParam("video", qParams.getFirst("videos"));
         } else if (pathSegments.size() > 1 && pathSegments.get(0).equals("channel")) {
             uriBuilder.queryParam("channel", pathSegments.get(1));
         } else if (pathSegments.size() > 1 && pathSegments.get(0).equals("videos")) {
-            uriBuilder.queryParam("videos", pathSegments.get(1));
+            uriBuilder.queryParam("video", pathSegments.get(1));
         } else if (pathSegments.size() == 1) {
             uriBuilder.queryParam("channel", pathSegments.get(0));
         } else {
