@@ -5,11 +5,11 @@
 
   {{^noDeck}}
     <div class="row mt-4">
-      <div class="col">
-        <div id="chart-leaders" style="width: 100%; min-height: 300px; max-height: 400px"></div>
+      <div class="col-lg-6">
+        <div id="chart-leaders" style="width: 100%; min-height: 400px"></div>
       </div>
-      <div class="col">
-        <div id="chart-bases" style="width: 100%; min-height: 300px; max-height: 400px"></div>
+      <div class="col-lg-6">
+        <div id="chart-bases" style="width: 100%; min-height: 400px"></div>
       </div>
     </div>
     <div class="row mb-4">
@@ -98,97 +98,22 @@
 
 {{^noDeck}}
   <script type="text/javascript">
-    const leadersChart = echarts.init(document.getElementById('chart-leaders'));
-    const leadersOption = {
-      backgroundColor: '#121212',
-      legend: {
-        data: [
-    {{#leaderSerie}}
-      '{{key}}',
-    {{/leaderSerie}}
-    ],
-    icon: 'rect',
-    orient: 'vertical',
-    top: 'center',
-    right: 'right',
-    selectedMode: false,
-    textStyle: {
-      color: '#fff',
-    },
-  },
-title: {
-  text: 'Leaders',
-  left: 'center',
-},
-  tooltip: {
-    trigger: 'item',
-    confine: true,
-    formatter(params) {
-      return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
-    }
-  },
-  series: [
-    {
-      type: 'pie',
-      data: [
-    {{#leaderSerie}}
-      { value: {{value}}, name: '{{key}}' },
-    {{/leaderSerie}}
-    ],
-    label: {
-        show: false,
-        position: 'center'
-      },
-  }
-]
-};
-leadersChart.setOption(leadersOption);
-
-const basesChart = echarts.init(document.getElementById('chart-bases'));
-const basesOption = {
-backgroundColor: '#121212',
-      legend: {
-        data: [
-    {{#baseSerie}}
-      '{{key}}',
-    {{/baseSerie}}
-    ],
-    icon: 'rect',
-    orient: 'vertical',
-    top: 'center',
-    right: 'right',
-    selectedMode: false,
-    textStyle: {
-      color: '#fff',
-    },
-  },
-title: {
-  text: 'Bases',
-  left: 'center',
-},
-tooltip: {
-  trigger: 'item',
-  confine: true,
-  formatter(params) {
-    return `${params.marker}${params.name}<span style="float: right; margin-left: 20px"><b>${params.value}</b> (${params.percent}%)</span>`;
-  }
-},
-series: [
-  {
-    type: 'pie',
-    data: [
-    {{#baseSerie}}
-      { value: {{value}}, name: '{{key}}' },
-    {{/baseSerie}}
-    ],
-    label: {
-        show: false,
-        position: 'center'
-      },
-  }
-]
-};
-basesChart.setOption(basesOption);
+    const leaderData = [
+      {{#leaderSerie}}
+        { value: {{value}}, name: '{{key}}' },
+      {{/leaderSerie}}
+    ];
+    const baseData = [
+      {{#baseSerie}}
+        { value: {{value}}, name: '{{key}}' },
+      {{/baseSerie}}
+    ];
+    createHorizontalBarChart('chart-leaders', leaderData, {
+        title: 'Leaders',
+    });
+    createHorizontalBarChart('chart-bases', baseData, {
+        title: 'Bases',
+    });
   </script>
 {{/noDeck}}
 
