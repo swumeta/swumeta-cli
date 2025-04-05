@@ -34,19 +34,6 @@
     {{/top8LeaderSerie}}
   ];
 
-  // Function to generate a dynamic color palette based on the number of leaders
-  function generateColorPalette(numColors) {
-      const colors = [];
-      for (let i = 0; i < numColors; i++) {
-          // Generate HSL colors well distributed across the spectrum
-          const hue = (i * 360 / numColors) % 360;
-          const saturation = 70 + Math.random() * 20; // between 70% and 90%
-          const lightness = 45 + Math.random() * 10;  // between 45% and 55%
-          colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
-      }
-      return colors;
-  }
-
   // Chart initialization with dark theme
   const chartDom = document.getElementById('chart-leaders');
   const myChart = echarts.init(chartDom);
