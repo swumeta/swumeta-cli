@@ -168,8 +168,25 @@ class GenerateSiteCommand {
             final var leaderSerie = new ArrayList<KeyValue>(leaderBag.size());
             leaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> leaderSerie.add(new KeyValue(name, count)));
 
+            final MutableBag<String> top64LeaderBag = HashBag.newBag(64);
+            Lists.immutable.withAll(event.decks()).take(64).stream()
+                    .filter(d -> d.url() != null)
+                    .map(link -> deckService.load(link.url()).formatLeader().replace("'", " "))
+                    .forEach(top64LeaderBag::add);
+            final var top64LeaderSerie = new ArrayList<KeyValue>(top64LeaderBag.size());
+            top64LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top64LeaderSerie.add(new KeyValue(name, count)));
+
+            final MutableBag<String> top8LeaderBag = HashBag.newBag(8);
+            Lists.immutable.withAll(event.decks()).take(8).stream()
+                    .filter(d -> d.url() != null)
+                    .map(link -> deckService.load(link.url()).formatLeader().replace("'", " "))
+                    .forEach(top8LeaderBag::add);
+            final var top8LeaderSerie = new ArrayList<KeyValue>(top8LeaderBag.size());
+            top8LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top8LeaderSerie.add(new KeyValue(name, count)));
+
             final var statsFileName = eventFileName.replace(".html", "-stats.html");
-            renderToFile(new EventStatsModel("Statistics from " + event.name(), event, countryFlag, leaderSerie),
+            renderToFile(new EventStatsModel("Statistics from " + event.name(), event, countryFlag,
+                            leaderSerie, top64LeaderSerie, top8LeaderSerie),
                     new File(outputDir, statsFileName));
 
             renderToFile(new EventModel(event.name(), event, countryFlag, statsFileName, decks, decks.isEmpty(),
@@ -278,7 +295,9 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record EventStatsModel(String title, Event event, String countryFlag,
-                           List<KeyValue> leaderSerie) implements TemplateSupport {
+                           List<KeyValue> allLeaderSerie,
+                           List<KeyValue> top64LeaderSerie,
+                           List<KeyValue> top8LeaderSerie) implements TemplateSupport {
     }
 
     interface TemplateSupport {
