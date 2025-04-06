@@ -23,7 +23,7 @@ import java.net.URI;
 public record DeckLink(
         @JsonProperty(required = true) int rank,
         @JsonProperty(defaultValue = "false")
-        boolean unconfirmed,
+        boolean pending,
         URI url
 ) {
 }

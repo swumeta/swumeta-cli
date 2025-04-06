@@ -121,7 +121,7 @@ class GenerateSiteCommand {
                         .filter(d -> d.url() != null)
                         .map(d -> {
                             try {
-                                final var deck = deckService.load(d.url(), d.unconfirmed());
+                                final var deck = deckService.load(d.url(), d.pending());
                                 if (deck.isValid()) {
                                     leaderBag.add(deck.formatLeader().replace("'", " "));
                                     baseBag.add(deck.formatBase());
@@ -136,7 +136,7 @@ class GenerateSiteCommand {
                                         }
                                     }
 
-                                    return new DeckWithRank(d.rank(), d.unconfirmed(), deck, getAspects(deck), deck.toSwudbJson(objectMapper));
+                                    return new DeckWithRank(d.rank(), d.pending(), deck, getAspects(deck), deck.toSwudbJson(objectMapper));
                                 }
                             } catch (Exception e) {
                                 logger.warn("Failed to load deck: {}", d.url(), e);
@@ -289,7 +289,7 @@ class GenerateSiteCommand {
     ) {
     }
 
-    record DeckWithRank(int rank, boolean unconfirmed, Deck deck, List<Card.Aspect> aspects, String swudbFormat) {
+    record DeckWithRank(int rank, boolean pending, Deck deck, List<Card.Aspect> aspects, String swudbFormat) {
     }
 
     @JStache(path = "/templates/event-stats.mustache")
