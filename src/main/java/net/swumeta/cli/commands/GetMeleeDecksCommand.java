@@ -42,7 +42,7 @@ class GetMeleeDecksCommand {
         this.client = client;
     }
 
-    void run(URI uri, int max) {
+    void run(URI uri, int max, int roundIdOpt) {
         logger.info("Connecting to melee.gg: {}", uri);
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
@@ -54,7 +54,7 @@ class GetMeleeDecksCommand {
         }
 
         final var lastRoundElem = roundStandingsElems.last();
-        final var roundId = Integer.parseInt(lastRoundElem.attr("data-id"));
+        final var roundId = roundIdOpt == 0 ? Integer.parseInt(lastRoundElem.attr("data-id")) : roundIdOpt;
         logger.debug("Found round id: {}", roundId);
 
         final var deckUris = new ArrayList<DeckLink>(32);
