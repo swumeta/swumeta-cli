@@ -54,9 +54,13 @@ public class DeckService {
     }
 
     public Deck load(URI uri) {
+        return load(uri, false);
+    }
+
+    public Deck load(URI uri, boolean skipCache) {
         final var deckCacheDir = new File(config.cache(), "decks");
         final var deckFile = new File(deckCacheDir, md5(uri.toASCIIString()) + ".yaml");
-        if (deckFile.exists()) {
+        if (!skipCache && deckFile.exists()) {
             try {
                 logger.debug("Loading deck from cache: {}", uri);
                 return objectMapper.readerFor(Deck.class).readValue(deckFile);

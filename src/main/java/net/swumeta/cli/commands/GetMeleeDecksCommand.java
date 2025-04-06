@@ -97,7 +97,7 @@ class GetMeleeDecksCommand {
                     deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
                 }
                 logger.debug("Adding deck URI at rank {}: {}", player.Rank, deckUri);
-                deckUris.add(new DeckLink(player.Rank, deckUri));
+                deckUris.add(new DeckLink(player.Rank, true, deckUri));
 
                 if (deckUris.size() >= resp.recordsTotal || (max != 0 && deckUris.size() >= max)) {
                     break;

@@ -41,7 +41,10 @@
             {{#decks}}
               <tr class="d-none">
                 <td class="align-middle text-end fit">
-                  <span class="align-middle text-secondary" style="font-size: 80%">{{rank}}</span></td>
+                  <span class="align-middle text-secondary" style="font-size: 80%">
+                    {{#unconfirmed}}<strong>N/A</strong>{{/unconfirmed}}
+                    {{^unconfirmed}}{{rank}}{{/unconfirmed}}
+                  </span></td>
                 <td class="align-middle d-none d-md-table-cell fit">
                   <img src="{{deck.leader.thumbnail}}" width="120" height="40"
                        class="rounded rounded-1 d-inline-block me-2"/>
