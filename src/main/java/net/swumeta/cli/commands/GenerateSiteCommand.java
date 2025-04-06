@@ -94,7 +94,7 @@ class GenerateSiteCommand {
 
         final var dbDir = config.database();
         final var eventFiles = new ArrayList<File>(16);
-        listFilesRecursively(new File(dbDir, "events"), eventFiles);
+        listFilesRecursively(new File(dbDir, "events"), eventFiles, ".yaml");
 
         LocalDate lastEventDate = null;
         final MutableBag<String> deckBag = HashBag.newBag(128);
@@ -223,6 +223,8 @@ class GenerateSiteCommand {
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
+
+        generateSitemap(outputDir);
     }
 
     private List<KeyValue> nMostResults(MutableBag<String> bag, int n) {
@@ -320,14 +322,15 @@ class GenerateSiteCommand {
         }
     }
 
-    private static void listFilesRecursively(File directory, List<File> filesList) {
+    private static void listFilesRecursively(File directory, List<File> filesList, String extension) {
         final var files = directory.listFiles();
         if (files != null) {
+            final var dotExt = extension.startsWith(".") ? extension : ("." + extension);
             for (final var file : files) {
-                if (file.isFile() && file.getName().endsWith(".yaml")) {
+                if (file.isFile() && file.getName().endsWith(dotExt)) {
                     filesList.add(file);
                 } else if (file.isDirectory()) {
-                    listFilesRecursively(file, filesList);
+                    listFilesRecursively(file, filesList, extension);
                 }
             }
         }
@@ -462,5 +465,40 @@ class GenerateSiteCommand {
         }
         return UriComponentsBuilder.fromUriString("https://www.youtube.com/embed/")
                 .pathSegment(embedId).queryParam("autoplay", "0").build().toUri();
+    }
+
+    private void generateSitemap(File outputDir) {
+        final var htmlFiles = new ArrayList<File>(32);
+        listFilesRecursively(outputDir, htmlFiles, ".html");
+
+        final var urlFiles = new ArrayList<URI>(htmlFiles.size());
+        for (final var htmlFile : htmlFiles) {
+            final var uri = UriComponentsBuilder.newInstance()
+                    .scheme("https").host(config.domain())
+                    .path(outputDir.toPath().relativize(htmlFile.toPath()).toString()).build().toUri();
+            urlFiles.add(uri);
+        }
+        logger.debug("Generating sitemap: {}", urlFiles);
+        renderToFile(new SitemapModel(urlFiles, ZonedDateTime.now()), new File(outputDir, "sitemap.xml"));
+
+        final var sitemapUri = UriComponentsBuilder.newInstance()
+                .scheme("https").host(config.domain()).path("sitemap.xml").build().toUri();
+        logger.debug("Generating robots.txt: sitemap={}", sitemapUri);
+        renderToFile(new RobotsModel(sitemapUri), new File(outputDir, "robots.txt"));
+    }
+
+    @JStache(path = "/templates/sitemap.mustache")
+    @JStacheConfig(formatter = CustomFormatter.class)
+    record SitemapModel(
+            List<URI> urls,
+            ZonedDateTime now
+    ) {
+    }
+
+    @JStache(path = "/templates/robots.mustache")
+    @JStacheConfig(formatter = CustomFormatter.class)
+    record RobotsModel(
+            URI sitemap
+    ) {
     }
 }
