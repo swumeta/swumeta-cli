@@ -335,9 +335,13 @@ class GenerateSiteCommand {
 
     private static List<Card.Aspect> getAspects(Deck d) {
         final var aspects = new ArrayList<Card.Aspect>(3);
-        aspects.addAll(d.leader().aspects());
-        for (final var a : d.base().aspects()) {
-            aspects.add(a);
+        if (d.leader().aspects() != null) {
+            aspects.addAll(d.leader().aspects());
+        }
+        if (d.base().aspects() != null) {
+            for (final var a : d.base().aspects()) {
+                aspects.add(a);
+            }
         }
         Collections.sort(aspects);
         return aspects;
