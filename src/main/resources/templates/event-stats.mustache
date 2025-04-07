@@ -3,7 +3,19 @@
 <section class="container">
   {{>templates/event-header.mustache}}
 
-  <div class="row mt-1">
+  <style>
+    .all-leaders {
+      height: 950px;
+    }
+    .top64-leaders {
+      height: 700px;
+    }
+    .top8-leaders {
+      height: 400px;
+    }
+  </style>
+
+  <div class="row">
     <div class="col text-center">
       <button id="btn-all" class="btn btn-sw mx-1">All</button>
       <button id="btn-top64" class="btn btn-sw mx-1">Top 64</button>
@@ -11,8 +23,8 @@
     </div>
   </div>
   <div class="row">
-    <div class="col mt-4">
-      <div id="chart-leaders" style="width: 100%; height: 100%; min-height: 1000px"></div>
+    <div class="col mt-3 me-4">
+      <div id="chart-leaders" class="w-100 all-leaders"></div>
     </div>
   </div>
 </section>
@@ -41,24 +53,33 @@
   // Variable to track current dataset
   let currentDataset = 'all';
 
+  let chartAlreadyInit = false;
+
   // Function to update the chart with the selected dataset
   function updateChart(datasetType) {
       // Select the appropriate dataset
       let dataToUse;
       let chartTitle;
 
+      chartDom.classList.remove("all-leaders");
+      chartDom.classList.remove("top8-leaders");
+      chartDom.classList.remove("top64-leaders");
+
       switch(datasetType) {
           case 'top8':
               dataToUse = top8Data;
               chartTitle = "Top 8 Leaders";
+              chartDom.classList.add("top8-leaders");
               break;
           case 'top64':
               dataToUse = top64Data;
               chartTitle = "Top 64 Leaders";
+              chartDom.classList.add("top64-leaders");
               break;
           default:
               dataToUse = allLeadersData;
               chartTitle = "All Leaders";
+              chartDom.classList.add("all-leaders");
       }
 
       // Update current dataset tracker
@@ -149,6 +170,21 @@
 
       // Apply options to the chart
       myChart.setOption(option);
+
+      switch(datasetType) {
+          case 'top8':
+              chartDom.classList.add("top8-leaders");
+              break;
+          case 'top64':
+              chartDom.classList.add("top64-leaders");
+              break;
+          default:
+              chartDom.classList.add("all-leaders");
+      }
+      if(chartAlreadyInit) {
+         myChart.resize();
+      }
+      chartAlreadyInit = true;
   }
 
   // Initialize with all leaders dataset
