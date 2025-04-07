@@ -16,6 +16,7 @@
 
 package net.swumeta.cli.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,6 +50,7 @@ public record Deck(
         return DigestUtils.md5DigestAsHex(source.toASCIIString().getBytes(StandardCharsets.UTF_8));
     }
 
+    @JsonIgnore
     public boolean isValid() {
         return leader != null && base != null && main != null && !main.isEmpty();
     }
