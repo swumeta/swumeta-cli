@@ -155,19 +155,12 @@ class GenerateSiteCommand {
                     .replace(".yaml", "")
                     .replace(" ", "-") + ".html";
             final var countryFlag = getCountryCodeFromName(event.location().country());
-            final List<Link> twitchLinks = event.links() != null ?
+            final List<Link> videoLinks = event.links() != null ?
                     event.links().stream()
-                            .filter(link -> link.url().getHost().contains("twitch.tv"))
-                            .map(link -> new Link(createTwitchEmbedLink(link.url()), link.title()))
+                            .map(this::createVideoEmbedLink)
+                            .filter(Objects::nonNull)
                             .toList()
                     : List.of();
-            final List<Link> ytLinks = event.links() != null ?
-                    event.links().stream()
-                            .filter(link -> link.url().getHost().contains("youtube.com"))
-                            .map(link -> new Link(createYoutubeEmbedLink(link.url()), link.title()))
-                            .toList()
-                    : List.of();
-            final List<Link> videoLinks = Lists.mutable.withAll(twitchLinks).withAll(ytLinks);
 
             final var leaderSerie = new ArrayList<KeyValue>(leaderBag.size());
             leaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> leaderSerie.add(new KeyValue(name, count)));
@@ -469,6 +462,15 @@ class GenerateSiteCommand {
         }
         return UriComponentsBuilder.fromUriString("https://www.youtube.com/embed/")
                 .pathSegment(embedId).queryParam("autoplay", "0").build().toUri();
+    }
+
+    private Link createVideoEmbedLink(Link link) {
+        if (link.url().getHost().contains("twitch.tv")) {
+            return new Link(createTwitchEmbedLink(link.url()), link.title());
+        } else if (link.url().getHost().contains("youtube.com") || link.url().getHost().contains("youtu.be")) {
+            return new Link(createYoutubeEmbedLink(link.url()), link.title());
+        }
+        return null;
     }
 
     private void generateSitemap(File outputDir) {
