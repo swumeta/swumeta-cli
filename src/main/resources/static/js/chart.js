@@ -126,6 +126,9 @@ function createHorizontalBarChart(containerId, data, options = {}) {
                 data: values,
                 itemStyle: {
                     color: function(params) {
+                        if (names[params.dataIndex] === "Others") {
+                            return "#555";
+                        }
                         return colorPalette[params.dataIndex];
                     }
                 },
