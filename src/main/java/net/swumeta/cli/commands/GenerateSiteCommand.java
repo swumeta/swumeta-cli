@@ -104,6 +104,10 @@ class GenerateSiteCommand {
         final var eventPages = new ArrayList<EventPage>(eventFiles.size());
         for (final var eventFile : eventFiles) {
             final var event = eventService.load(eventFile.toURI());
+            if (event.hidden()) {
+                logger.debug("Skipping hidden event: {}", eventFile);
+                continue;
+            }
 
             if (lastEventDate == null || event.date().isAfter(lastEventDate)) {
                 lastEventDate = event.date();
