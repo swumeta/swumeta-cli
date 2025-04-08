@@ -50,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -89,7 +90,8 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
-        renderToFile(new AboutModel("About"), new File(outputDir, "about.html"));
+        renderToFile(new AboutModel("About", "Information about the website " + config.domain()),
+                new File(outputDir, "about.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
         final var dbDir = config.database();
@@ -182,11 +184,14 @@ class GenerateSiteCommand {
             top8LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top8LeaderSerie.add(new KeyValue(name, count)));
 
             final var statsFileName = eventFileName.replace(".html", "-stats.html");
-            renderToFile(new EventStatsModel("Statistics from " + event.name(), event, countryFlag,
-                            leaderSerie, top64LeaderSerie, top8LeaderSerie),
+            renderToFile(new EventStatsModel("Statistics from " + event.name(),
+                            "Statistics from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
+                            event, countryFlag, leaderSerie, top64LeaderSerie, top8LeaderSerie),
                     new File(outputDir, statsFileName));
 
-            renderToFile(new EventModel(event.name(), event, countryFlag, statsFileName, decks, decks.isEmpty(),
+            renderToFile(new EventModel(event.name(),
+                            "Results from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
+                            event, countryFlag, statsFileName, decks, decks.isEmpty(),
                             nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
                             videoLinks),
                     new File(outputDir, eventFileName));
@@ -194,8 +199,9 @@ class GenerateSiteCommand {
         }
 
         Collections.sort(eventPages, Comparator.reverseOrder());
-        renderToFile(new EventIndexModel("Events", eventPages),
-                new File(outputDir, "events.html"));
+        renderToFile(new EventIndexModel("Events",
+                "Star Wars Unlimited events (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
+                eventPages), new File(outputDir, "events.html"));
 
         final int totalDecks = deckBag.size();
         final int totalTop8Decks = deckTop8Bag.size();
@@ -217,6 +223,7 @@ class GenerateSiteCommand {
                 .toList();
 
         renderToFile(new IndexModel(null,
+                        null,
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
@@ -244,14 +251,15 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record IndexModel(String title, String lastEventDate, int totalDecks,
+    record IndexModel(String title, String description,
+                      String lastEventDate, int totalDecks,
                       List<KeyValue> topDecks, List<KeyValue> topCards,
                       List<KeyValue> top8Decks) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/about.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record AboutModel(String title) implements TemplateSupport {
+    record AboutModel(String title, String description) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/version.mustache")
@@ -261,7 +269,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/events.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventIndexModel(String title, List<EventPage> events) implements TemplateSupport {
+    record EventIndexModel(String title, String description, List<EventPage> events) implements TemplateSupport {
     }
 
     record EventPage(
@@ -275,7 +283,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventModel(String title, Event event, String countryFlag, String statsPage,
+    record EventModel(String title, String description, Event event, String countryFlag, String statsPage,
                       List<DeckWithRank> decks, boolean noDeck,
                       List<KeyValue> leaderSerie,
                       List<KeyValue> baseSerie,
@@ -293,7 +301,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(String title, Event event, String countryFlag,
+    record EventStatsModel(String title, String description, Event event, String countryFlag,
                            List<KeyValue> allLeaderSerie,
                            List<KeyValue> top64LeaderSerie,
                            List<KeyValue> top8LeaderSerie) implements TemplateSupport {
@@ -506,5 +514,9 @@ class GenerateSiteCommand {
     record RobotsModel(
             URI sitemap
     ) {
+    }
+
+    private String formatDate(Event e) {
+        return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(Locale.ENGLISH).format(e.date());
     }
 }

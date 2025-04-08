@@ -24,4 +24,11 @@ public record Location(
         @JsonProperty(required = true) String country,
         String city
 ) {
+    @Override
+    public String toString() {
+        if (city == null) {
+            return country;
+        }
+        return "%s (%s)".formatted(city, country);
+    }
 }
