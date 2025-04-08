@@ -158,3 +158,13 @@ tr:hover .btn-copy {
 .cookie-banner.hidden {
     display: none;
 }
+
+.event-metadata dt {
+    font-weight: normal;
+}
+
+.event-metadata dt, .event-metadata dd {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
