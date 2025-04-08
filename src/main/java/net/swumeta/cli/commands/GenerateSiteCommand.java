@@ -22,10 +22,7 @@ import io.jstach.jstache.JStacheConfig;
 import io.jstach.jstache.JStacheFormatter;
 import io.jstach.jstache.JStacheFormatterTypes;
 import io.jstach.jstachio.JStachio;
-import net.swumeta.cli.AppConfig;
-import net.swumeta.cli.CardDatabaseService;
-import net.swumeta.cli.DeckService;
-import net.swumeta.cli.EventService;
+import net.swumeta.cli.*;
 import net.swumeta.cli.model.*;
 import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
@@ -62,15 +59,17 @@ class GenerateSiteCommand {
     private final CardDatabaseService cardDatabaseService;
     private final EventService eventService;
     private final DeckService deckService;
+    private final QuoteService quoteService;
     private final JStachio jStachio;
     private final AppConfig config;
     private final StaticResources staticResources;
     private final ObjectMapper objectMapper;
 
-    GenerateSiteCommand(CardDatabaseService cardDatabaseService, EventService eventService, DeckService deckService, AppConfig config, StaticResources staticResources) {
+    GenerateSiteCommand(CardDatabaseService cardDatabaseService, EventService eventService, DeckService deckService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
         this.eventService = eventService;
         this.deckService = deckService;
         this.cardDatabaseService = cardDatabaseService;
+        this.quoteService = quoteService;
         this.config = config;
         this.staticResources = staticResources;
         this.jStachio = JStachio.of();
@@ -90,8 +89,8 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
-        renderToFile(new AboutModel("About", "Information about the website " + config.domain()),
-                new File(outputDir, "about.html"));
+        renderToFile(new AboutModel("About", "Information about the website " + config.domain(),
+                quoteService.randomQuote()), new File(outputDir, "about.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
         final var dbDir = config.database();
@@ -259,7 +258,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/about.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record AboutModel(String title, String description) implements TemplateSupport {
+    record AboutModel(String title, String description, String quote) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/version.mustache")
