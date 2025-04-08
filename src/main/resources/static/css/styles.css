@@ -115,8 +115,11 @@ footer {
 .info-banner {
     background-color: rgba(46, 103, 248, 0.1);
     border-left: 3px solid var(--sw-blue);
-    padding: 10px 15px;
-    margin-bottom: 10px;
+    padding: 1em;
+}
+
+.info-banner p:last-child {
+    margin-bottom: 0;
 }
 
 .sw-table th {
