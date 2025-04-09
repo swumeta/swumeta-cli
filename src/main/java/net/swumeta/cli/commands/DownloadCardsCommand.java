@@ -22,8 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Component
 class DownloadCardsCommand {
     private final Logger logger = LoggerFactory.getLogger(DownloadCardsCommand.class);
@@ -42,11 +40,7 @@ class DownloadCardsCommand {
         cardsDownloaderService.downloadCards(card -> {
             logger.debug("Downloaded card: {}", card);
             status.cardCount += 1;
-            try {
-                cardDatabaseService.save(card);
-            } catch (IOException e) {
-                logger.warn("Failed to save card: {}", card.name(), e);
-            }
+            cardDatabaseService.save(card);
         });
         logger.info("Downloaded {} cards", status.cardCount);
     }

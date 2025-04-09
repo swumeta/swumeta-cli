@@ -19,9 +19,13 @@ package net.swumeta.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
+import org.eclipse.collections.api.multimap.MutableMultimap;
+import org.eclipse.collections.impl.factory.Multimaps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 
@@ -29,14 +33,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class CardDatabaseService {
     private final Logger logger = LoggerFactory.getLogger(CardDatabaseService.class);
     private final AppConfig config;
     private final ObjectMapper objectMapper;
-    private final Map<String, Set<File>> cardsByName = new HashMap<>(256);
+    private final MutableMultimap<String, File> cardsByName = Multimaps.mutable.set.of();
 
     CardDatabaseService(AppConfig config) {
         this.config = config;
@@ -44,14 +51,10 @@ public class CardDatabaseService {
         this.objectMapper.findAndRegisterModules();
     }
 
-    public Set<Card> findByName(String name, String title) {
-        if (cardsByName.isEmpty()) {
-            try {
-                initIndex();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to initialize card database index", e);
-            }
-        }
+    public Set<Card> findByName(String name, @Nullable String title) {
+        Assert.notNull(name, "Argument name must not be null");
+        initIndex();
+
         title = trimToNull(title);
         final var cardFiles = cardsByName.get(name);
         if (cardFiles == null || cardFiles.isEmpty()) {
@@ -85,19 +88,22 @@ public class CardDatabaseService {
         }
     }
 
-    private void initIndex() throws IOException {
+    private void initIndex() {
+        if (!cardsByName.isEmpty()) {
+            return;
+        }
+
         logger.debug("Initializing card database index");
         final var cardFiles = new ArrayList<File>(256);
         listFilesRecursively(getCardsDir(), cardFiles);
         for (final var cardFile : cardFiles) {
-            final var card = readCardFile(cardFile);
-
-            var cardFilesFromIndex = cardsByName.get(card.name());
-            if (cardFilesFromIndex == null) {
-                cardFilesFromIndex = new HashSet<>(1);
-                cardsByName.put(card.name(), cardFilesFromIndex);
+            final Card card;
+            try {
+                card = readCardFile(cardFile);
+            } catch (IOException e) {
+                throw new AppException("Failed to read card from file: " + cardFile, e);
             }
-            cardFilesFromIndex.add(cardFile);
+            cardsByName.put(card.name(), cardFile);
         }
     }
 
@@ -114,7 +120,10 @@ public class CardDatabaseService {
         }
     }
 
-    public void save(Card card) throws IOException {
+    public void save(Card card) {
+        Assert.notNull(card, "Card must not be null");
+        initIndex();
+
         final var cardsDir = getCardsDir();
         if (!cardsDir.exists()) {
             cardsDir.mkdirs();
@@ -125,14 +134,12 @@ public class CardDatabaseService {
         }
         final var cardFile = new File(setDir, card.id() + ".yaml");
         logger.debug("Saving card: {}", cardFile);
-        objectMapper.writerFor(Card.class).withDefaultPrettyPrinter().writeValue(cardFile, card);
-
-        var cardFiles = cardsByName.get(card.name());
-        if (cardFiles == null) {
-            cardFiles = new HashSet<>(1);
-            cardsByName.put(card.name(), cardFiles);
+        try {
+            objectMapper.writerFor(Card.class).withDefaultPrettyPrinter().writeValue(cardFile, card);
+        } catch (IOException e) {
+            throw new AppException("Failed to save card: " + card.id(), e);
         }
-        cardFiles.add(cardFile);
+        cardsByName.put(card.name(), cardFile);
     }
 
     private static String trimToNull(String s) {

@@ -36,3 +36,6 @@ build/
 database
 docs
 cache
+spring-shell.log
+
+JTL-999.yaml
