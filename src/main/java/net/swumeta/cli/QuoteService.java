@@ -53,7 +53,7 @@ public class QuoteService {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load quotes", e);
+            throw new AppException("Failed to load quotes", e);
         }
     }
 }
