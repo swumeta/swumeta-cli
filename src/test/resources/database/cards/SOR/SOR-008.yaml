@@ -1,0 +1,14 @@
+---
+set: "SOR"
+number: 8
+type: "leader"
+rarity: "rare"
+arena: "ground"
+aspects:
+- "command"
+- "heroism"
+cost: 6
+name: "Hera Syndulla"
+title: "Spectre Two"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_008_Hera_Syndulla_Leader_31a4e3f9cb.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_008_Hera_Syndulla_Thumbnail_3a895c216f.png"

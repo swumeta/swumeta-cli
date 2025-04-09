@@ -16,25 +16,23 @@
 
 package net.swumeta.cli;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
-import static org.assertj.core.api.Assertions.assertThat;
+@Component
+class AppConfigLogger implements CommandLineRunner {
+    private final Logger logger = LoggerFactory.getLogger(AppConfigLogger.class);
+    private final AppConfig config;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class QuoteServiceTests {
-    @Autowired
-    private QuoteService svc;
+    AppConfigLogger(AppConfig config) {
+        this.config = config;
+    }
 
-    @Test
-    void testRandomQuote() {
-        final var quote1 = svc.randomQuote();
-        final var quote2 = svc.randomQuote();
-        assertThat(quote1).isNotNull();
-        assertThat(quote2).isNotNull();
-        assertThat(quote1).isNotEqualTo(quote2);
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info("Database dir: {}", config.database());
+        logger.info("Cache dir: {}", config.cache());
     }
 }

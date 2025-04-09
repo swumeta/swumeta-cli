@@ -1,0 +1,13 @@
+---
+set: "SOR"
+number: 65
+type: "unit"
+rarity: "uncommon"
+arena: "ground"
+aspects:
+- "vigilance"
+cost: 4
+name: "Baze Malbus"
+title: "Temple Guardian"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_065_Baze_Malbus_da639950e1.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_065_Baze_Malbus_Thumbnail_1f9b32bd67.png"

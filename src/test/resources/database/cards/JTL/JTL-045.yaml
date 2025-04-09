@@ -1,0 +1,14 @@
+---
+set: "JTL"
+number: 45
+type: "unit"
+rarity: "uncommon"
+arena: "ground"
+aspects:
+- "vigilance"
+- "heroism"
+cost: 2
+name: "Hera Syndulla"
+title: "We've Lost Enough"
+art: "https://cdn.starwarsunlimited.com//card_04010045_EN_Hera_Syndulla_3ca18a4c54.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_04010045_EN_Hera_Syndulla_Thumbnail_9d041af466.png"
