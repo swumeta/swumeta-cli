@@ -33,9 +33,6 @@ build/
 .vscode/
 
 .DS_Store
-database
-docs
-cache
 spring-shell.log
 
 JTL-999.yaml

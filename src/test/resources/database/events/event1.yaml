@@ -1,0 +1,20 @@
+name: Sector Qualifier Milan
+date: 2025-03-29
+type: sector-qualifier
+players: 546
+location:
+  city: Milan
+  country: Italy
+contributors:
+- NotAlex
+melee: https://melee.gg/Tournament/View/270771
+links:
+- title: Stream
+  url: https://twitch.tv/videos/2419268107
+- title: Review
+  url: https://www.youtube.com/watch?v=-RcTpbxRPqo
+decks:
+- rank: 1
+  url: https://melee.gg/Decklist/View/739710d1-772f-4b10-bde6-b2ae0105815a
+- rank: 3
+  url: https://melee.gg/Decklist/View/69c0f08b-1088-48f3-adf8-b2ae00065c6d

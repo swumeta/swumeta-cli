@@ -22,6 +22,7 @@ import net.swumeta.cli.model.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.URI;
@@ -37,10 +38,11 @@ public class EventService {
     }
 
     public Event load(URI uri) {
+        Assert.notNull(uri, "URI must not be null");
         try {
             return objectMapper.readerFor(Event.class).readValue(uri.toURL());
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load event from URI: " + uri, e);
+            throw new AppException("Failed to load event from URI: " + uri, e);
         }
     }
 }
