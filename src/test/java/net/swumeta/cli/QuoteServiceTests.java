@@ -31,10 +31,18 @@ class QuoteServiceTests {
 
     @Test
     void testRandomQuote() {
-        final var quote1 = svc.randomQuote();
-        final var quote2 = svc.randomQuote();
+        final var quote1 = getRandomQuote();
+        final var quote2 = getRandomQuote();
         assertThat(quote1).isNotNull();
         assertThat(quote2).isNotNull();
         assertThat(quote1).isNotEqualTo(quote2);
+    }
+
+    private String getRandomQuote() {
+        // This ensures more "randomness".
+        for(int i = 0; i< 10; ++i) {
+            svc.randomQuote();
+        }
+        return svc.randomQuote();
     }
 }
