@@ -89,7 +89,9 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
-        renderToFile(new AboutModel("About", "Information about the website " + config.domain(),
+        renderToFile(new AboutModel("About", """
+                Discover swumeta.net, created by Alexandre (NotAlex), software engineer and Star Wars Unlimited player, to analyze matchups and optimize your decks against popular game leaders.
+                """,
                 quoteService.randomQuote()), new File(outputDir, "about.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
