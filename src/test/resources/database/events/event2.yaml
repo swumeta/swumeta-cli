@@ -1,0 +1,32 @@
+name: Santa Geek Café Store Showdown
+date: 2025-04-13
+type: major
+players: 84
+location:
+  city: Yerres
+  country: France
+contributors:
+- NotAlex
+melee: https://melee.gg/Tournament/View/285590
+links:
+- title: First BIG TOURNAMENT by MoG TCG
+  url: https://youtu.be/JxhChoE3S80
+- title: Livestream
+  url: https://www.twitch.tv/videos/2431805241
+decks:
+- rank: 1
+  url: https://melee.gg/Decklist/View/ae9f151f-db9d-438c-8725-b2bd01322ee4
+- rank: 2
+  url: https://melee.gg/Decklist/View/045c60bd-84f0-4644-a6aa-b2bd0165fbf0
+- rank: 3
+  url: https://melee.gg/Decklist/View/f96dfdcf-ff1a-4eb0-ae44-b2bd017d00b2
+- rank: 4
+  url: https://melee.gg/Decklist/View/cd304ac0-2a6d-4897-a811-b2bd012f462f
+- rank: 5
+  url: https://melee.gg/Decklist/View/bb231bc3-d629-49bf-8f60-b2bd0180d4e3
+- rank: 6
+  url: https://melee.gg/Decklist/View/32d87c7c-3933-42f2-975d-b2ba0089ef36
+- rank: 7
+  url: https://melee.gg/Decklist/View/32f0fddb-e276-41d2-8c32-b2bd0140b30b
+- rank: 8
+  url: https://melee.gg/Decklist/View/1f7a4efe-144c-47eb-8b40-b2be00539ebc

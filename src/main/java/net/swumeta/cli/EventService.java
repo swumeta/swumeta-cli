@@ -24,15 +24,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 
 @Service
 public class EventService {
+    private static final Predicate<Event> NULL_FILTER = e -> true;
     private final Logger logger = LoggerFactory.getLogger(EventService.class);
+    private final AppConfig config;
     private final ObjectMapper objectMapper;
 
-    EventService() {
+    EventService(AppConfig config) {
+        this.config = config;
         this.objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.findAndRegisterModules();
     }
@@ -43,6 +50,39 @@ public class EventService {
             return objectMapper.readerFor(Event.class).readValue(uri.toURL());
         } catch (IOException e) {
             throw new AppException("Failed to load event from URI: " + uri, e);
+        }
+    }
+
+    public List<Event> list(Predicate<Event> filter) {
+        final var eventsDir = new File(config.database(), "events");
+        logger.trace("Listing event files in directory: {}", eventsDir);
+        final var eventFiles = new ArrayList<File>(32);
+        listFilesRecursively(eventsDir, eventFiles);
+        final var events = eventFiles.stream().map(this::load).filter(filter == null ? NULL_FILTER : filter).toList();
+        if (logger.isTraceEnabled()) {
+            logger.trace("Found events: {}", events.stream().map(Event::name).toList());
+        }
+        return events;
+    }
+
+    private Event load(File file) {
+        try {
+            return objectMapper.readerFor(Event.class).readValue(file);
+        } catch (IOException e) {
+            throw new AppException("Failed to load event from file: " + file, e);
+        }
+    }
+
+    private static void listFilesRecursively(File directory, List<File> filesList) {
+        final var files = directory.listFiles();
+        if (files != null) {
+            for (final var file : files) {
+                if (file.isFile() && file.getName().endsWith(".yaml")) {
+                    filesList.add(file);
+                } else if (file.isDirectory()) {
+                    listFilesRecursively(file, filesList);
+                }
+            }
         }
     }
 }
