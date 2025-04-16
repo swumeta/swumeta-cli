@@ -63,9 +63,16 @@ public class DeckService {
         return load(uri, false);
     }
 
-    public Deck load(URI uri, boolean skipCache) {
+    private File toCachedFile(URI uri) {
         final var deckCacheDir = new File(config.cache(), "decks");
-        final var deckFile = new File(deckCacheDir, md5(UriComponentsBuilder.fromUri(uri).port(80).toUriString()) + ".yaml");
+        final var deckFileName = md5(UriComponentsBuilder.fromUri(uri).port(80).toUriString()) + ".yaml";
+        final var dirLevel1 = deckFileName.substring(0, 1);
+        final var dirLevel2 = deckFileName.substring(0, 2);
+        return new File(new File(new File(deckCacheDir, dirLevel1), dirLevel2), deckFileName);
+    }
+
+    public Deck load(URI uri, boolean skipCache) {
+        final var deckFile = toCachedFile(uri);
         if (!skipCache && deckFile.exists()) {
             try {
                 logger.debug("Loading deck from cache: {}", uri);
@@ -87,8 +94,8 @@ public class DeckService {
         }
 
         logger.debug("Saving deck to cache: {}", uri);
-        if (!deckCacheDir.exists()) {
-            deckCacheDir.mkdirs();
+        if (!deckFile.getParentFile().exists()) {
+            deckFile.getParentFile().mkdirs();
         }
         try {
             yamlObjectMapper.writerFor(Deck.class).writeValue(deckFile, deck);
