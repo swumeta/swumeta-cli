@@ -19,35 +19,38 @@ package net.swumeta.cli.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.collections.api.bag.MutableBag;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.eclipse.collections.api.bag.Bag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
-import org.eclipse.collections.impl.bag.mutable.HashBag;
+import org.eclipse.collections.api.factory.Bags;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Deck(
         @JsonProperty(required = true) URI source,
         @JsonProperty(required = true) String author,
         @JsonProperty(required = true) Format format,
-        @JsonProperty(required = true) Card leader,
-        @JsonProperty(required = true) Card base,
-        @JsonProperty(required = true) List<Card> main,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        List<Card> sideboard
+        @JsonProperty(required = true) String leader,
+        @JsonProperty(required = true) String base,
+        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) Bag<String> main,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) Bag<String> sideboard
 ) {
-    public String name() {
-        return new StringBuffer(64).append(formatLeader()).append(" - ").append(formatBase()).toString();
-    }
-
     public String id() {
-        return DigestUtils.md5DigestAsHex(source.toASCIIString().getBytes(StandardCharsets.UTF_8));
+        return DigestUtils.md5DigestAsHex(
+                UriComponentsBuilder.fromUri(source).port(80).toUriString().getBytes(StandardCharsets.UTF_8));
     }
 
     @JsonIgnore
@@ -55,79 +58,42 @@ public record Deck(
         return leader != null && base != null && main != null && !main.isEmpty();
     }
 
-    public String formatLeader() {
-        return new StringBuffer(32).append(leader.name()).append(" (").append(leader.set()).append(")").toString();
+    private record CardEntry(
+            @JsonProperty(required = true) String card,
+            @JsonProperty(required = true) int count
+    ) {
     }
 
-    public String formatBase() {
-        if (base.rarity().equals(Card.Rarity.COMMON)) {
-            if (base.aspects().isEmpty()) {
-                return base.name();
+    private static class CardEntrySerializer extends StdSerializer<Bag> {
+        public CardEntrySerializer() {
+            super(Bag.class);
+        }
+
+        @Override
+        public void serialize(Bag value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            final var bag = (Bag<String>) value;
+            final var entries = new ArrayList<CardEntry>(bag.size());
+            bag.forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> entries.add(new CardEntry(card, count)));
+            gen.writeObject(entries);
+        }
+    }
+
+    private static class CardEntryDeserializer extends StdDeserializer<Bag> {
+        public CardEntryDeserializer() {
+            super(Bag.class);
+        }
+
+        @Override
+        public Bag deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            final var entries = p.readValueAs(CardEntry[].class);
+            if (entries == null || entries.length == 0) {
+                return Bags.immutable.empty();
             }
-            return switch (base.aspects().get(0)) {
-                case VIGILANCE -> "Blue";
-                case COMMAND -> "Green";
-                case AGGRESSION -> "Red";
-                case CUNNING -> "Yellow";
-                default -> base.name();
-            };
+            final var bag = Bags.mutable.<String>withInitialCapacity(entries.length);
+            for (final var e : entries) {
+                bag.addOccurrences(e.card, e.count);
+            }
+            return bag;
         }
-        return base.name();
-    }
-
-    public String toSwudbJson(ObjectMapper objectMapper) {
-        final var swudbDeck = new ArrayList<SwudbCard>(50);
-        if (main != null) {
-            final MutableBag<Card> bag = HashBag.newBag(30);
-            bag.addAll(main);
-            bag.forEachWithOccurrences((ObjectIntProcedure<Card>) (card, count) -> {
-                swudbDeck.add(toSwudbCard(card, count));
-            });
-        }
-        final var swudbSideboard = new ArrayList<SwudbCard>(10);
-        if (sideboard != null) {
-            final MutableBag<Card> bag = HashBag.newBag(5);
-            bag.addAll(sideboard);
-            bag.forEachWithOccurrences((ObjectIntProcedure<Card>) (card, count) -> {
-                swudbSideboard.add(toSwudbCard(card, count));
-            });
-        }
-        final var d = new SwudbDeck(
-                new SwudbMetadata(name(), author),
-                toSwudbCard(leader, 1),
-                toSwudbCard(base, 1),
-                swudbDeck,
-                swudbSideboard
-        );
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(d);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to convert deck to swudb format", e);
-        }
-    }
-
-    private SwudbCard toSwudbCard(Card c, int count) {
-        return new SwudbCard(c.id().replace("-", "_"), count);
-    }
-
-    private record SwudbDeck(
-            SwudbMetadata metadata,
-            SwudbCard leader,
-            SwudbCard base,
-            List<SwudbCard> deck,
-            List<SwudbCard> sideboard
-    ) {
-    }
-
-    private record SwudbMetadata(
-            String name,
-            String author
-    ) {
-    }
-
-    private record SwudbCard(
-            String id,
-            int count
-    ) {
     }
 }

@@ -18,6 +18,8 @@ package net.swumeta.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import net.swumeta.cli.model.Card;
 import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
@@ -44,11 +46,47 @@ public class CardDatabaseService {
     private final AppConfig config;
     private final ObjectMapper objectMapper;
     private final MutableMultimap<String, File> cardsByName = Multimaps.mutable.set.of();
+    private final LoadingCache<String, Card> cardByIdCache;
 
     CardDatabaseService(AppConfig config) {
         this.config = config;
         this.objectMapper = new ObjectMapper(new YAMLFactory());
         this.objectMapper.findAndRegisterModules();
+        cardByIdCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::loadById);
+    }
+
+    public Card findById(String id) {
+        try {
+            return cardByIdCache.get(id);
+        } catch (Exception e) {
+            throw new AppException("Failed to card from id: " + id, e);
+        }
+    }
+
+    private Card loadById(String id) {
+        Assert.notNull(id, "Card id must not be null");
+        logger.trace("Loading card by id: {}", id);
+
+        final int i = id.indexOf("-");
+        if (i == -1 || i == id.length() - 1) {
+            throw new AppException("Invalid card id: " + id);
+        }
+        final var set = id.substring(0, i);
+        final var numberStr = id.substring(i + 1);
+        final int number;
+        try {
+            number = Integer.parseInt(numberStr);
+        } catch (NumberFormatException e) {
+            throw new AppException("Invalid card number: " + id, e);
+        }
+
+        final var cardSetDir = new File(getCardsDir(), set);
+        final var cardFile = new File(cardSetDir, "%s-%03d.yaml".formatted(set, number));
+        try {
+            return readCardFile(cardFile);
+        } catch (IOException e) {
+            throw new AppException("Failed to card " + id, e);
+        }
     }
 
     public Set<Card> findByName(String name, @Nullable String title) {
@@ -72,7 +110,7 @@ public class CardDatabaseService {
             try {
                 card = readCardFile(cardFile);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to read card file: " + cardFile, e);
+                throw new AppException("Failed to read card file: " + cardFile, e);
             }
             if (title == null || title.equals(card.title())) {
                 cards.add(card);

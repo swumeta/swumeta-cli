@@ -1,0 +1,10 @@
+---
+set: "JTL"
+number: 21
+type: "base"
+rarity: "rare"
+aspects:
+- "vigilance"
+name: "Colossus"
+art: "https://cdn.starwarsunlimited.com//card_04010021_EN_Colossus_Base_a3bc86dbbf.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_04010021_EN_Colossus_Base_Thumbnail_12c8a86507.png"

@@ -16,14 +16,22 @@
 
 package net.swumeta.cli.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.net.URI;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record DeckLink(
-        @JsonProperty(required = true) int rank,
-        @JsonProperty(defaultValue = "false")
-        boolean pending,
-        URI url
-) {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+class LocationTests {
+    @Test
+    void testCountryFlagUSA() {
+        assertThat(new Location("USA", "Boston").countryFlag()).isEqualTo("us");
+    }
+
+    @Test
+    void testCountryFlag() {
+        assertThat(new Location("France", "Yerres").countryFlag()).isEqualTo("fr");
+    }
 }

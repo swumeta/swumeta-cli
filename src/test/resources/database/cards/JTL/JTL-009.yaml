@@ -1,0 +1,14 @@
+---
+set: "JTL"
+number: 9
+type: "leader"
+rarity: "special"
+arena: "ground"
+aspects:
+- "aggression"
+- "villainy"
+cost: 6
+name: "Boba Fett"
+title: "Any Methods Necessary"
+art: "https://cdn.starwarsunlimited.com//card_04010009_EN_Boba_Fett_Leader_2055d09e00.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_04010009_EN_Boba_Fett_Leader_Unit_Thumbnail_ecf6fdcb78.png"

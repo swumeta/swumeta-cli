@@ -17,7 +17,7 @@
 package net.swumeta.cli.commands;
 
 import net.swumeta.cli.DeckService;
-import net.swumeta.cli.model.DeckLink;
+import net.swumeta.cli.model.Event;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ class GetMeleeDecksCommand {
         final var roundId = roundIdOpt == 0 ? Integer.parseInt(lastRoundElem.attr("data-id")) : roundIdOpt;
         logger.debug("Found round id: {}", roundId);
 
-        final var deckUris = new ArrayList<DeckLink>(32);
+        final var deckUris = new ArrayList<Event.DeckEntry>(32);
 
         while (true) {
             final var body = new LinkedMultiValueMap<String, String>();
@@ -97,7 +97,7 @@ class GetMeleeDecksCommand {
                     deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
                 }
                 logger.debug("Adding deck URI at rank {}: {}", player.Rank, deckUri);
-                deckUris.add(new DeckLink(player.Rank, true, deckUri));
+                deckUris.add(new Event.DeckEntry(player.Rank, true, deckUri));
 
                 if (deckUris.size() >= resp.recordsTotal || (max != 0 && deckUris.size() >= max)) {
                     break;

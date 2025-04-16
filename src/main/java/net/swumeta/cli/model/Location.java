@@ -18,17 +18,46 @@ package net.swumeta.cli.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import net.swumeta.cli.AppException;
+import org.apache.tomcat.util.collections.CaseInsensitiveKeyMap;
+
+import java.util.Locale;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Location(
         @JsonProperty(required = true) String country,
         String city
 ) {
+    private static final CaseInsensitiveKeyMap<String> COUNTRY_FLAG_CACHE = new CaseInsensitiveKeyMap<>();
+
     @Override
     public String toString() {
         if (city == null) {
             return country;
         }
         return "%s (%s)".formatted(city, country);
+    }
+
+    public String countryFlag() {
+        if ("USA".equals(country)) {
+            return "us";
+        }
+        String flag = COUNTRY_FLAG_CACHE.get(country);
+        if (flag != null) {
+            return flag;
+        }
+
+        for (final var iso : Locale.getISOCountries()) {
+            final var locale = new Locale("", iso);
+            if (locale.getDisplayCountry(Locale.ENGLISH).equalsIgnoreCase(country)) {
+                flag = iso.toLowerCase(Locale.ENGLISH);
+                break;
+            }
+        }
+        if (flag == null) {
+            throw new AppException("Unable to find country code: " + country);
+        }
+        COUNTRY_FLAG_CACHE.put(country, flag);
+        return flag;
     }
 }

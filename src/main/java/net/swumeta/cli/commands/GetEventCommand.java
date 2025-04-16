@@ -66,7 +66,7 @@ class GetEventCommand {
                             buf.append("N/A");
                         } else {
                             final var deck = deckService.load(deckUri.url());
-                            buf.append(deck.name()).append(" | ").append(deck.source());
+                            buf.append(deckService.formatName(deck)).append(" | ").append(deck.source());
                         }
                     });
         }

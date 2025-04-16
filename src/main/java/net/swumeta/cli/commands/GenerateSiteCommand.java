@@ -123,27 +123,31 @@ class GenerateSiteCommand {
                 decks = List.of();
             } else {
                 FastList.newList(event.decks()).take(8).stream()
-                        .map(d -> deckService.load(d.url()).name()).forEach(deckTop8Bag::add);
+                        .map(d -> deckService.load(d.url())).map(deckService::formatName).forEach(deckTop8Bag::add);
                 decks = event.decks().stream()
                         .filter(d -> d.url() != null)
                         .map(d -> {
                             try {
                                 final var deck = deckService.load(d.url(), d.pending());
                                 if (deck.isValid()) {
-                                    leaderBag.add(deck.formatLeader().replace("'", " "));
-                                    baseBag.add(deck.formatBase());
-                                    deckBag.add(deck.name());
+                                    leaderBag.add(deckService.formatLeader(deck).replace("'", " "));
+                                    baseBag.add(deckService.formatBase(deck));
+                                    deckBag.add(deckService.formatName(deck));
 
                                     for (final var c : deck.main()) {
-                                        cardBag.add(c.name());
+                                        cardBag.add(cardDatabaseService.findById(c).name());
                                     }
                                     if (deck.sideboard() != null) {
                                         for (final var c : deck.sideboard()) {
-                                            cardBag.add(c.name());
+                                            cardBag.add(cardDatabaseService.findById(c).name());
                                         }
                                     }
 
-                                    return new DeckWithRank(d.rank(), d.pending(), deck, getAspects(deck), deck.toSwudbJson(objectMapper));
+                                    return new DeckWithRank(d.rank(), d.pending(), deck,
+                                            deckService.formatName(deck),
+                                            cardDatabaseService.findById(deck.leader()),
+                                            cardDatabaseService.findById(deck.base()),
+                                            getAspects(deck), deckService.toSwudbJson(deck));
                                 }
                             } catch (Exception e) {
                                 logger.warn("Failed to load deck: {}", d.url(), e);
@@ -171,7 +175,7 @@ class GenerateSiteCommand {
             final MutableBag<String> top64LeaderBag = HashBag.newBag(64);
             Lists.immutable.withAll(event.decks()).take(64).stream()
                     .filter(d -> d.url() != null)
-                    .map(link -> deckService.load(link.url()).formatLeader().replace("'", " "))
+                    .map(link -> deckService.load(link.url())).map(d -> deckService.formatLeader(d).replace("'", " "))
                     .forEach(top64LeaderBag::add);
             final var top64LeaderSerie = new ArrayList<KeyValue>(top64LeaderBag.size());
             top64LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top64LeaderSerie.add(new KeyValue(name, count)));
@@ -179,7 +183,7 @@ class GenerateSiteCommand {
             final MutableBag<String> top8LeaderBag = HashBag.newBag(8);
             Lists.immutable.withAll(event.decks()).take(8).stream()
                     .filter(d -> d.url() != null)
-                    .map(link -> deckService.load(link.url()).formatLeader().replace("'", " "))
+                    .map(link -> deckService.load(link.url())).map(d -> deckService.formatLeader(d).replace("'", " "))
                     .forEach(top8LeaderBag::add);
             final var top8LeaderSerie = new ArrayList<KeyValue>(top8LeaderBag.size());
             top8LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top8LeaderSerie.add(new KeyValue(name, count)));
@@ -297,7 +301,9 @@ class GenerateSiteCommand {
     ) {
     }
 
-    record DeckWithRank(int rank, boolean pending, Deck deck, List<Card.Aspect> aspects, String swudbFormat) {
+    record DeckWithRank(int rank, boolean pending, Deck deck, String name, Card leader, Card base,
+                        List<Card.Aspect> aspects,
+                        String swudbFormat) {
     }
 
     @JStache(path = "/templates/event-stats.mustache")
@@ -342,13 +348,15 @@ class GenerateSiteCommand {
         }
     }
 
-    private static List<Card.Aspect> getAspects(Deck d) {
+    private List<Card.Aspect> getAspects(Deck d) {
         final var aspects = new ArrayList<Card.Aspect>(3);
-        if (d.leader().aspects() != null) {
-            aspects.addAll(d.leader().aspects());
+        final var leader = cardDatabaseService.findById(d.leader());
+        if (leader.aspects() != null) {
+            aspects.addAll(leader.aspects());
         }
-        if (d.base().aspects() != null) {
-            for (final var a : d.base().aspects()) {
+        final var base = cardDatabaseService.findById(d.base());
+        if (base.aspects() != null) {
+            for (final var a : base.aspects()) {
                 aspects.add(a);
             }
         }
@@ -387,7 +395,6 @@ class GenerateSiteCommand {
                         case Event.Type.RQ -> "Regional Qualifier";
                         case Event.Type.SQ -> "Sector Qualifier";
                         case Event.Type.MAJOR -> "Major Tournament";
-                        case Event.Type.SHOWDOWN -> "Store Showdown";
                     };
                 }
                 if (o instanceof LocalDate d) {

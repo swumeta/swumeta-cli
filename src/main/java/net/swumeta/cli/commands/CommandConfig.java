@@ -78,19 +78,6 @@ class CommandConfig {
     }
 
     @Bean
-    CommandRegistration getDeck(GetDeckCommand cmd) {
-        return CommandRegistration.builder()
-                .command("get-deck")
-                .description("Display deck details from an URI")
-                .withOption().longNames("url").shortNames('u').description("Deck URL").type(URI.class).required().and()
-                .withTarget().consumer(ctx -> {
-                    final var uri = (URI) ctx.getOptionValue("url");
-                    cmd.run(uri);
-                })
-                .and().build();
-    }
-
-    @Bean
     CommandRegistration getEvent(GetEventCommand cmd) {
         return CommandRegistration.builder()
                 .command("get-event")

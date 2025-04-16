@@ -31,7 +31,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 class CardDatabaseServiceTests {
     @Autowired
@@ -78,5 +78,25 @@ class CardDatabaseServiceTests {
         final var cards = svc.findByName("Restart the game", "One more game?");
         assertThat(cards).hasSize(1);
         assertThat(cards.stream().map(Card::id)).containsExactly("JTL-999");
+    }
+
+    @Test
+    void testFindById() {
+        final var card = svc.findById("JTL-045");
+        assertThat(card.id()).isEqualTo("JTL-045");
+
+        // Check if the cache actually works.
+        final var card2 = svc.findById("JTL-045");
+        assertThat(card2).isSameAs(card);
+    }
+
+    @Test
+    void findByIdNull() {
+        assertThatExceptionOfType(AppException.class).isThrownBy(() -> svc.findById(null));
+    }
+
+    @Test
+    void findByIdUnknown() {
+        assertThatExceptionOfType(AppException.class).isThrownBy(() -> svc.findById("FOO-007"));
     }
 }

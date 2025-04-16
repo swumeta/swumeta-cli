@@ -16,15 +16,19 @@
 
 package net.swumeta.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.Format;
+import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
+import org.eclipse.collections.api.factory.Bags;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -44,13 +48,15 @@ public class DeckService {
     private final CardDatabaseService cardDatabaseService;
     private final RestClient client;
     private final AppConfig config;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper yamlObjectMapper;
+    private final ObjectMapper jsonObjectMapper;
 
     DeckService(CardDatabaseService cardDatabaseService, RestClient client, AppConfig config) {
         this.cardDatabaseService = cardDatabaseService;
         this.client = client;
         this.config = config;
-        this.objectMapper = new ObjectMapper(new YAMLFactory());
+        this.jsonObjectMapper = new ObjectMapper();
+        this.yamlObjectMapper = new ObjectMapper(new YAMLFactory());
     }
 
     public Deck load(URI uri) {
@@ -59,11 +65,11 @@ public class DeckService {
 
     public Deck load(URI uri, boolean skipCache) {
         final var deckCacheDir = new File(config.cache(), "decks");
-        final var deckFile = new File(deckCacheDir, md5(uri.toASCIIString()) + ".yaml");
+        final var deckFile = new File(deckCacheDir, md5(UriComponentsBuilder.fromUri(uri).port(80).toUriString()) + ".yaml");
         if (!skipCache && deckFile.exists()) {
             try {
                 logger.debug("Loading deck from cache: {}", uri);
-                return objectMapper.readerFor(Deck.class).readValue(deckFile);
+                return yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
             } catch (IOException e) {
                 logger.debug("Unable to read cached deck file: {}", deckFile, e);
             }
@@ -71,9 +77,9 @@ public class DeckService {
 
         final var host = uri.getHost();
         Deck deck = null;
-        if (host.endsWith("swudb.com")) {
+        if (host.contains("swudb")) {
             deck = loadSwudbDeck(uri);
-        } else if (host.endsWith("melee.gg")) {
+        } else if (host.contains("melee")) {
             deck = loadMeleeDeck(uri);
         }
         if (deck == null) {
@@ -85,11 +91,84 @@ public class DeckService {
             deckCacheDir.mkdirs();
         }
         try {
-            objectMapper.writerFor(Deck.class).writeValue(deckFile, deck);
+            yamlObjectMapper.writerFor(Deck.class).writeValue(deckFile, deck);
         } catch (IOException e) {
             logger.warn("Failed to cache deck: {}", uri, e);
         }
         return deck;
+    }
+
+    public String formatName(Deck deck) {
+        Assert.notNull(deck, "Deck must not be null");
+        return new StringBuffer(64).append(formatLeader(deck)).append(" - ").append(formatBase(deck)).toString();
+    }
+
+    public String formatLeader(Deck deck) {
+        Assert.notNull(deck, "Deck must not be null");
+        final var leader = cardDatabaseService.findById(deck.leader());
+        return new StringBuffer(32).append(leader.name()).append(" (").append(leader.set()).append(")").toString();
+    }
+
+    public String formatBase(Deck deck) {
+        Assert.notNull(deck, "Deck must not be null");
+        final var base = cardDatabaseService.findById(deck.base());
+        if (base.rarity().equals(Card.Rarity.COMMON)) {
+            if (base.aspects().isEmpty()) {
+                return base.name();
+            }
+            return switch (base.aspects().get(0)) {
+                case VIGILANCE -> "Blue";
+                case COMMAND -> "Green";
+                case AGGRESSION -> "Red";
+                case CUNNING -> "Yellow";
+                default -> base.name();
+            };
+        }
+        return base.name();
+    }
+
+    public String toSwudbJson(Deck deck) {
+        final var swudbDeck = new ArrayList<JsonSwudbCard>(50);
+        if (deck.main() != null) {
+            deck.main().forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> swudbDeck.add(new JsonSwudbCard(card.replace("-", "_"), count)));
+        }
+        final var swudbSideboard = new ArrayList<JsonSwudbCard>(10);
+        if (deck.sideboard() != null) {
+            deck.sideboard().forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> swudbSideboard.add(new JsonSwudbCard(card.replace("-", "_"), count)));
+        }
+        final var d = new JsonSwudbDeck(
+                new JsonSwudbMetadata(formatName(deck), deck.author()),
+                new JsonSwudbCard(deck.leader().replace("-", "_"), 1),
+                new JsonSwudbCard(deck.base().replace("-", "_"), 1),
+                swudbDeck,
+                swudbSideboard
+        );
+        try {
+            return yamlObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(d);
+        } catch (JsonProcessingException e) {
+            throw new AppException("Failed to convert deck to swudb format", e);
+        }
+    }
+
+    private record JsonSwudbDeck(
+            JsonSwudbMetadata metadata,
+            JsonSwudbCard leader,
+            JsonSwudbCard base,
+            List<JsonSwudbCard> deck,
+            List<JsonSwudbCard> sideboard
+    ) {
+    }
+
+    private record JsonSwudbMetadata(
+            String name,
+            String author
+    ) {
+    }
+
+    private record JsonSwudbCard(
+            String id,
+            int count
+    ) {
     }
 
     private Deck loadSwudbDeck(URI uri) {
@@ -104,39 +183,26 @@ public class DeckService {
         final var swudbDeck = client.get().uri(jsonDeckUri).retrieve().body(SwudbDeck.class);
         logger.trace("Loaded deck from swudb.com: {}", swudbDeck);
 
-        final var main = new ArrayList<Card>(50);
-        final var sideboard = new ArrayList<Card>(10);
+        final var main = Bags.mutable.<String>ofInitialCapacity(50);
+        final var sideboard = Bags.mutable.<String>ofInitialCapacity(10);
         for (final SwudbContent c : swudbDeck.shuffledDeck) {
+            final var cardId = "%s-%s".formatted(c.card.defaultExpansionAbbreviation, c.card.defaultCardNumber);
             if (c.count != 0) {
-                final var card = toCard(c.card);
-                for (int i = 0; i < c.count; ++i) {
-                    main.add(card);
-                }
+                main.addOccurrences(cardId, c.count);
             }
             if (c.sideboardCount != 0) {
-                final var card = toCard(c.card);
-                for (int i = 0; i < c.sideboardCount; ++i) {
-                    sideboard.add(card);
-                }
+                sideboard.addOccurrences(cardId, c.count);
             }
         }
         return new Deck(
                 uri,
                 swudbDeck.authorName(),
                 Format.PREMIER,
-                toCard(swudbDeck.leader),
-                toCard(swudbDeck.base),
+                "%s-%03d".formatted(swudbDeck.leader.defaultExpansionAbbreviation, swudbDeck.leader.defaultCardNumber),
+                "%s-%03d".formatted(swudbDeck.base.defaultExpansionAbbreviation, swudbDeck.base.defaultCardNumber),
                 main,
                 sideboard
         );
-    }
-
-    private Card toCard(SwudbCard c) {
-        final var cards = cardDatabaseService.findByName(c.cardName, c.title);
-        if (cards.isEmpty()) {
-            throw new RuntimeException("No card found: " + c.cardName + " | " + c.title);
-        }
-        return cards.iterator().next();
     }
 
     private Deck loadMeleeDeck(URI uri) {
@@ -158,10 +224,10 @@ public class DeckService {
         final var swuContent = meleeDoc.getElementById("decklist-swu-text").text();
         final var lines = swuContent.split("\\r\\n|\\n|\\r");
 
-        Card leader = null;
-        Card base = null;
-        final var main = new ArrayList<Card>(50);
-        final var sideboard = new ArrayList<Card>(10);
+        String leader = null;
+        String base = null;
+        final var main = Bags.mutable.<String>ofInitialCapacity(50);
+        final var sideboard = Bags.mutable.<String>ofInitialCapacity(10);
 
         boolean inSectionLeaders = false;
         boolean inSectionBase = false;
@@ -204,17 +270,13 @@ public class DeckService {
 
                 final var card = cards.iterator().next();
                 if (inSectionLeaders) {
-                    leader = card;
+                    leader = card.id();
                 } else if (inSectionBase) {
-                    base = card;
+                    base = card.id();
                 } else if (inSectionDeck) {
-                    for (int i = 0; i < quantity; ++i) {
-                        main.add(card);
-                    }
+                    main.addOccurrences(card.id(), quantity);
                 } else if (inSectionSideboard) {
-                    for (int i = 0; i < quantity; ++i) {
-                        sideboard.add(card);
-                    }
+                    sideboard.addOccurrences(card.id(), quantity);
                 }
             }
         }
@@ -238,8 +300,8 @@ public class DeckService {
     }
 
     private record SwudbCard(
-            String cardName,
-            String title
+            String defaultExpansionAbbreviation,
+            String defaultCardNumber
     ) {
     }
 

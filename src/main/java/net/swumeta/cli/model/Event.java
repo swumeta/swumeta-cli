@@ -38,7 +38,7 @@ public record Event(
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         List<Link> links,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        List<DeckLink> decks
+        List<DeckEntry> decks
 ) implements Comparable<Event> {
     @Override
     public int compareTo(Event o) {
@@ -49,11 +49,17 @@ public record Event(
     }
 
     public enum Type {
-        @JsonProperty("store-showdown") SHOWDOWN,
         @JsonProperty("major") MAJOR,
         @JsonProperty("planetary-qualifier") PQ,
         @JsonProperty("sector-qualifier") SQ,
         @JsonProperty("regional-qualifier") RQ,
         @JsonProperty("galactic-championship") GS
+    }
+
+    public record DeckEntry(
+            @JsonProperty(required = true) int rank,
+            @JsonProperty(defaultValue = "false") boolean pending,
+            URI url
+    ) {
     }
 }

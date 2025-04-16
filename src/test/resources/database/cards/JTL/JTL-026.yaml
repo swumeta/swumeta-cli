@@ -1,0 +1,10 @@
+---
+set: "JTL"
+number: 26
+type: "base"
+rarity: "common"
+aspects:
+- "aggression"
+name: "Massassi Temple"
+art: "https://cdn.starwarsunlimited.com//card_04010026_EN_Massassi_Temple_Base_76c325b58c.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_04010026_EN_Massassi_Temple_Base_Thumbnail_7f02e57166.png"

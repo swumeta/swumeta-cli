@@ -29,10 +29,8 @@ public record Card(
         @JsonProperty(required = true) Type type,
         @JsonProperty(required = true) Rarity rarity,
         Arena arena,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        List<Aspect> aspects,
-        @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-        int cost,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Aspect> aspects,
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT) int cost,
         @JsonProperty(required = true) String name,
         String title,
         @JsonProperty(required = true) URI art,

@@ -1,0 +1,14 @@
+---
+set: "JTL"
+number: 143
+type: "unit"
+rarity: "legendary"
+arena: "space"
+aspects:
+- "aggression"
+- "villainy"
+cost: 8
+name: "Devastator"
+title: "Hunting the Rebellion"
+art: "https://cdn.starwarsunlimited.com//card_04010143_EN_Devastator_59c55b0ba6.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_04010143_EN_Devastator_Thumbnail_b1205b34a2.png"

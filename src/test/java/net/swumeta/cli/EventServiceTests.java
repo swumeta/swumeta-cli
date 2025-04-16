@@ -16,7 +16,7 @@
 
 package net.swumeta.cli;
 
-import net.swumeta.cli.model.DeckLink;
+import net.swumeta.cli.model.Event;
 import net.swumeta.cli.model.Link;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ import java.net.URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 class EventServiceTests {
     @Autowired
@@ -50,8 +50,8 @@ class EventServiceTests {
         );
         assertThat(event.decks()).hasSize(2);
         assertThat(event.decks()).containsExactly(
-                new DeckLink(1, false, URI.create("https://melee.gg/Decklist/View/739710d1-772f-4b10-bde6-b2ae0105815a")),
-                new DeckLink(3, false, URI.create("https://melee.gg/Decklist/View/69c0f08b-1088-48f3-adf8-b2ae00065c6d"))
+                new Event.DeckEntry(1, false, URI.create("https://melee.gg/Decklist/View/739710d1-772f-4b10-bde6-b2ae0105815a")),
+                new Event.DeckEntry(3, false, URI.create("https://melee.gg/Decklist/View/69c0f08b-1088-48f3-adf8-b2ae00065c6d"))
         );
     }
 
