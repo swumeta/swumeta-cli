@@ -16,8 +16,6 @@
 
 package net.swumeta.cli;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -26,10 +24,7 @@ import org.springframework.web.client.RestClient;
 @Configuration(proxyBeanMethods = false)
 class RestConfig {
     @Bean
-    RestClient restClient(RestClient.Builder rcb,
-                          @Value("${spring.application.name") String appName,
-                          BuildProperties build) {
-        final var userAgent = appName + "/" + build.getVersion();
+    RestClient restClient(RestClient.Builder rcb) {
         return rcb.clone()
                 // Need to set the user agent as curl otherwise melee.gg will forbid requests.
                 .defaultHeader(HttpHeaders.USER_AGENT, "curl/8.5.0")
