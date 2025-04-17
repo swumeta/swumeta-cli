@@ -39,10 +39,7 @@ public class MetagameService {
         this.config = config;
     }
 
-    public record Metagame(
-            LocalDate date,
-            ImmutableList<Event> events
-    ) {
+    public record Metagame(LocalDate date, ImmutableList<Event> events) {
     }
 
     public Metagame getMetagame() {
@@ -57,7 +54,7 @@ public class MetagameService {
         if (logger.isTraceEnabled()) {
             final var df = DateTimeFormatter.ISO_LOCAL_DATE;
             final var eventNames = events.stream()
-                    .map(e -> "%s (%s)".formatted(e.name(), df.format(e.date())))
+                    .map(Object::toString)
                     .collect(Collectors.joining(", "));
             logger.trace("Events part for the metagame: {}", eventNames);
         }

@@ -19,8 +19,6 @@ package net.swumeta.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Deck;
-import net.swumeta.cli.model.Format;
-import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.factory.Bags;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,30 +44,30 @@ class DeckServiceTests {
     @Autowired
     private DeckService svc;
     @Autowired
-    private DeckHelper deckHelper;
+    private TestHelper helper;
     @Value("${wiremock.server.port}")
     private int wiremockPort;
 
     @Test
     void testFormatName() {
-        assertThat(svc.formatName(deckHelper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Boba Fett (JTL) - Red");
-        assertThat(svc.formatName(deckHelper.createDeck("JTL-009", "JTL-021"))).isEqualTo("Boba Fett (JTL) - Colossus");
+        assertThat(svc.formatName(helper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Boba Fett (JTL) - Red");
+        assertThat(svc.formatName(helper.createDeck("JTL-009", "JTL-021"))).isEqualTo("Boba Fett (JTL) - Colossus");
     }
 
     @Test
     void testFormatLeader() {
-        assertThat(svc.formatLeader(deckHelper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Boba Fett (JTL)");
+        assertThat(svc.formatLeader(helper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Boba Fett (JTL)");
     }
 
     @Test
     void testFormatBase() {
-        assertThat(svc.formatBase(deckHelper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Red");
-        assertThat(svc.formatBase(deckHelper.createDeck("JTL-009", "JTL-021"))).isEqualTo("Colossus");
+        assertThat(svc.formatBase(helper.createDeck("JTL-009", "JTL-026"))).isEqualTo("Red");
+        assertThat(svc.formatBase(helper.createDeck("JTL-009", "JTL-021"))).isEqualTo("Colossus");
     }
 
     @Test
     void testToSwudbJson() {
-        final var deck = deckHelper.createDeck("JTL-009", "JTL-026",
+        final var deck = helper.createDeck("JTL-009", "JTL-026",
                 Bags.immutable.ofOccurrences("JTL-143", 2),
                 Bags.immutable.ofOccurrences("JTL-045", 3)
         );
@@ -113,7 +111,7 @@ class DeckServiceTests {
 
     @Test
     void testLoadingWithJackson() throws IOException {
-        final var deck = deckHelper.createDeck("JTL-009", "JTL-026",
+        final var deck = helper.createDeck("JTL-009", "JTL-026",
                 Bags.immutable.ofOccurrences("JTL-143", 2),
                 Bags.immutable.ofOccurrences("JTL-045", 3)
         );
@@ -124,7 +122,7 @@ class DeckServiceTests {
         final var yamlOut = out.getBuffer().toString();
         assertThat(yamlOut).isEqualTo("""
                 ---
-                source: "http://foo.bar"
+                source: "%s"
                 author: "Me"
                 format: "premier"
                 leader: "JTL-009"
@@ -135,7 +133,7 @@ class DeckServiceTests {
                 sideboard:
                 - card: "JTL-045"
                   count: 3
-                """);
+                """.formatted(deck.source()));
 
         final var deck2 = objectMapper.readValue(yamlOut, Deck.class);
         assertThat(deck2.main()).isEqualTo(deck.main());

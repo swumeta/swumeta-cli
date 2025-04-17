@@ -84,17 +84,9 @@ public class DeckService {
         }
 
         final var host = uri.getHost();
-        Deck deck = null;
-        if (host.contains("swudb")) {
-            deck = loadSwudbDeck(uri);
-        } else if (host.contains("melee")) {
-            deck = loadMeleeDeck(uri);
-        }
-        if (deck == null) {
-            throw new RuntimeException("Unsupported deck URI: " + uri);
-        }
+        final var deck = loadMeleeDeck(uri);
 
-        logger.debug("Saving deck to cache: {}", uri);
+        logger.debug("Caching deck: {}", uri);
         if (!deckFile.getParentFile().exists()) {
             deckFile.getParentFile().mkdirs();
         }
@@ -192,41 +184,16 @@ public class DeckService {
     ) {
     }
 
-    private Deck loadSwudbDeck(URI uri) {
-        logger.debug("Loading deck from swudb.com: {}", uri);
-        final String jsonDeckUri;
-        if (uri.getPath().startsWith("/api")) {
-            jsonDeckUri = uri.toASCIIString();
-        } else {
-            jsonDeckUri = UriComponentsBuilder.fromUri(uri).replacePath("/api/" + uri.getPath()).toUriString();
-        }
-        logger.debug("Loading deck content: {}", jsonDeckUri);
-        final var swudbDeck = client.get().uri(jsonDeckUri).retrieve().body(SwudbDeck.class);
-        logger.trace("Loaded deck from swudb.com: {}", swudbDeck);
-
-        final var main = Bags.mutable.<String>ofInitialCapacity(50);
-        final var sideboard = Bags.mutable.<String>ofInitialCapacity(10);
-        for (final SwudbContent c : swudbDeck.shuffledDeck) {
-            final var cardId = "%s-%s".formatted(c.card.defaultExpansionAbbreviation, c.card.defaultCardNumber);
-            if (c.count != 0) {
-                main.addOccurrences(cardId, c.count);
-            }
-            if (c.sideboardCount != 0) {
-                sideboard.addOccurrences(cardId, c.count);
-            }
-        }
-        return new Deck(
-                uri,
-                swudbDeck.authorName(),
-                Format.PREMIER,
-                "%s-%03d".formatted(swudbDeck.leader.defaultExpansionAbbreviation, swudbDeck.leader.defaultCardNumber),
-                "%s-%03d".formatted(swudbDeck.base.defaultExpansionAbbreviation, swudbDeck.base.defaultCardNumber),
-                main.toImmutableBag(),
-                sideboard.toImmutableBag()
-        );
-    }
-
     private Deck loadMeleeDeck(URI uri) {
+        if ("testfile".equals(uri.getScheme())) {
+            final var testUri = UriComponentsBuilder.fromUri(uri).scheme("file").build().toUri();
+            logger.debug("Loading test deck from file: {}", testUri);
+            try (final var in = testUri.toURL().openStream()) {
+                return yamlObjectMapper.readerFor(Deck.class).readValue(in);
+            } catch (IOException e) {
+                throw new AppException("Failed to read test deck from file: " + uri, e);
+            }
+        }
         logger.debug("Loading deck from melee.gg: {}", uri);
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);

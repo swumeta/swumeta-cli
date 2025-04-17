@@ -16,13 +16,14 @@
 
 package net.swumeta.cli.statistics;
 
-import net.swumeta.cli.DeckHelper;
+import net.swumeta.cli.TestHelper;
 import org.eclipse.collections.api.factory.Bags;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,20 +34,20 @@ class MostPlayedCardsStatisticsServiceTests {
     @Autowired
     private MostPlayedCardsStatisticsService svc;
     @Autowired
-    private DeckHelper deckHelper;
+    private TestHelper helper;
 
     @Test
     void testGetMostPlayedCardsStatistics() {
-        final var deck1 = deckHelper.createDeck("JTL-009", "JTL-026",
+        final var deck1 = helper.createDeck("JTL-009", "JTL-026",
                 Bags.immutable.ofOccurrences("JTL-143", 2),
                 Bags.immutable.ofOccurrences("JTL-045", 3)
         );
-        final var deck2 = deckHelper.createDeck("JTL-009", "JTL-026",
+        final var deck2 = helper.createDeck("SOR-008", "SOR-028",
                 Bags.immutable.ofOccurrences("JTL-143", 3),
                 Bags.immutable.ofOccurrences("JTL-045", 1)
         );
-
-        final var stats = svc.getMostPlayedCardsStatistics(List.of(deck1, deck2));
+        final var event = helper.createEvent("Foo", LocalDate.now(), List.of(deck1, deck2));
+        final var stats = svc.getMostPlayedCardsStatistics(List.of(event));
         assertThat(stats).isNotNull();
         assertThat(stats.cards().sizeDistinct()).isEqualTo(2);
         assertThat(stats.cards().occurrencesOf("JTL-143")).isEqualTo(5);
