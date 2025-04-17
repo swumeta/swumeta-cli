@@ -27,6 +27,7 @@ public record AppConfig(
         String domain,
         File database,
         File cache,
+        int metagameMonths,
         List<URI> cards
 ) {
 }

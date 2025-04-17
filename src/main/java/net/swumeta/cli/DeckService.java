@@ -22,6 +22,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.Format;
+import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.factory.Bags;
 import org.jsoup.Jsoup;
@@ -103,6 +104,19 @@ public class DeckService {
             logger.warn("Failed to cache deck: {}", uri, e);
         }
         return deck;
+    }
+
+    public ImmutableBag<Card> getCards(Deck deck) {
+        final var cardIds = deck.main().newWithAll(deck.sideboard());
+        if (cardIds.isEmpty()) {
+            return Bags.immutable.empty();
+        }
+        final var cards = Bags.mutable.<Card>withInitialCapacity(cardIds.size());
+        cardIds.forEachWithOccurrences((cardId, count) -> {
+            final var card = cardDatabaseService.findById(cardId);
+            cards.addOccurrences(card, count);
+        });
+        return cards.toImmutableBag();
     }
 
     public String formatName(Deck deck) {
@@ -207,8 +221,8 @@ public class DeckService {
                 Format.PREMIER,
                 "%s-%03d".formatted(swudbDeck.leader.defaultExpansionAbbreviation, swudbDeck.leader.defaultCardNumber),
                 "%s-%03d".formatted(swudbDeck.base.defaultExpansionAbbreviation, swudbDeck.base.defaultCardNumber),
-                main,
-                sideboard
+                main.toImmutableBag(),
+                sideboard.toImmutableBag()
         );
     }
 
@@ -293,8 +307,8 @@ public class DeckService {
                 Format.PREMIER,
                 leader,
                 base,
-                main,
-                sideboard
+                main.toImmutableBag(),
+                sideboard.toImmutableBag()
         );
     }
 

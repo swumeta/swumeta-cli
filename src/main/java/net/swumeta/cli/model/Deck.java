@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.eclipse.collections.api.bag.Bag;
+import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.factory.Bags;
 import org.springframework.util.DigestUtils;
@@ -45,8 +46,8 @@ public record Deck(
         @JsonProperty(required = true) Format format,
         @JsonProperty(required = true) String leader,
         @JsonProperty(required = true) String base,
-        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) Bag<String> main,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) Bag<String> sideboard
+        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<String> main,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<String> sideboard
 ) {
     public String id() {
         return DigestUtils.md5DigestAsHex(
@@ -64,27 +65,30 @@ public record Deck(
     ) {
     }
 
-    private static class CardEntrySerializer extends StdSerializer<Bag> {
+    private static class CardEntrySerializer extends StdSerializer<ImmutableBag> {
         public CardEntrySerializer() {
-            super(Bag.class);
+            super(ImmutableBag.class);
         }
 
         @Override
-        public void serialize(Bag value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            final var bag = (Bag<String>) value;
+        public void serialize(ImmutableBag value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            var bag = (ImmutableBag<String>) value;
+            if (bag == null) {
+                bag = Bags.immutable.empty();
+            }
             final var entries = new ArrayList<CardEntry>(bag.size());
             bag.forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> entries.add(new CardEntry(card, count)));
             gen.writeObject(entries);
         }
     }
 
-    private static class CardEntryDeserializer extends StdDeserializer<Bag> {
+    private static class CardEntryDeserializer extends StdDeserializer<ImmutableBag> {
         public CardEntryDeserializer() {
-            super(Bag.class);
+            super(ImmutableBag.class);
         }
 
         @Override
-        public Bag deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public ImmutableBag deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             final var entries = p.readValueAs(CardEntry[].class);
             if (entries == null || entries.length == 0) {
                 return Bags.immutable.empty();
@@ -93,7 +97,7 @@ public record Deck(
             for (final var e : entries) {
                 bag.addOccurrences(e.card, e.count);
             }
-            return bag;
+            return bag.toImmutableBag();
         }
     }
 }

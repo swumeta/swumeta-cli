@@ -53,6 +53,10 @@ public class EventService {
         }
     }
 
+    public List<Event> list() {
+        return list(null);
+    }
+
     public List<Event> list(Predicate<Event> filter) {
         final var eventsDir = new File(config.database(), "events");
         logger.trace("Listing event files in directory: {}", eventsDir);
