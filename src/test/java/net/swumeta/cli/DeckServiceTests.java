@@ -98,7 +98,7 @@ class DeckServiceTests {
         stubFor(get(urlEqualTo("/melee")).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE).withBody(meleeRes.getContentAsByteArray())));
 
         final var meleeUri = URI.create("http://melee.127.0.0.1.nip.io:" + wiremockPort + "/melee");
-        final var deck = svc.load(meleeUri, true);
+        final var deck = svc.load(meleeUri);
         assertThat(deck.leader()).isEqualTo(Card.Id.valueOf("JTL-009"));
         assertThat(deck.base()).isEqualTo(Card.Id.valueOf("JTL-021"));
         assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(3);

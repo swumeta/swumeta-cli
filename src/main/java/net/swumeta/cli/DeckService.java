@@ -19,6 +19,8 @@ package net.swumeta.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.DeckArchetype;
@@ -59,6 +61,7 @@ public class DeckService {
     private final AppConfig config;
     private final ObjectMapper yamlObjectMapper;
     private final ObjectMapper jsonObjectMapper;
+    private final LoadingCache<URI, Deck> deckCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::doLoad);
 
     DeckService(CardDatabaseService cardDatabaseService, RestClient client, AppConfig config) {
         this.cardDatabaseService = cardDatabaseService;
@@ -69,7 +72,7 @@ public class DeckService {
     }
 
     public Deck load(URI uri) {
-        return load(uri, false);
+        return deckCache.get(uri);
     }
 
     private File toCachedFile(URI uri) {
@@ -80,9 +83,9 @@ public class DeckService {
         return new File(new File(new File(deckCacheDir, dirLevel1), dirLevel2), deckFileName);
     }
 
-    public Deck load(URI uri, boolean skipCache) {
+    private Deck doLoad(URI uri) {
         final var deckFile = toCachedFile(uri);
-        if (!skipCache && deckFile.exists()) {
+        if (deckFile.exists()) {
             try {
                 logger.debug("Loading deck from cache: {}", uri);
                 return yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
