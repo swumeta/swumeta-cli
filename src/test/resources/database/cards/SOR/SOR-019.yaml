@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 19
+type: "base"
+rarity: "rare"
+aspects:
+- "vigilance"
+name: "Security Complex"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_019_Security_Complex_Base_e27cea5c5f.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_019_Security_Complex_Thumbnail_62ae9af486.png"

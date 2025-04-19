@@ -46,7 +46,7 @@ public class CardDatabaseService {
     private final AppConfig config;
     private final ObjectMapper objectMapper;
     private final MutableMultimap<String, File> cardsByName = Multimaps.mutable.set.of();
-    private final LoadingCache<String, Card> cardByIdCache;
+    private final LoadingCache<Card.Id, Card> cardByIdCache;
 
     CardDatabaseService(AppConfig config) {
         this.config = config;
@@ -55,7 +55,7 @@ public class CardDatabaseService {
         cardByIdCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::loadById);
     }
 
-    public Card findById(String id) {
+    public Card findById(Card.Id id) {
         try {
             return cardByIdCache.get(id);
         } catch (Exception e) {
@@ -63,25 +63,12 @@ public class CardDatabaseService {
         }
     }
 
-    private Card loadById(String id) {
+    private Card loadById(Card.Id id) {
         Assert.notNull(id, "Card id must not be null");
         logger.trace("Loading card by id: {}", id);
 
-        final int i = id.indexOf("-");
-        if (i == -1 || i == id.length() - 1) {
-            throw new AppException("Invalid card id: " + id);
-        }
-        final var set = id.substring(0, i);
-        final var numberStr = id.substring(i + 1);
-        final int number;
-        try {
-            number = Integer.parseInt(numberStr);
-        } catch (NumberFormatException e) {
-            throw new AppException("Invalid card number: " + id, e);
-        }
-
-        final var cardSetDir = new File(getCardsDir(), set);
-        final var cardFile = new File(cardSetDir, "%s-%03d.yaml".formatted(set, number));
+        final var cardSetDir = new File(getCardsDir(), id.set().name());
+        final var cardFile = new File(cardSetDir, "%s.yaml".formatted(id));
         try {
             return readCardFile(cardFile);
         } catch (IOException e) {

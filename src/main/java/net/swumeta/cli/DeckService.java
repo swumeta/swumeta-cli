@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
+import net.swumeta.cli.model.DeckArchetype;
 import net.swumeta.cli.model.Format;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
@@ -42,9 +43,16 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DeckService {
+    private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
+            Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-019"),
+            Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
+            Card.Aspect.AGGRESSION, Card.Id.valueOf("SOR-026"),
+            Card.Aspect.CUNNING, Card.Id.valueOf("SOR-029")
+    );
     private final Logger logger = LoggerFactory.getLogger(DeckService.class);
     private final CardDatabaseService cardDatabaseService;
     private final RestClient client;
@@ -111,9 +119,28 @@ public class DeckService {
         return cards.toImmutableBag();
     }
 
+    public DeckArchetype getArchetype(Deck deck) {
+        Assert.notNull(deck, "Deck must not be null");
+        final var baseCard = cardDatabaseService.findById(deck.base());
+        return !baseCard.rarity().equals(Card.Rarity.COMMON) || baseCard.aspects().isEmpty()
+                ? DeckArchetype.valueOf(deck.leader(), deck.base())
+                : DeckArchetype.valueOf(deck.leader(), baseCard.aspects().get(0));
+    }
+
+    public String formatArchetype(DeckArchetype archetype) {
+        Assert.notNull(archetype, "Deck archetype must not be null");
+        final var leaderCard = cardDatabaseService.findById(archetype.leader());
+        final var base = archetype.base() == null ? DEFAULT_BASES.get(archetype.aspect()) : archetype.base();
+        return "%s (%s) - %s".formatted(
+                leaderCard.name(),
+                leaderCard.set(),
+                formatBase(base)
+        );
+    }
+
     public String formatName(Deck deck) {
         Assert.notNull(deck, "Deck must not be null");
-        return new StringBuffer(64).append(formatLeader(deck)).append(" - ").append(formatBase(deck)).toString();
+        return formatArchetype(getArchetype(deck));
     }
 
     public String formatLeader(Deck deck) {
@@ -124,35 +151,40 @@ public class DeckService {
 
     public String formatBase(Deck deck) {
         Assert.notNull(deck, "Deck must not be null");
-        final var base = cardDatabaseService.findById(deck.base());
-        if (base.rarity().equals(Card.Rarity.COMMON)) {
-            if (base.aspects().isEmpty()) {
-                return base.name();
+        return formatBase(deck.base());
+    }
+
+    private String formatBase(Card.Id base) {
+        Assert.notNull(base, "Base must not be null");
+        final var baseCard = cardDatabaseService.findById(base);
+        if (baseCard.rarity().equals(Card.Rarity.COMMON)) {
+            if (baseCard.aspects().isEmpty()) {
+                return baseCard.name();
             }
-            return switch (base.aspects().get(0)) {
+            return switch (baseCard.aspects().get(0)) {
                 case VIGILANCE -> "Blue";
                 case COMMAND -> "Green";
                 case AGGRESSION -> "Red";
                 case CUNNING -> "Yellow";
-                default -> base.name();
+                default -> baseCard.name();
             };
         }
-        return base.name();
+        return baseCard.name();
     }
 
     public String toSwudbJson(Deck deck) {
         final var swudbDeck = new ArrayList<JsonSwudbCard>(50);
         if (deck.main() != null) {
-            deck.main().forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> swudbDeck.add(new JsonSwudbCard(card.replace("-", "_"), count)));
+            deck.main().forEachWithOccurrences((ObjectIntProcedure<Card.Id>) (card, count) -> swudbDeck.add(new JsonSwudbCard(card.toString().replace("-", "_"), count)));
         }
         final var swudbSideboard = new ArrayList<JsonSwudbCard>(10);
         if (deck.sideboard() != null) {
-            deck.sideboard().forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> swudbSideboard.add(new JsonSwudbCard(card.replace("-", "_"), count)));
+            deck.sideboard().forEachWithOccurrences((ObjectIntProcedure<Card.Id>) (card, count) -> swudbSideboard.add(new JsonSwudbCard(card.toString().replace("-", "_"), count)));
         }
         final var d = new JsonSwudbDeck(
                 new JsonSwudbMetadata(formatName(deck), deck.author()),
-                new JsonSwudbCard(deck.leader().replace("-", "_"), 1),
-                new JsonSwudbCard(deck.base().replace("-", "_"), 1),
+                new JsonSwudbCard(deck.leader().toString().replace("-", "_"), 1),
+                new JsonSwudbCard(deck.base().toString().replace("-", "_"), 1),
                 swudbDeck,
                 swudbSideboard
         );
@@ -212,10 +244,10 @@ public class DeckService {
         final var swuContent = meleeDoc.getElementById("decklist-swu-text").text();
         final var lines = swuContent.split("\\r\\n|\\n|\\r");
 
-        String leader = null;
-        String base = null;
-        final var main = Bags.mutable.<String>ofInitialCapacity(50);
-        final var sideboard = Bags.mutable.<String>ofInitialCapacity(10);
+        Card.Id leader = null;
+        Card.Id base = null;
+        final var main = Bags.mutable.<Card.Id>ofInitialCapacity(50);
+        final var sideboard = Bags.mutable.<Card.Id>ofInitialCapacity(10);
 
         boolean inSectionLeaders = false;
         boolean inSectionBase = false;

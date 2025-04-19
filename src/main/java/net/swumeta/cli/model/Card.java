@@ -16,11 +16,16 @@
 
 package net.swumeta.cli.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Card(
@@ -77,7 +82,57 @@ public record Card(
         return number < o.number ? -1 : 1;
     }
 
-    public String id() {
-        return "%s-%03d".formatted(set.name(), number);
+    public Card.Id id() {
+        return new Card.Id(set, number);
+    }
+
+    public static final class Id {
+        private static final LoadingCache<String, Id> CACHE = Caffeine.newBuilder().weakKeys().weakValues().build(Id::new);
+        private final Set set;
+        private final int number;
+
+        Id(Set set, int number) {
+            this.set = set;
+            this.number = number;
+        }
+
+        @JsonCreator
+        Id(String value) {
+            final int i = value.indexOf('-');
+            final var setStr = value.substring(0, i);
+            this.set = Set.valueOf(setStr);
+
+            final var numberStr = value.substring(i + 1);
+            this.number = Integer.parseInt(numberStr);
+        }
+
+        public Set set() {
+            return set;
+        }
+
+        public int number() {
+            return number;
+        }
+
+        public static Card.Id valueOf(String value) {
+            return CACHE.get(value);
+        }
+
+        @Override
+        @JsonValue
+        public String toString() {
+            return "%s-%03d".formatted(set.name(), number);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Id id)) return false;
+            return number == id.number && set == id.set;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(set, number);
+        }
     }
 }

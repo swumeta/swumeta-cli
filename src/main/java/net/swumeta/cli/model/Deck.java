@@ -43,10 +43,10 @@ public record Deck(
         @JsonProperty(required = true) URI source,
         @JsonProperty(required = true) String author,
         @JsonProperty(required = true) Format format,
-        @JsonProperty(required = true) String leader,
-        @JsonProperty(required = true) String base,
-        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<String> main,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<String> sideboard
+        @JsonProperty(required = true) Card.Id leader,
+        @JsonProperty(required = true) Card.Id base,
+        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> main,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> sideboard
 ) {
     public String id() {
         return DigestUtils.md5DigestAsHex(
@@ -59,7 +59,7 @@ public record Deck(
     }
 
     private record CardEntry(
-            @JsonProperty(required = true) String card,
+            @JsonProperty(required = true) Card.Id card,
             @JsonProperty(required = true) int count
     ) {
     }
@@ -71,12 +71,12 @@ public record Deck(
 
         @Override
         public void serialize(ImmutableBag value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            var bag = (ImmutableBag<String>) value;
+            var bag = (ImmutableBag<Card.Id>) value;
             if (bag == null) {
                 bag = Bags.immutable.empty();
             }
             final var entries = new ArrayList<CardEntry>(bag.size());
-            bag.forEachWithOccurrences((ObjectIntProcedure<String>) (card, count) -> entries.add(new CardEntry(card, count)));
+            bag.forEachWithOccurrences((ObjectIntProcedure<Card.Id>) (card, count) -> entries.add(new CardEntry(card, count)));
             gen.writeObject(entries);
         }
     }
@@ -87,12 +87,12 @@ public record Deck(
         }
 
         @Override
-        public ImmutableBag deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public ImmutableBag deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
             final var entries = p.readValueAs(CardEntry[].class);
             if (entries == null || entries.length == 0) {
                 return Bags.immutable.empty();
             }
-            final var bag = Bags.mutable.<String>withInitialCapacity(entries.length);
+            final var bag = Bags.mutable.<Card.Id>withInitialCapacity(entries.length);
             for (final var e : entries) {
                 bag.addOccurrences(e.card, e.count);
             }

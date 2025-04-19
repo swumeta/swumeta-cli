@@ -43,14 +43,14 @@ class CardDatabaseServiceTests {
     void testFindByNameSingleCard() {
         final var cards = svc.findByName("Hera Syndulla", "Spectre Two");
         assertThat(cards).hasSize(1);
-        assertThat(cards.iterator().next().id()).isEqualTo("SOR-008");
+        assertThat(cards.iterator().next().id()).isEqualTo(Card.Id.valueOf("SOR-008"));
     }
 
     @Test
     void testFindByNameOnly() {
         final var cards = svc.findByName("Hera Syndulla", null);
         assertThat(cards).hasSize(2);
-        assertThat(cards.stream().map(Card::id)).containsExactlyInAnyOrder("SOR-008", "JTL-045");
+        assertThat(cards.stream().map(Card::id)).containsExactlyInAnyOrder(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("JTL-045"));
     }
 
     @Test
@@ -77,26 +77,21 @@ class CardDatabaseServiceTests {
         assertThat(cardFile.exists()).isTrue();
         final var cards = svc.findByName("Restart the game", "One more game?");
         assertThat(cards).hasSize(1);
-        assertThat(cards.stream().map(Card::id)).containsExactly("JTL-999");
+        assertThat(cards.stream().map(Card::id)).containsExactly(Card.Id.valueOf("JTL-999"));
     }
 
     @Test
     void testFindById() {
-        final var card = svc.findById("JTL-045");
-        assertThat(card.id()).isEqualTo("JTL-045");
+        final var card = svc.findById(Card.Id.valueOf("JTL-045"));
+        assertThat(card.id()).isEqualTo(Card.Id.valueOf("JTL-045"));
 
         // Check if the cache actually works.
-        final var card2 = svc.findById("JTL-045");
+        final var card2 = svc.findById(Card.Id.valueOf("JTL-045"));
         assertThat(card2).isSameAs(card);
     }
 
     @Test
     void findByIdNull() {
         assertThatExceptionOfType(AppException.class).isThrownBy(() -> svc.findById(null));
-    }
-
-    @Test
-    void findByIdUnknown() {
-        assertThatExceptionOfType(AppException.class).isThrownBy(() -> svc.findById("FOO-007"));
     }
 }

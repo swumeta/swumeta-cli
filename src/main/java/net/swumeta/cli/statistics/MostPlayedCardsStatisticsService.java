@@ -17,6 +17,7 @@
 package net.swumeta.cli.statistics;
 
 import net.swumeta.cli.DeckService;
+import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Event;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.factory.Bags;
@@ -33,12 +34,12 @@ public class MostPlayedCardsStatisticsService {
         this.deckService = deckService;
     }
 
-    public record MostPlayedCardStatistics(ImmutableBag<String> cards) {
+    public record MostPlayedCardStatistics(ImmutableBag<Card.Id> cards) {
     }
 
     public MostPlayedCardStatistics getMostPlayedCardsStatistics(Iterable<Event> events) {
         logger.info("Computing statistics: most played cards");
-        final var playedCards = Bags.mutable.<String>withInitialCapacity(512);
+        final var playedCards = Bags.mutable.<Card.Id>withInitialCapacity(512);
         for (final var event : events) {
             logger.trace("Processing event: {}", event);
             for (final var e : event.decks()) {

@@ -18,10 +18,7 @@ package net.swumeta.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import net.swumeta.cli.model.Deck;
-import net.swumeta.cli.model.Event;
-import net.swumeta.cli.model.Format;
-import net.swumeta.cli.model.Location;
+import net.swumeta.cli.model.*;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.factory.Bags;
 import org.slf4j.Logger;
@@ -54,11 +51,11 @@ public class TestHelper {
                 URI.create("http://melee.gg/foo"), List.of("Me"), List.of(), deckEntries);
     }
 
-    public Deck createDeck(String leader, String base) {
+    public Deck createDeck(Card.Id leader, Card.Id base) {
         return createDeck(leader, base, Bags.immutable.empty(), Bags.immutable.empty());
     }
 
-    public Deck createDeck(String leader, String base, ImmutableBag<String> main, ImmutableBag<String> sideboard) {
+    public Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard) {
         try {
             final var deckFile = File.createTempFile("deck-", ".yaml");
             deckFile.deleteOnExit();

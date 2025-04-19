@@ -17,6 +17,8 @@
 package net.swumeta.cli.statistics;
 
 import net.swumeta.cli.TestHelper;
+import net.swumeta.cli.model.Card;
+import net.swumeta.cli.model.DeckArchetype;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,30 +39,30 @@ class MostPlayedDecksStatisticsServiceTests {
 
     @Test
     void testGetMostPlayedDecksStatistics() {
-        final var deck1 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck2 = helper.createDeck("SOR-008", "SOR-028");
-        final var deck3 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck4 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck5 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck6 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck7 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck8 = helper.createDeck("JTL-009", "JTL-026");
-        final var deck9 = helper.createDeck("JTL-009", "SOR-028");
+        final var deck1 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck2 = helper.createDeck(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028"));
+        final var deck3 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck4 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck5 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck6 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck7 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck8 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
+        final var deck9 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028"));
         final var event = helper.createEvent("Foo", LocalDate.now(),
                 List.of(deck1, deck2, deck3, deck4, deck5, deck6, deck7, deck8, deck9));
 
         final var top8Stats = svc.getMostPlayedDecksStatistics(List.of(event), 8);
         assertThat(top8Stats).isNotNull();
         assertThat(top8Stats.leaderBaseDecks().sizeDistinct()).isEqualTo(2);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(new DeckType("JTL-009", "JTL-026"))).isEqualTo(7);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(new DeckType("JTL-009", "SOR-028"))).isEqualTo(0);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(new DeckType("SOR-008", "SOR-028"))).isEqualTo(1);
+        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
+        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(0);
+        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
 
         final var overallStats = svc.getMostPlayedDecksStatistics(List.of(event));
         assertThat(overallStats).isNotNull();
         assertThat(overallStats.leaderBaseDecks().sizeDistinct()).isEqualTo(3);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(new DeckType("JTL-009", "JTL-026"))).isEqualTo(7);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(new DeckType("JTL-009", "SOR-028"))).isEqualTo(1);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(new DeckType("SOR-008", "SOR-028"))).isEqualTo(1);
+        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
+        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
+        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
     }
 }

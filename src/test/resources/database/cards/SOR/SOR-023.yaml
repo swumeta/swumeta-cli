@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 23
+type: "base"
+rarity: "common"
+aspects:
+- "command"
+name: "Command Center"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_023_Command_Center_Base_c455f9e940.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_023_Command_Center_Thumbnail_8a46d7dcf4.png"

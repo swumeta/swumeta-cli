@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 29
+type: "base"
+rarity: "common"
+aspects:
+- "cunning"
+name: "Administrator's Tower"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_029_Administrators_Tower_Base_7dac299254.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_029_Administrator_s_Tower_Thumbnail_2bbe8ea753.png"

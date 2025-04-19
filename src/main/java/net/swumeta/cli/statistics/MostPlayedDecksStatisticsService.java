@@ -17,6 +17,7 @@
 package net.swumeta.cli.statistics;
 
 import net.swumeta.cli.DeckService;
+import net.swumeta.cli.model.DeckArchetype;
 import net.swumeta.cli.model.Event;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.factory.Bags;
@@ -34,7 +35,7 @@ class MostPlayedDecksStatisticsService {
     }
 
     public record MostPlayedDecksStatistics(
-            ImmutableBag<DeckType> leaderBaseDecks,
+            ImmutableBag<DeckArchetype> leaderBaseDecks,
             int rankingMax
     ) {
     }
@@ -46,7 +47,7 @@ class MostPlayedDecksStatisticsService {
     public MostPlayedDecksStatistics getMostPlayedDecksStatistics(Iterable<Event> events, int rankingMax) {
         logger.info("Computing statistics: most played decks ({})", rankingMax == 0 ? "all players" : ("top " + rankingMax));
 
-        final var leaderBaseDecks = Bags.mutable.<DeckType>ofInitialCapacity(64);
+        final var leaderBaseDecks = Bags.mutable.<DeckArchetype>ofInitialCapacity(64);
         for (final var event : events) {
             logger.trace("Processing event: {}", event);
             for (final var e : event.decks()) {
@@ -55,7 +56,7 @@ class MostPlayedDecksStatisticsService {
                 }
                 logger.trace("Processing deck: {}", e.url());
                 final var deck = deckService.load(e.url());
-                final var deckType = new DeckType(deck.leader(), deck.base());
+                final var deckType = deckService.getArchetype(deck);
                 leaderBaseDecks.add(deckType);
             }
         }

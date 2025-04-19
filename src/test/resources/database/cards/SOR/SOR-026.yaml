@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 26
+type: "base"
+rarity: "common"
+aspects:
+- "aggression"
+name: "Catacombs of Cadera"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_026_Catacombs_Of_Cadera_Base_68cc6c16b0.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_026_Catacombs_of_Cadera_Thumbnail_bcda5d865e.png"
