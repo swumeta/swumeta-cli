@@ -50,8 +50,30 @@ class MostPlayedCardsStatisticsServiceTests {
         final var event = helper.createEvent("Foo", LocalDate.now(), List.of(deck1, deck2));
         final var stats = svc.getMostPlayedCardsStatistics(List.of(event));
         assertThat(stats).isNotNull();
-        assertThat(stats.cards().sizeDistinct()).isEqualTo(2);
+        assertThat(stats.cards().sizeDistinct()).isEqualTo(6);
         assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(5);
         assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(4);
+    }
+
+    @Test
+    void testGetMostPlayedLeadersStatistics() {
+        final var deck1 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
+        );
+        final var deck2 = helper.createDeck(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028"),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 3),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 1)
+        );
+        final var deck3 = helper.createDeck(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("JTL-026"),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
+        );
+        final var event = helper.createEvent("Foo", LocalDate.now(), List.of(deck1, deck2, deck3));
+        final var stats = svc.getMostPlayedCardsStatistics(List.of(event), c -> Card.Type.LEADER.equals(c.type()));
+        assertThat(stats).isNotNull();
+        assertThat(stats.cards().sizeDistinct()).isEqualTo(2);
+        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-009"))).isEqualTo(1);
+        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("SOR-008"))).isEqualTo(2);
     }
 }
