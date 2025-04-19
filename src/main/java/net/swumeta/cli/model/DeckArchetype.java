@@ -17,6 +17,7 @@
 package net.swumeta.cli.model;
 
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.util.Objects;
 
@@ -46,10 +47,14 @@ public final class DeckArchetype {
     }
 
     public static DeckArchetype valueOf(Card.Id leader, Card.Aspect aspect) {
+        Assert.notNull(leader, "Leader must not be null");
+        Assert.notNull(aspect, "Aspect must not be null");
         return new DeckArchetype(leader, aspect, null);
     }
 
     public static DeckArchetype valueOf(Card.Id leader, Card.Id base) {
+        Assert.notNull(leader, "Leader must not be null");
+        Assert.notNull(base, "Base must not be null");
         return new DeckArchetype(leader, null, base);
     }
 

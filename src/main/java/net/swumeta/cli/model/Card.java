@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import org.springframework.util.Assert;
 
 import java.net.URI;
 import java.util.List;
@@ -115,6 +116,7 @@ public record Card(
         }
 
         public static Card.Id valueOf(String value) {
+            Assert.notNull(value, "Value must not be null");
             return CACHE.get(value);
         }
 
