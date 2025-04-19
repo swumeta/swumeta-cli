@@ -48,7 +48,7 @@ public record Location(
         }
 
         for (final var iso : Locale.getISOCountries()) {
-            final var locale = new Locale("", iso);
+            final var locale = Locale.of("", iso);
             if (locale.getDisplayCountry(Locale.ENGLISH).equalsIgnoreCase(country)) {
                 flag = iso.toLowerCase(Locale.ENGLISH);
                 break;

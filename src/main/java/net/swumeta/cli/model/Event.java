@@ -18,6 +18,8 @@ package net.swumeta.cli.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -35,10 +37,13 @@ public record Event(
         @JsonProperty(defaultValue = "premier") Format format,
         URI melee,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        @JsonSetter(nulls = Nulls.AS_EMPTY)
         List<String> contributors,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        @JsonSetter(nulls = Nulls.AS_EMPTY)
         List<Link> links,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        @JsonSetter(nulls = Nulls.AS_EMPTY)
         List<DeckEntry> decks
 ) implements Comparable<Event> {
     @Override

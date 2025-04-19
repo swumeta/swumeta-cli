@@ -78,19 +78,6 @@ class CommandConfig {
     }
 
     @Bean
-    CommandRegistration getEvent(GetEventCommand cmd) {
-        return CommandRegistration.builder()
-                .command("get-event")
-                .description("Display event details")
-                .withOption().longNames("file").shortNames('f').description("Event manifest").type(File.class).required().and()
-                .withTarget().consumer(ctx -> {
-                    final var file = (File) ctx.getOptionValue("file");
-                    cmd.run(file);
-                })
-                .and().build();
-    }
-
-    @Bean
     CommandRegistration getMeleeDecks(GetMeleeDecksCommand cmd) {
         return CommandRegistration.builder()
                 .command("get-melee-decks")

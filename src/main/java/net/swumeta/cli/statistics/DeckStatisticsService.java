@@ -26,26 +26,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-class MostPlayedDecksStatisticsService {
-    private final Logger logger = LoggerFactory.getLogger(MostPlayedDecksStatisticsService.class);
+public class DeckStatisticsService {
+    private final Logger logger = LoggerFactory.getLogger(DeckStatisticsService.class);
     private DeckService deckService;
 
-    MostPlayedDecksStatisticsService(DeckService deckService) {
+    DeckStatisticsService(DeckService deckService) {
         this.deckService = deckService;
     }
 
-    public record MostPlayedDecksStatistics(
-            ImmutableBag<DeckArchetype> archetypes,
-            int rankingMax
+    public record DeckStatistics(
+            ImmutableBag<DeckArchetype> archetypes
     ) {
     }
 
-    public MostPlayedDecksStatistics getMostPlayedDecksStatistics(Iterable<Event> events) {
-        return getMostPlayedDecksStatistics(events, 0);
+    public DeckStatistics getMostPlayedDecks(Iterable<Event> events) {
+        return getMostPlayedDecks(events, 0);
     }
 
-    public MostPlayedDecksStatistics getMostPlayedDecksStatistics(Iterable<Event> events, int rankingMax) {
-        logger.info("Computing statistics: most played decks ({})", rankingMax == 0 ? "all players" : ("top " + rankingMax));
+    public DeckStatistics getMostPlayedDecks(Iterable<Event> events, int rankingMax) {
+        logger.debug("Computing statistics: most played decks ({})", rankingMax == 0 ? "all players" : ("top " + rankingMax));
 
         final var archetypes = Bags.mutable.<DeckArchetype>ofInitialCapacity(64);
         for (final var event : events) {
@@ -54,12 +53,18 @@ class MostPlayedDecksStatisticsService {
                 if (rankingMax != 0 && e.rank() > rankingMax) {
                     break;
                 }
+                if (e.url() == null) {
+                    continue;
+                }
                 logger.trace("Processing deck: {}", e.url());
                 final var deck = deckService.load(e.url());
+                if (!deck.isValid()) {
+                    continue;
+                }
                 final var deckType = deckService.getArchetype(deck);
                 archetypes.add(deckType);
             }
         }
-        return new MostPlayedDecksStatistics(archetypes.toImmutableBag(), rankingMax);
+        return new DeckStatistics(archetypes.toImmutableBag());
     }
 }

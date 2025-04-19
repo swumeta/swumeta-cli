@@ -31,14 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
-class MostPlayedDecksStatisticsServiceTests {
+class DeckStatisticsServiceTests {
     @Autowired
-    private MostPlayedDecksStatisticsService svc;
+    private DeckStatisticsService svc;
     @Autowired
     private TestHelper helper;
 
     @Test
-    void testGetMostPlayedDecksStatistics() {
+    void testGetMostPlayedDecks() {
         final var deck1 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
         final var deck2 = helper.createDeck(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028"));
         final var deck3 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"));
@@ -51,14 +51,14 @@ class MostPlayedDecksStatisticsServiceTests {
         final var event = helper.createEvent("Foo", LocalDate.now(),
                 List.of(deck1, deck2, deck3, deck4, deck5, deck6, deck7, deck8, deck9));
 
-        final var top8Stats = svc.getMostPlayedDecksStatistics(List.of(event), 8);
+        final var top8Stats = svc.getMostPlayedDecks(List.of(event), 8);
         assertThat(top8Stats).isNotNull();
         assertThat(top8Stats.archetypes().sizeDistinct()).isEqualTo(2);
         assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
         assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(0);
         assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
 
-        final var overallStats = svc.getMostPlayedDecksStatistics(List.of(event));
+        final var overallStats = svc.getMostPlayedDecks(List.of(event));
         assertThat(overallStats).isNotNull();
         assertThat(overallStats.archetypes().sizeDistinct()).isEqualTo(3);
         assertThat(overallStats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);

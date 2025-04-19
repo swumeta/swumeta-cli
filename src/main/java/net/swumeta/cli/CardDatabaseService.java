@@ -56,10 +56,11 @@ public class CardDatabaseService {
     }
 
     public Card findById(Card.Id id) {
+        Assert.notNull(id, "Card id must not be null");
         try {
             return cardByIdCache.get(id);
         } catch (Exception e) {
-            throw new AppException("Failed to card from id: " + id, e);
+            throw new AppException("Failed to lookup card by id: " + id, e);
         }
     }
 

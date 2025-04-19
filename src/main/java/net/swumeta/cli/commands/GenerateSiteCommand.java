@@ -24,14 +24,14 @@ import io.jstach.jstache.JStacheFormatterTypes;
 import io.jstach.jstachio.JStachio;
 import net.swumeta.cli.*;
 import net.swumeta.cli.model.*;
-import org.eclipse.collections.api.bag.MutableBag;
-import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.api.tuple.primitive.ObjectIntPair;
-import org.eclipse.collections.impl.bag.mutable.HashBag;
+import net.swumeta.cli.statistics.CardStatisticsService;
+import net.swumeta.cli.statistics.DeckStatisticsService;
+import org.eclipse.collections.api.RichIterable;
+import org.eclipse.collections.api.bag.Bag;
+import org.eclipse.collections.api.block.procedure.Procedure2;
+import org.eclipse.collections.api.factory.Bags;
+import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
-import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,19 +56,23 @@ import java.util.regex.Pattern;
 @Component
 class GenerateSiteCommand {
     private final Logger logger = LoggerFactory.getLogger(GenerateSiteCommand.class);
+    private final MetagameService metagameService;
     private final CardDatabaseService cardDatabaseService;
-    private final EventService eventService;
     private final DeckService deckService;
+    private final DeckStatisticsService deckStatisticsService;
+    private final CardStatisticsService cardStatisticsService;
     private final QuoteService quoteService;
     private final JStachio jStachio;
     private final AppConfig config;
     private final StaticResources staticResources;
     private final ObjectMapper objectMapper;
 
-    GenerateSiteCommand(CardDatabaseService cardDatabaseService, EventService eventService, DeckService deckService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
-        this.eventService = eventService;
+    GenerateSiteCommand(MetagameService metagameService, CardDatabaseService cardDatabaseService, DeckService deckService, DeckStatisticsService deckStatisticsService, CardStatisticsService cardStatisticsService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
+        this.metagameService = metagameService;
         this.deckService = deckService;
         this.cardDatabaseService = cardDatabaseService;
+        this.deckStatisticsService = deckStatisticsService;
+        this.cardStatisticsService = cardStatisticsService;
         this.quoteService = quoteService;
         this.config = config;
         this.staticResources = staticResources;
@@ -95,153 +99,123 @@ class GenerateSiteCommand {
                 quoteService.randomQuote()), new File(outputDir, "about.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
-        final var dbDir = config.database();
-        final var eventFiles = new ArrayList<File>(16);
-        listFilesRecursively(new File(dbDir, "events"), eventFiles, ".yaml");
+        final var metagame = metagameService.getMetagame();
 
-        LocalDate lastEventDate = null;
-        final MutableBag<String> deckBag = HashBag.newBag(128);
-        final MutableBag<String> deckTop8Bag = HashBag.newBag(128);
-        final MutableBag<String> cardBag = HashBag.newBag(256);
-
-        final var eventPages = new ArrayList<EventPage>(eventFiles.size());
-        for (final var eventFile : eventFiles) {
-            final var event = eventService.load(eventFile.toURI());
+        final var eventPages = new ArrayList<EventPage>(metagame.events().size());
+        for (final var e : metagame.events().keyValuesView()) {
+            final var event = e.getTwo();
+            logger.info("Processing event: {}", event);
             if (event.hidden()) {
-                logger.debug("Skipping hidden event: {}", eventFile);
+                logger.debug("Skipping hidden event: {}", event);
                 continue;
             }
 
-            if (lastEventDate == null || event.date().isAfter(lastEventDate)) {
-                lastEventDate = event.date();
-            }
-
-            final List<DeckWithRank> decks;
-            final MutableBag<String> leaderBag = HashBag.newBag();
-            final MutableBag<String> baseBag = HashBag.newBag();
-            if (event.decks() == null) {
-                decks = List.of();
-            } else {
-                FastList.newList(event.decks()).take(8).stream()
-                        .map(d -> deckService.load(d.url())).map(deckService::formatName).forEach(deckTop8Bag::add);
-                decks = event.decks().stream()
-                        .filter(d -> d.url() != null)
-                        .map(d -> {
-                            try {
-                                final var deck = deckService.load(d.url(), d.pending());
-                                if (deck.isValid()) {
-                                    leaderBag.add(deckService.formatLeader(deck).replace("'", " "));
-                                    baseBag.add(deckService.formatBase(deck));
-                                    deckBag.add(deckService.formatName(deck));
-
-                                    for (final var c : deck.main()) {
-                                        cardBag.add(cardDatabaseService.findById(c).name());
-                                    }
-                                    if (deck.sideboard() != null) {
-                                        for (final var c : deck.sideboard()) {
-                                            cardBag.add(cardDatabaseService.findById(c).name());
-                                        }
-                                    }
-
-                                    return new DeckWithRank(d.rank(), d.pending(), deck,
-                                            deckService.formatName(deck),
-                                            cardDatabaseService.findById(deck.leader()),
-                                            cardDatabaseService.findById(deck.base()),
-                                            getAspects(deck), deckService.toSwudbJson(deck));
-                                }
-                            } catch (Exception e) {
-                                logger.warn("Failed to load deck: {}", d.url(), e);
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)
-                        .sorted(Comparator.comparingInt(DeckWithRank::rank))
-                        .toList();
-            }
-            final var eventFileName = eventFile.getName().toLowerCase()
+            final var eventFileName = e.getOne().getName().toLowerCase()
                     .replace(".yaml", "")
                     .replace(" ", "-") + ".html";
-            final var countryFlag = getCountryCodeFromName(event.location().country());
-            final List<Link> videoLinks = event.links() != null ?
-                    event.links().stream()
+            final var countryFlag = event.location().countryFlag();
+            final var videoLinks = event.links() != null ?
+                    Lists.immutable.fromStream(event.links().stream()
                             .map(this::createVideoEmbedLink)
-                            .filter(Objects::nonNull)
-                            .toList()
-                    : List.of();
+                            .filter(Objects::nonNull))
+                    : Lists.immutable.<Link>empty();
 
-            final var leaderSerie = new ArrayList<KeyValue>(leaderBag.size());
-            leaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> leaderSerie.add(new KeyValue(name, count)));
+            final var singleEvent = Collections.singleton(event);
+            final var deckBag = deckStatisticsService.getMostPlayedDecks(singleEvent).archetypes();
+            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(singleEvent, 64).archetypes();
+            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(singleEvent, 8).archetypes();
 
-            final MutableBag<String> top64LeaderBag = HashBag.newBag(64);
-            Lists.immutable.withAll(event.decks()).take(64).stream()
-                    .filter(d -> d.url() != null)
-                    .map(link -> deckService.load(link.url())).map(d -> deckService.formatLeader(d).replace("'", " "))
-                    .forEach(top64LeaderBag::add);
-            final var top64LeaderSerie = new ArrayList<KeyValue>(top64LeaderBag.size());
-            top64LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top64LeaderSerie.add(new KeyValue(name, count)));
-
-            final MutableBag<String> top8LeaderBag = HashBag.newBag(8);
-            Lists.immutable.withAll(event.decks()).take(8).stream()
-                    .filter(d -> d.url() != null)
-                    .map(link -> deckService.load(link.url())).map(d -> deckService.formatLeader(d).replace("'", " "))
-                    .forEach(top8LeaderBag::add);
-            final var top8LeaderSerie = new ArrayList<KeyValue>(top8LeaderBag.size());
-            top8LeaderBag.forEachWithOccurrences((ObjectIntProcedure<String>) (name, count) -> top8LeaderSerie.add(new KeyValue(name, count)));
+            final var leaderSeries = toLeaderSerie(deckBag);
+            final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
+            final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
             final var statsFileName = eventFileName.replace(".html", "-stats.html");
             renderToFile(new EventStatsModel("Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
-                            event, countryFlag, leaderSerie, top64LeaderSerie, top8LeaderSerie),
+                            event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
                     new File(outputDir, statsFileName));
 
+            final var decks = Lists.immutable.<DeckWithRank>fromStream(event.decks().stream()
+                    .filter(entry -> entry.url() != null)
+                    .map(this::toDeckWithRank)
+                    .filter(Objects::nonNull)
+            );
+            final var leaderBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck())));
+            final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
             renderToFile(new EventModel(event.name(),
                             "Results from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
                             event, countryFlag, statsFileName, decks, decks.isEmpty(),
-                            nMostResults(leaderBag, 4), nMostResults(baseBag, 4),
+                            nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
                             videoLinks),
                     new File(outputDir, eventFileName));
             eventPages.add(new EventPage(event, countryFlag, eventFileName));
         }
 
+        logger.info("Processing event index page");
         Collections.sort(eventPages, Comparator.reverseOrder());
         renderToFile(new EventIndexModel("Events",
                 "Star Wars Unlimited events (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
                 eventPages), new File(outputDir, "events.html"));
 
+        logger.info("Processing metagame page");
+        final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.events()).cards();
+        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.events()).archetypes();
+        final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(metagame.events(), 8).archetypes();
+
         final int totalDecks = deckBag.size();
-        final int totalTop8Decks = deckTop8Bag.size();
+        final int totalTop8Decks = deckBagTop8.size();
         final int totalCards = cardBag.size();
-        final var topDecks = deckBag.topOccurrences(5).stream()
+        final var topDecks = Lists.immutable.fromStream(deckBag.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalDecks * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
-                .toList();
-        final var topCards = cardBag.topOccurrences(5).stream()
+                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalDecks * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
+        final var topCards = Lists.immutable.fromStream(cardBag.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalCards * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
-                .toList();
-        final var top8Decks = deckTop8Bag.topOccurrences(5).stream()
+                .map(e -> new KeyValue(cardDatabaseService.findById(e.getOne()).name(), (int) (e.getTwo() / (double) totalCards * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
+        final var top8Decks = Lists.immutable.fromStream(deckBagTop8.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(e.getOne(), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed())
-                .toList();
+                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
+                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
 
         renderToFile(new IndexModel(null,
                         null,
-                        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(lastEventDate),
+                        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
 
         generateSitemap(outputDir);
     }
 
-    private List<KeyValue> nMostResults(MutableBag<String> bag, int n) {
-        MutableList<ObjectIntPair<String>> allItemsRanked = bag.topOccurrences(bag.sizeDistinct());
-        MutableMap<String, Integer> result = UnifiedMap.newMap();
-        int topCount = Math.min(n, allItemsRanked.size());
+    private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
+        final var deck = deckService.load(e.url());
+        if (!deck.isValid()) {
+            return null;
+        }
+        return new DeckWithRank(
+                e.rank(), e.pending(), deck, deckService.formatName(deck),
+                cardDatabaseService.findById(deck.leader()),
+                cardDatabaseService.findById(deck.base()),
+                getAspects(deck),
+                deckService.toSwudbJson(deck)
+        );
+    }
+
+    private ImmutableList<KeyValue> toLeaderSerie(Bag<DeckArchetype> bag) {
+        final var keyValues = Lists.mutable.<KeyValue>ofInitialCapacity(bag.sizeDistinct());
+        bag.groupBy(DeckArchetype::leader).forEachKeyMultiValues((Procedure2<Card.Id, RichIterable<DeckArchetype>>) (leader, archetypes) -> {
+            final var card = cardDatabaseService.findById(leader);
+            keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("'", " "), card.set()), archetypes.size()));
+        });
+        return keyValues.toImmutable();
+    }
+
+    private ImmutableList<KeyValue> nMostCards(Bag<String> bag, int n) {
+        final var allItemsRanked = bag.topOccurrences(bag.sizeDistinct());
+        final var result = UnifiedMap.<String, Integer>newMap();
+        final int topCount = Math.min(n, allItemsRanked.size());
         for (int i = 0; i < topCount; i++) {
-            ObjectIntPair<String> pair = allItemsRanked.get(i);
+            final var pair = allItemsRanked.get(i);
             result.put(pair.getOne(), pair.getTwo());
         }
         int othersTotal = 0;
@@ -251,15 +225,15 @@ class GenerateSiteCommand {
         if (othersTotal > 0) {
             result.put("Others", othersTotal);
         }
-        return result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).toList();
+        return Lists.immutable.fromStream(result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())));
     }
 
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record IndexModel(String title, String description,
                       String lastEventDate, int totalDecks,
-                      List<KeyValue> topDecks, List<KeyValue> topCards,
-                      List<KeyValue> top8Decks) implements TemplateSupport {
+                      ImmutableList<KeyValue> topDecks, ImmutableList<KeyValue> topCards,
+                      ImmutableList<KeyValue> top8Decks) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/about.mustache")
@@ -289,10 +263,10 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record EventModel(String title, String description, Event event, String countryFlag, String statsPage,
-                      List<DeckWithRank> decks, boolean noDeck,
-                      List<KeyValue> leaderSerie,
-                      List<KeyValue> baseSerie,
-                      List<Link> videoLinks) implements TemplateSupport {
+                      ImmutableList<DeckWithRank> decks, boolean noDeck,
+                      ImmutableList<KeyValue> leaderSerie,
+                      ImmutableList<KeyValue> baseSerie,
+                      ImmutableList<Link> videoLinks) implements TemplateSupport {
     }
 
     record KeyValue(
@@ -309,9 +283,9 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record EventStatsModel(String title, String description, Event event, String countryFlag,
-                           List<KeyValue> allLeaderSerie,
-                           List<KeyValue> top64LeaderSerie,
-                           List<KeyValue> top8LeaderSerie) implements TemplateSupport {
+                           ImmutableList<KeyValue> allLeaderSerie,
+                           ImmutableList<KeyValue> top64LeaderSerie,
+                           ImmutableList<KeyValue> top8LeaderSerie) implements TemplateSupport {
     }
 
     interface TemplateSupport {
@@ -362,19 +336,6 @@ class GenerateSiteCommand {
         }
         Collections.sort(aspects);
         return aspects;
-    }
-
-    private static String getCountryCodeFromName(String countryName) {
-        if ("USA".equals(countryName)) {
-            return "us";
-        }
-        for (final var iso : Locale.getISOCountries()) {
-            final var locale = new Locale("", iso);
-            if (locale.getDisplayCountry(Locale.ENGLISH).equalsIgnoreCase(countryName)) {
-                return iso.toLowerCase(Locale.ENGLISH);
-            }
-        }
-        throw new RuntimeException("Unable to find country code: " + countryName);
     }
 
     @JStacheFormatter

@@ -17,12 +17,12 @@
 package net.swumeta.cli;
 
 import net.swumeta.cli.model.Event;
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.api.map.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
@@ -39,13 +39,14 @@ public class MetagameService {
         this.config = config;
     }
 
-    public record Metagame(LocalDate date, ImmutableList<Event> events) {
+    public record Metagame(LocalDate date, ImmutableMap<File, Event> events) {
     }
 
     public Metagame getMetagame() {
         logger.info("Listing events for the metagame");
         final Predicate<Event> eventFilter = config.metagameMonths() < 1 ? null : new EventFilter(config.metagameMonths());
-        final var events = Lists.immutable.withAllSorted(Lists.adapt(eventService.list(eventFilter)));
+
+        final var events = eventService.list(eventFilter);
         if (events.isEmpty()) {
             throw new AppException("No events found");
         }
@@ -58,7 +59,15 @@ public class MetagameService {
                     .collect(Collectors.joining(", "));
             logger.trace("Events part for the metagame: {}", eventNames);
         }
-        return new Metagame(events.getLast().date(), events);
+
+        LocalDate lastDate = null;
+        for (final var e : events.valuesView()) {
+            if (lastDate == null || e.date().isAfter(lastDate)) {
+                lastDate = e.date();
+            }
+        }
+
+        return new Metagame(lastDate, events);
     }
 
     private static class EventFilter implements Predicate<Event> {

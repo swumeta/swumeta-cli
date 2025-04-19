@@ -16,6 +16,7 @@
 
 package net.swumeta.cli;
 
+import net.swumeta.cli.model.Event;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +38,6 @@ class MetagameServiceTests {
         assertThat(metagame).isNotNull();
         assertThat(metagame.date()).isEqualTo(LocalDate.of(2025, 4, 13));
         assertThat(metagame.events()).hasSize(2);
-        assertThat(metagame.events().get(0).name()).isEqualTo("Sector Qualifier Milan");
-        assertThat(metagame.events().get(1).name()).isEqualTo("Santa Geek Café Store Showdown");
+        assertThat(metagame.events().collect(Event::name)).contains("Sector Qualifier Milan", "Santa Geek Café Store Showdown");
     }
 }

@@ -92,6 +92,6 @@ class CardDatabaseServiceTests {
 
     @Test
     void findByIdNull() {
-        assertThatExceptionOfType(AppException.class).isThrownBy(() -> svc.findById(null));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> svc.findById(null));
     }
 }

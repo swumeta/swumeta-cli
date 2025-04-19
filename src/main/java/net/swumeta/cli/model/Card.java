@@ -16,10 +16,7 @@
 
 package net.swumeta.cli.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.*;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.springframework.util.Assert;
@@ -35,7 +32,7 @@ public record Card(
         @JsonProperty(required = true) Type type,
         @JsonProperty(required = true) Rarity rarity,
         Arena arena,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Aspect> aspects,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSetter(nulls = Nulls.AS_EMPTY) List<Aspect> aspects,
         @JsonInclude(JsonInclude.Include.NON_DEFAULT) int cost,
         @JsonProperty(required = true) String name,
         String title,

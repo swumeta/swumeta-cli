@@ -285,18 +285,18 @@ public class DeckService {
                 final var cardSubtitle = parts.length > 2 ? parts[2] : null;
                 final var cards = cardDatabaseService.findByName(cardTitle, cardSubtitle);
                 if (cards.isEmpty()) {
-                    throw new RuntimeException("Unable to find card: " + line);
-                }
-
-                final var card = cards.iterator().next();
-                if (inSectionLeaders) {
-                    leader = card.id();
-                } else if (inSectionBase) {
-                    base = card.id();
-                } else if (inSectionDeck) {
-                    main.addOccurrences(card.id(), quantity);
-                } else if (inSectionSideboard) {
-                    sideboard.addOccurrences(card.id(), quantity);
+                    logger.warn("Unable to find card: {}", line);
+                } else {
+                    final var card = cards.iterator().next();
+                    if (inSectionLeaders) {
+                        leader = card.id();
+                    } else if (inSectionBase) {
+                        base = card.id();
+                    } else if (inSectionDeck) {
+                        main.addOccurrences(card.id(), quantity);
+                    } else if (inSectionSideboard) {
+                        sideboard.addOccurrences(card.id(), quantity);
+                    }
                 }
             }
         }

@@ -16,9 +16,7 @@
 
 package net.swumeta.cli.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -45,8 +43,8 @@ public record Deck(
         @JsonProperty(required = true) Format format,
         @JsonProperty(required = true) Card.Id leader,
         @JsonProperty(required = true) Card.Id base,
-        @JsonProperty(required = true) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> main,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> sideboard
+        @JsonProperty(required = true) @JsonSetter(nulls = Nulls.AS_EMPTY) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> main,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSetter(nulls = Nulls.AS_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> sideboard
 ) {
     public String id() {
         return DigestUtils.md5DigestAsHex(
@@ -55,7 +53,7 @@ public record Deck(
 
     @JsonIgnore
     public boolean isValid() {
-        return leader != null && base != null && main != null && !main.isEmpty();
+        return leader != null && base != null;
     }
 
     private record CardEntry(
