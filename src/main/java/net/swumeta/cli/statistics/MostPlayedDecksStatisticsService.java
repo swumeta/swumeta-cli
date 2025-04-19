@@ -35,7 +35,7 @@ class MostPlayedDecksStatisticsService {
     }
 
     public record MostPlayedDecksStatistics(
-            ImmutableBag<DeckArchetype> leaderBaseDecks,
+            ImmutableBag<DeckArchetype> archetypes,
             int rankingMax
     ) {
     }
@@ -47,7 +47,7 @@ class MostPlayedDecksStatisticsService {
     public MostPlayedDecksStatistics getMostPlayedDecksStatistics(Iterable<Event> events, int rankingMax) {
         logger.info("Computing statistics: most played decks ({})", rankingMax == 0 ? "all players" : ("top " + rankingMax));
 
-        final var leaderBaseDecks = Bags.mutable.<DeckArchetype>ofInitialCapacity(64);
+        final var archetypes = Bags.mutable.<DeckArchetype>ofInitialCapacity(64);
         for (final var event : events) {
             logger.trace("Processing event: {}", event);
             for (final var e : event.decks()) {
@@ -57,9 +57,9 @@ class MostPlayedDecksStatisticsService {
                 logger.trace("Processing deck: {}", e.url());
                 final var deck = deckService.load(e.url());
                 final var deckType = deckService.getArchetype(deck);
-                leaderBaseDecks.add(deckType);
+                archetypes.add(deckType);
             }
         }
-        return new MostPlayedDecksStatistics(leaderBaseDecks.toImmutableBag(), rankingMax);
+        return new MostPlayedDecksStatistics(archetypes.toImmutableBag(), rankingMax);
     }
 }

@@ -53,16 +53,16 @@ class MostPlayedDecksStatisticsServiceTests {
 
         final var top8Stats = svc.getMostPlayedDecksStatistics(List.of(event), 8);
         assertThat(top8Stats).isNotNull();
-        assertThat(top8Stats.leaderBaseDecks().sizeDistinct()).isEqualTo(2);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(0);
-        assertThat(top8Stats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
+        assertThat(top8Stats.archetypes().sizeDistinct()).isEqualTo(2);
+        assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
+        assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(0);
+        assertThat(top8Stats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
 
         final var overallStats = svc.getMostPlayedDecksStatistics(List.of(event));
         assertThat(overallStats).isNotNull();
-        assertThat(overallStats.leaderBaseDecks().sizeDistinct()).isEqualTo(3);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
-        assertThat(overallStats.leaderBaseDecks().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
+        assertThat(overallStats.archetypes().sizeDistinct()).isEqualTo(3);
+        assertThat(overallStats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Aspect.AGGRESSION))).isEqualTo(7);
+        assertThat(overallStats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
+        assertThat(overallStats.archetypes().occurrencesOf(DeckArchetype.valueOf(Card.Id.valueOf("SOR-008"), Card.Id.valueOf("SOR-028")))).isEqualTo(1);
     }
 }
