@@ -481,11 +481,20 @@ class GenerateSiteCommand {
 
         final var urlFiles = new ArrayList<URI>(htmlFiles.size());
         for (final var htmlFile : htmlFiles) {
+            var res = outputDir.toPath().relativize(htmlFile.toPath()).toString().replace(File.separator, "/");
+            if ("index.html".equals(res)) {
+                continue;
+            }
+            if (res.endsWith("/index.html")) {
+                res = res.replace("/index.html", "/");
+            }
             final var uri = UriComponentsBuilder.newInstance()
                     .scheme("https").host(config.domain())
-                    .path(outputDir.toPath().relativize(htmlFile.toPath()).toString()).build().toUri();
+                    .pathSegment(res.split("/")).build().toUri();
             urlFiles.add(uri);
         }
+        urlFiles.add(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri());
+
         logger.debug("Generating sitemap: {}", urlFiles);
         renderToFile(new SitemapModel(urlFiles, ZonedDateTime.now()), new File(outputDir, "sitemap.xml"));
 
