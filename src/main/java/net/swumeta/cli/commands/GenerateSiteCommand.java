@@ -61,18 +61,20 @@ class GenerateSiteCommand {
     private final DeckService deckService;
     private final DeckStatisticsService deckStatisticsService;
     private final CardStatisticsService cardStatisticsService;
+    private final RedirectService redirectService;
     private final QuoteService quoteService;
     private final JStachio jStachio;
     private final AppConfig config;
     private final StaticResources staticResources;
     private final ObjectMapper objectMapper;
 
-    GenerateSiteCommand(MetagameService metagameService, CardDatabaseService cardDatabaseService, DeckService deckService, DeckStatisticsService deckStatisticsService, CardStatisticsService cardStatisticsService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
+    GenerateSiteCommand(MetagameService metagameService, CardDatabaseService cardDatabaseService, DeckService deckService, DeckStatisticsService deckStatisticsService, CardStatisticsService cardStatisticsService, RedirectService redirectService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
         this.metagameService = metagameService;
         this.deckService = deckService;
         this.cardDatabaseService = cardDatabaseService;
         this.deckStatisticsService = deckStatisticsService;
         this.cardStatisticsService = cardStatisticsService;
+        this.redirectService = redirectService;
         this.quoteService = quoteService;
         this.config = config;
         this.staticResources = staticResources;
@@ -183,6 +185,15 @@ class GenerateSiteCommand {
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
+
+        logger.info("Processing redirects");
+        for (final var redirect : redirectService.getRedirects()) {
+            final var resFile = new File(outputDir, redirect.resource());
+            if (!resFile.getParentFile().exists()) {
+                resFile.getParentFile().mkdirs();
+            }
+            renderToFile(new RedirectModel(redirect.target()), resFile);
+        }
 
         generateSitemap(outputDir);
     }
@@ -483,6 +494,13 @@ class GenerateSiteCommand {
     record RobotsModel(
             URI sitemap
     ) {
+    }
+
+    @JStache(path = "/templates/redirect.mustache")
+    @JStacheConfig
+    record RedirectModel(
+            URI target
+    ) implements TemplateSupport {
     }
 
     private String formatDate(Event e) {
