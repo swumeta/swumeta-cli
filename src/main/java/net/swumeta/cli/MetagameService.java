@@ -62,7 +62,7 @@ public class MetagameService {
 
         LocalDate lastDate = null;
         for (final var e : events.valuesView()) {
-            if (lastDate == null || e.date().isAfter(lastDate)) {
+            if (!e.decks().isEmpty() && (lastDate == null || e.date().isAfter(lastDate))) {
                 lastDate = e.date();
             }
         }
