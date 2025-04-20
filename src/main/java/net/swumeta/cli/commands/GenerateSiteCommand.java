@@ -160,11 +160,11 @@ class GenerateSiteCommand {
             final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
             renderToFile(new EventModel(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
-                            event, countryFlag, "%s/%s".formatted(eventName, statsFileName),
+                            event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
                             decks, decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
                             videoLinks),
                     new File(eventDir, "index.html"));
-            eventPages.add(new EventPage(event, countryFlag, tournamentsDir.getName() + "/" + eventDirName));
+            eventPages.add(new EventPage(event, countryFlag, "/%s/%s".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
