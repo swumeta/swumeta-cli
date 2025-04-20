@@ -95,26 +95,40 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
+        final var aboutDir = new File(outputDir, "about");
+        if (!aboutDir.exists()) {
+            aboutDir.mkdirs();
+        }
         renderToFile(new AboutModel("About", """
                 Discover swumeta.net, created by Alexandre (NotAlex), software engineer and Star Wars Unlimited player, to analyze matchups and optimize your decks against popular game leaders.
                 """,
-                quoteService.randomQuote()), new File(outputDir, "about.html"));
+                quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
         final var metagame = metagameService.getMetagame();
 
         final var eventPages = new ArrayList<EventPage>(metagame.events().size());
-        for (final var e : metagame.events().keyValuesView()) {
-            final var event = e.getTwo();
+        final var tournamentsDir = new File(outputDir, "tournaments");
+        if (!tournamentsDir.exists()) {
+            tournamentsDir.mkdirs();
+        }
+        for (final var event : metagame.events()) {
             logger.info("Processing event: {}", event);
             if (event.hidden()) {
                 logger.debug("Skipping hidden event: {}", event);
                 continue;
             }
 
-            final var eventFileName = e.getOne().getName().toLowerCase()
-                    .replace(".yaml", "")
-                    .replace(" ", "-") + ".html";
+            final var eventName = event.name()
+                    .replace(" ", "-")
+                    .replace("$", "")
+                    .replace("é", "e")
+                    .toLowerCase(Locale.ENGLISH);
+            final var eventDirName = "%s/%02d/%02d/%s".formatted(event.date().getYear(), event.date().getMonthValue(), event.date().getDayOfMonth(), eventName);
+            final var eventDir = new File(tournamentsDir, eventDirName);
+            if (!eventDir.exists()) {
+                eventDir.mkdirs();
+            }
             final var countryFlag = event.location().countryFlag();
             final var videoLinks = event.links() != null ?
                     Lists.immutable.fromStream(event.links().stream()
@@ -131,11 +145,11 @@ class GenerateSiteCommand {
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
             final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
-            final var statsFileName = eventFileName.replace(".html", "-stats.html");
+            final var statsFileName = "statistics.html";
             renderToFile(new EventStatsModel("Statistics from " + event.name(),
-                            "Statistics from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
+                            "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
                             event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
-                    new File(outputDir, statsFileName));
+                    new File(eventDir, statsFileName));
 
             final var decks = Lists.immutable.<DeckWithRank>fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
@@ -145,19 +159,19 @@ class GenerateSiteCommand {
             final var leaderBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck())));
             final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
             renderToFile(new EventModel(event.name(),
-                            "Results from the Star Wars Unlimited event " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
-                            event, countryFlag, statsFileName, decks, decks.isEmpty(),
-                            nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
+                            "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
+                            event, countryFlag, "%s/%s".formatted(eventName, statsFileName),
+                            decks, decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
                             videoLinks),
-                    new File(outputDir, eventFileName));
-            eventPages.add(new EventPage(event, countryFlag, eventFileName));
+                    new File(eventDir, "index.html"));
+            eventPages.add(new EventPage(event, countryFlag, tournamentsDir.getName() + "/" + eventDirName));
         }
 
         logger.info("Processing event index page");
         Collections.sort(eventPages, Comparator.reverseOrder());
-        renderToFile(new EventIndexModel("Events",
-                "Star Wars Unlimited events (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
-                eventPages), new File(outputDir, "events.html"));
+        renderToFile(new EventIndexModel("Tournaments",
+                "Star Wars Unlimited tournaments (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
+                eventPages), new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.events()).cards();

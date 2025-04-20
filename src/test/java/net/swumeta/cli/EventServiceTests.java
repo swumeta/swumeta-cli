@@ -37,7 +37,7 @@ class EventServiceTests {
     void testListNoFilter() {
         final var events = svc.list();
         assertThat(events).hasSize(2);
-        final var eventNames = events.valuesView().collect(e -> e.name());
+        final var eventNames = events.collect(e -> e.name());
         assertThat(eventNames).contains("Sector Qualifier Milan", "Santa Geek Café Store Showdown");
     }
 
@@ -45,6 +45,6 @@ class EventServiceTests {
     void testListDateFilter() {
         final var events = svc.list(e -> e.date().isAfter(LocalDate.of(2025, 4, 10)));
         assertThat(events).hasSize(1);
-        assertThat(events.valuesView().getAny().name()).isEqualTo("Santa Geek Café Store Showdown");
+        assertThat(events.getAny().name()).isEqualTo("Santa Geek Café Store Showdown");
     }
 }

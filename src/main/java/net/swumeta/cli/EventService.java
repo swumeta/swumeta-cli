@@ -19,8 +19,8 @@ package net.swumeta.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Event;
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.impl.factory.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,24 +44,17 @@ public class EventService {
         objectMapper.findAndRegisterModules();
     }
 
-    public ImmutableMap<File, Event> list() {
+    public ImmutableList<Event> list() {
         return list(null);
     }
 
-    public ImmutableMap<File, Event> list(Predicate<Event> filter) {
+    public ImmutableList<Event> list(Predicate<Event> filter) {
         final var eventsDir = new File(config.database(), "events");
         logger.trace("Listing event files in directory: {}", eventsDir);
         final var eventFiles = new ArrayList<File>(32);
         listFilesRecursively(eventsDir, eventFiles);
         final var f = filter == null ? NULL_FILTER : filter;
-        final var events = Maps.mutable.<File, Event>ofInitialCapacity(eventFiles.size());
-        eventFiles.forEach(file -> {
-            final var event = load(file);
-            if (f.test(event)) {
-                events.put(file, event);
-            }
-        });
-        eventFiles.stream().map(this::load).filter(f).toList();
+        final var events = Lists.immutable.fromStream(eventFiles.stream().map(this::load).filter(f));
         if (logger.isTraceEnabled()) {
             logger.trace("Found events: {}", events.stream().map(Event::name).toList());
         }

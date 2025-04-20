@@ -17,12 +17,11 @@
 package net.swumeta.cli;
 
 import net.swumeta.cli.model.Event;
-import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.list.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
@@ -39,7 +38,7 @@ public class MetagameService {
         this.config = config;
     }
 
-    public record Metagame(LocalDate date, ImmutableMap<File, Event> events) {
+    public record Metagame(LocalDate date, ImmutableList<Event> events) {
     }
 
     public Metagame getMetagame() {
@@ -61,7 +60,7 @@ public class MetagameService {
         }
 
         LocalDate lastDate = null;
-        for (final var e : events.valuesView()) {
+        for (final var e : events) {
             if (!e.decks().isEmpty() && (lastDate == null || e.date().isAfter(lastDate))) {
                 lastDate = e.date();
             }
@@ -79,7 +78,7 @@ public class MetagameService {
 
         @Override
         public boolean test(Event event) {
-            return event.date().isAfter(dateLimit);
+            return !event.hidden() && event.date().isAfter(dateLimit);
         }
     }
 }
