@@ -30,11 +30,31 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 @Component
 class ServeFilesCommand {
     private final Logger logger = LoggerFactory.getLogger(ServeFilesCommand.class);
+    private static final Map<String, String> MIME_TYPES = new HashMap<>();
+
+    static {
+        // Common MIME types configuration
+        MIME_TYPES.put("html", "text/html; charset=UTF-8");
+        MIME_TYPES.put("css", "text/css; charset=UTF-8");
+        MIME_TYPES.put("js", "application/javascript; charset=UTF-8");
+        MIME_TYPES.put("jpg", "image/jpeg");
+        MIME_TYPES.put("jpeg", "image/jpeg");
+        MIME_TYPES.put("png", "image/png");
+        MIME_TYPES.put("gif", "image/gif");
+        MIME_TYPES.put("json", "application/json; charset=UTF-8");
+        MIME_TYPES.put("xml", "application/xml; charset=UTF-8");
+        MIME_TYPES.put("pdf", "application/pdf");
+        MIME_TYPES.put("txt", "text/plain; charset=UTF-8");
+        MIME_TYPES.put("svg", "image/svg+xml");
+    }
+
 
     void run(File dir) {
         final int port = 8080;
@@ -55,50 +75,82 @@ class ServeFilesCommand {
         }
     }
 
-    // Handler for serving files
-    private static class FileHandler implements HttpHandler {
-        private final File basePath;
+    static class FileHandler implements HttpHandler {
+        private final File dir;
 
-        public FileHandler(File basePath) {
-            this.basePath = basePath;
+        FileHandler(File dir) {
+            this.dir = dir;
         }
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String requestPath = exchange.getRequestURI().getPath();
+            String requestMethod = exchange.getRequestMethod();
 
-            // Normalize the path to prevent path traversal attacks
-            requestPath = requestPath.replaceAll("\\.\\./", "").replaceAll("//", "/");
-            if (requestPath.equals("/")) {
-                requestPath = "/index.html"; // Default page
+            if (!requestMethod.equals("GET")) {
+                sendError(exchange, 405, "Method Not Allowed");
+                return;
             }
 
-            Path filePath = Paths.get(basePath.getAbsolutePath(), requestPath);
+            String requestPath = exchange.getRequestURI().getPath();
+            Path filePath = getFilePath(requestPath);
+
+            if (filePath == null) {
+                sendError(exchange, 404, "Resource Not Found");
+                return;
+            }
+
+            try {
+                byte[] fileContent = Files.readAllBytes(filePath);
+                String mimeType = getMimeType(filePath.toString());
+
+                exchange.getResponseHeaders().set("Content-Type", mimeType);
+                exchange.sendResponseHeaders(200, fileContent.length);
+
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(fileContent);
+                }
+            } catch (IOException e) {
+                sendError(exchange, 500, "Server Error: " + e.getMessage());
+            }
+        }
+
+        private Path getFilePath(String requestPath) {
+            // Clean the request path
+            requestPath = requestPath.replaceAll("\\.\\.", "");
+            if (requestPath.endsWith("/")) {
+                requestPath += "index.html";
+            }
+
+            Path filePath = Paths.get(dir.getAbsolutePath(), requestPath);
             File file = filePath.toFile();
 
             if (file.exists() && file.isFile()) {
-                // Determine MIME type
-                String contentType = Files.probeContentType(filePath);
-                if (contentType == null) {
-                    contentType = "application/octet-stream";
+                return filePath;
+            } else if (file.isDirectory()) {
+                // Check if index.html exists in the directory
+                Path indexPath = Paths.get(filePath.toString(), "index.html");
+                if (indexPath.toFile().exists() && indexPath.toFile().isFile()) {
+                    return indexPath;
                 }
+            }
 
-                byte[] fileData = Files.readAllBytes(filePath);
+            return null;
+        }
 
-                exchange.getResponseHeaders().set("Content-Type", contentType);
-                exchange.sendResponseHeaders(200, fileData.length);
+        private String getMimeType(String filePath) {
+            int lastDotIndex = filePath.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                String extension = filePath.substring(lastDotIndex + 1).toLowerCase();
+                return MIME_TYPES.getOrDefault(extension, "application/octet-stream");
+            }
+            return "application/octet-stream";
+        }
 
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(fileData);
-                }
-            } else {
-                // File not found
-                String response = "404 Not Found: " + requestPath;
-                exchange.sendResponseHeaders(404, response.length());
-
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
+        private void sendError(HttpExchange exchange, int statusCode, String message) throws IOException {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+            exchange.sendResponseHeaders(statusCode, message.length());
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(message.getBytes());
             }
         }
     }
