@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Deck(
@@ -59,7 +61,17 @@ public record Deck(
     private record CardEntry(
             @JsonProperty(required = true) Card.Id card,
             @JsonProperty(required = true) int count
-    ) {
+    ) implements Comparable<CardEntry> {
+        @Override
+        public int compareTo(CardEntry o) {
+            if (card.compareTo(o.card) != 0) {
+                return card.compareTo(o.card);
+            }
+            if (count == o.count) {
+                return 0;
+            }
+            return count < o.count ? -1 : 1;
+        }
     }
 
     private static class CardEntrySerializer extends StdSerializer<ImmutableBag> {
@@ -75,6 +87,7 @@ public record Deck(
             }
             final var entries = new ArrayList<CardEntry>(bag.size());
             bag.forEachWithOccurrences((ObjectIntProcedure<Card.Id>) (card, count) -> entries.add(new CardEntry(card, count)));
+            Collections.sort(entries);
             gen.writeObject(entries);
         }
     }
@@ -90,6 +103,7 @@ public record Deck(
             if (entries == null || entries.length == 0) {
                 return Bags.immutable.empty();
             }
+            Arrays.sort(entries);
             final var bag = Bags.mutable.<Card.Id>withInitialCapacity(entries.length);
             for (final var e : entries) {
                 bag.addOccurrences(e.card, e.count);

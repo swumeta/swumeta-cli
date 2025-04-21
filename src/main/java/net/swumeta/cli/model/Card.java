@@ -84,7 +84,7 @@ public record Card(
         return new Card.Id(set, number);
     }
 
-    public static final class Id {
+    public static final class Id implements Comparable<Id> {
         private static final LoadingCache<String, Id> CACHE = Caffeine.newBuilder().weakKeys().weakValues().build(Id::new);
         private final Set set;
         private final int number;
@@ -132,6 +132,17 @@ public record Card(
         @Override
         public int hashCode() {
             return Objects.hash(set, number);
+        }
+
+        @Override
+        public int compareTo(Id o) {
+            if (set.compareTo(o.set) != 0) {
+                return set.compareTo(o.set);
+            }
+            if (number == o.number) {
+                return 0;
+            }
+            return number < o.number ? -1 : 1;
         }
     }
 }
