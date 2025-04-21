@@ -229,7 +229,7 @@ class GenerateSiteCommand {
             final var card = cardDatabaseService.findById(leader);
             keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("'", " "), card.set()), archetypes.size()));
         });
-        return keyValues.toImmutable();
+        return keyValues.toImmutableSortedList();
     }
 
     private ImmutableList<KeyValue> nMostCards(Bag<String> bag, int n) {
@@ -247,7 +247,7 @@ class GenerateSiteCommand {
         if (othersTotal > 0) {
             result.put("Others", othersTotal);
         }
-        return Lists.immutable.fromStream(result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())));
+        return Lists.immutable.fromStream(result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).sorted());
     }
 
     @JStache(path = "/templates/index.mustache")
@@ -294,7 +294,17 @@ class GenerateSiteCommand {
     record KeyValue(
             String key,
             int value
-    ) {
+    ) implements Comparable<KeyValue> {
+        @Override
+        public int compareTo(KeyValue o) {
+            if (key.compareTo(o.key) != 0) {
+                return key.compareTo(o.key);
+            }
+            if (value == o.value) {
+                return 0;
+            }
+            return value < o.value ? -1 : 1;
+        }
     }
 
     record DeckWithRank(int rank, boolean pending, Deck deck, String name, Card leader, Card base,
