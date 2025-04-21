@@ -57,14 +57,12 @@ public class DeckService {
     private final RestClient client;
     private final AppConfig config;
     private final ObjectMapper yamlObjectMapper;
-    private final ObjectMapper jsonObjectMapper;
     private final LoadingCache<URI, Deck> deckCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::doLoad);
 
     DeckService(CardDatabaseService cardDatabaseService, RestClient client, AppConfig config) {
         this.cardDatabaseService = cardDatabaseService;
         this.client = client;
         this.config = config;
-        this.jsonObjectMapper = new ObjectMapper();
         this.yamlObjectMapper = new ObjectMapper(new YAMLFactory());
     }
 
@@ -321,27 +319,6 @@ public class DeckService {
                 main.toImmutableBag(),
                 sideboard.toImmutableBag()
         );
-    }
-
-    private record SwudbDeck(
-            String authorName,
-            SwudbCard leader,
-            SwudbCard base,
-            List<SwudbContent> shuffledDeck
-    ) {
-    }
-
-    private record SwudbCard(
-            String defaultExpansionAbbreviation,
-            String defaultCardNumber
-    ) {
-    }
-
-    private record SwudbContent(
-            int count,
-            int sideboardCount,
-            SwudbCard card
-    ) {
     }
 
     private static String md5(String name) {
