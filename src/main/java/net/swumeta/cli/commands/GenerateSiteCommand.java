@@ -496,6 +496,7 @@ class GenerateSiteCommand {
         urlFiles.add(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri());
 
         logger.debug("Generating sitemap: {}", urlFiles);
+        Collections.sort(urlFiles);
         renderToFile(new SitemapModel(urlFiles, ZonedDateTime.now()), new File(outputDir, "sitemap.xml"));
 
         final var sitemapUri = UriComponentsBuilder.newInstance()
