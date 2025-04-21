@@ -69,10 +69,16 @@ class DeckServiceTests {
     @Test
     void testToSwudbJson() {
         final var deck = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
-                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
-                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
+                Bags.immutable.ofOccurrences(
+                        Card.Id.valueOf("JTL-045"), 2,
+                        Card.Id.valueOf("JTL-143"), 2
+                ),
+                Bags.immutable.ofOccurrences(
+                        Card.Id.valueOf("JTL-045"), 1,
+                        Card.Id.valueOf("JTL-143"), 1
+                )
         );
-        assertThat(svc.toSwudbJson(deck)).isEqualTo("""
+        final var swdbJson = """
                 ---
                 metadata:
                   name: "Boba Fett (JTL) - Red"
@@ -84,12 +90,30 @@ class DeckServiceTests {
                   id: "JTL_026"
                   count: 1
                 deck:
+                - id: "JTL_045"
+                  count: 2
                 - id: "JTL_143"
                   count: 2
                 sideboard:
                 - id: "JTL_045"
-                  count: 3
-                """);
+                  count: 1
+                - id: "JTL_143"
+                  count: 1
+                """;
+        assertThat(svc.toSwudbJson(deck)).isEqualTo(swdbJson);
+
+        final var deck2 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
+                Bags.immutable.ofOccurrences(
+                        Card.Id.valueOf("JTL-143"), 2,
+                        Card.Id.valueOf("JTL-045"), 2
+                ),
+                Bags.immutable.ofOccurrences(
+                        Card.Id.valueOf("JTL-143"), 1,
+                        Card.Id.valueOf("JTL-045"), 1
+                )
+        );
+        // Check that the output is always the same.
+        assertThat(svc.toSwudbJson(deck2)).isEqualTo(swdbJson);
     }
 
     @Test

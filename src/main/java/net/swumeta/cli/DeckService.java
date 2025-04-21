@@ -42,10 +42,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class DeckService {
@@ -191,6 +188,8 @@ public class DeckService {
                 swudbDeck,
                 swudbSideboard
         );
+        Collections.sort(d.deck);
+        Collections.sort(d.sideboard);
         try {
             return yamlObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(d);
         } catch (JsonProcessingException e) {
@@ -216,7 +215,17 @@ public class DeckService {
     private record JsonSwudbCard(
             String id,
             int count
-    ) {
+    ) implements Comparable<JsonSwudbCard> {
+        @Override
+        public int compareTo(JsonSwudbCard o) {
+            if (id.compareTo(o.id) != 0) {
+                return id.compareTo(o.id);
+            }
+            if (count == o.count) {
+                return 0;
+            }
+            return count < o.count ? -1 : 1;
+        }
     }
 
     private Deck loadMeleeDeck(URI uri) {
