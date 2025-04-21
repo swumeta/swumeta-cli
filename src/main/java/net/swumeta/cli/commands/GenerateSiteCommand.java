@@ -44,6 +44,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -119,11 +120,7 @@ class GenerateSiteCommand {
                 continue;
             }
 
-            final var eventName = event.name()
-                    .replace(" ", "-")
-                    .replace("$", "")
-                    .replace("é", "e")
-                    .toLowerCase(Locale.ENGLISH);
+            final var eventName = toLowercaseAscii(event.name());
             final var eventDirName = "%s/%02d/%02d/%s".formatted(event.date().getYear(), event.date().getMonthValue(), event.date().getDayOfMonth(), eventName);
             final var eventDir = new File(tournamentsDir, eventDirName);
             if (!eventDir.exists()) {
@@ -529,5 +526,13 @@ class GenerateSiteCommand {
 
     private String formatDate(Event e) {
         return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(Locale.ENGLISH).format(e.date());
+    }
+
+    private static String toLowercaseAscii(String s) {
+        final var lowercase = s.toLowerCase(Locale.ENGLISH);
+        final var normalized = Normalizer.normalize(lowercase, Normalizer.Form.NFD);
+        return normalized.replaceAll("[^\\p{ASCII}]", "")
+                .replace("$", "")
+                .replace(" ", "-");
     }
 }
