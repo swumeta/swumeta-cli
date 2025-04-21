@@ -103,12 +103,12 @@
   <script type="text/javascript">
     const leaderData = [
       {{#leaderSerie}}
-        { value: {{value}}, name: '{{key}}' },
+        { value: {{value}}, name: "{{{key}}}" },
       {{/leaderSerie}}
     ];
     const baseData = [
       {{#baseSerie}}
-        { value: {{value}}, name: '{{key}}' },
+        { value: {{value}}, name: "{{{key}}}" },
       {{/baseSerie}}
     ];
     createHorizontalBarChart('chart-leaders', leaderData, {

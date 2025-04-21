@@ -227,7 +227,7 @@ class GenerateSiteCommand {
         final var keyValues = Lists.mutable.<KeyValue>ofInitialCapacity(bag.sizeDistinct());
         bag.groupBy(DeckArchetype::leader).forEachKeyMultiValues((Procedure2<Card.Id, RichIterable<DeckArchetype>>) (leader, archetypes) -> {
             final var card = cardDatabaseService.findById(leader);
-            keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("'", " "), card.set()), archetypes.size()));
+            keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("\"", " "), card.set()), archetypes.size()));
         });
         return keyValues.toImmutableSortedList();
     }
