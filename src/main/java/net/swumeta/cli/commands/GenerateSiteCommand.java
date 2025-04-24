@@ -50,6 +50,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.*;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -198,15 +199,17 @@ class GenerateSiteCommand {
                 new File(outputDir, "index.html"));
 
         logger.info("Processing redirects");
+        final var excludedFilesFromSitemap = new HashSet<File>(4);
         for (final var redirect : redirectService.getRedirects()) {
             final var resFile = new File(outputDir, redirect.resource());
             if (!resFile.getParentFile().exists()) {
                 resFile.getParentFile().mkdirs();
             }
             renderToFile(new RedirectModel(redirect.target()), resFile);
+            excludedFilesFromSitemap.add(resFile);
         }
 
-        generateSitemap(outputDir);
+        generateSitemap(outputDir, excludedFilesFromSitemap);
     }
 
     private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
@@ -482,9 +485,10 @@ class GenerateSiteCommand {
         return null;
     }
 
-    private void generateSitemap(File outputDir) {
+    private void generateSitemap(File outputDir, Set<File> excludedFiles) {
         final var htmlFiles = new ArrayList<File>(32);
         listFilesRecursively(outputDir, htmlFiles, ".html");
+        htmlFiles.removeAll(excludedFiles);
 
         final var urlFiles = new ArrayList<URI>(htmlFiles.size());
         for (final var htmlFile : htmlFiles) {
