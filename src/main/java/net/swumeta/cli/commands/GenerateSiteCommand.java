@@ -45,7 +45,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -490,7 +492,7 @@ class GenerateSiteCommand {
         listFilesRecursively(outputDir, htmlFiles, ".html");
         htmlFiles.removeAll(excludedFiles);
 
-        final var urlFiles = new ArrayList<URI>(htmlFiles.size());
+        final var sitemapEntries = new ArrayList<SitemapEntry>(htmlFiles.size());
         for (final var htmlFile : htmlFiles) {
             var res = outputDir.toPath().relativize(htmlFile.toPath()).toString().replace(File.separator, "/");
             if ("index.html".equals(res)) {
@@ -502,13 +504,14 @@ class GenerateSiteCommand {
             final var uri = UriComponentsBuilder.newInstance()
                     .scheme("https").host(config.domain())
                     .pathSegment(res.split("/")).build().toUri();
-            urlFiles.add(uri);
+            sitemapEntries.add(new SitemapEntry(uri, getLastModified(htmlFile)));
         }
-        urlFiles.add(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri());
+        sitemapEntries.add(new SitemapEntry(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri(),
+                getLastModified(new File(outputDir, "index.html"))));
 
-        logger.debug("Generating sitemap: {}", urlFiles);
-        Collections.sort(urlFiles);
-        renderToFile(new SitemapModel(urlFiles, ZonedDateTime.now()), new File(outputDir, "sitemap.xml"));
+        logger.debug("Generating sitemap: {}", sitemapEntries);
+        Collections.sort(sitemapEntries);
+        renderToFile(new SitemapModel(sitemapEntries), new File(outputDir, "sitemap.xml"));
 
         final var sitemapUri = UriComponentsBuilder.newInstance()
                 .scheme("https").host(config.domain()).path("sitemap.xml").build().toUri();
@@ -516,12 +519,28 @@ class GenerateSiteCommand {
         renderToFile(new RobotsModel(sitemapUri), new File(outputDir, "robots.txt"));
     }
 
+    private static ZonedDateTime getLastModified(File f) {
+        return Instant.ofEpochMilli(f.lastModified()).atZone(ZoneId.systemDefault());
+    }
+
     @JStache(path = "/templates/sitemap.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record SitemapModel(
-            List<URI> urls,
-            ZonedDateTime now
+            List<SitemapEntry> entries
     ) {
+    }
+
+    record SitemapEntry(
+            URI url,
+            ZonedDateTime lastModified
+    ) implements Comparable<SitemapEntry> {
+        @Override
+        public int compareTo(SitemapEntry o) {
+            if (url.compareTo(o.url) != 0) {
+                return url.compareTo(o.url);
+            }
+            return lastModified.compareTo(o.lastModified);
+        }
     }
 
     @JStache(path = "/templates/robots.mustache")
