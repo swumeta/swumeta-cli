@@ -196,6 +196,7 @@ class GenerateSiteCommand {
 
         renderToFile(new IndexModel(null,
                         null,
+                        UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri(),
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
@@ -257,10 +258,14 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record IndexModel(String title, String description,
+    record IndexModel(String title, String description, URI canonicalUrl,
                       String lastEventDate, int totalDecks,
                       ImmutableList<KeyValue> topDecks, ImmutableList<KeyValue> topCards,
                       ImmutableList<KeyValue> top8Decks) implements TemplateSupport {
+        @Override
+        public URI canonicalUrl() {
+            return canonicalUrl;
+        }
     }
 
     @JStache(path = "/templates/about.mustache")
@@ -328,6 +333,10 @@ class GenerateSiteCommand {
     interface TemplateSupport {
         default int year() {
             return LocalDate.now().getYear();
+        }
+
+        default URI canonicalUrl() {
+            return null;
         }
 
         default ZonedDateTime now() {
