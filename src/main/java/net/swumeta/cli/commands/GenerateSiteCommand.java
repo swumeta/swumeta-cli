@@ -204,7 +204,7 @@ class GenerateSiteCommand {
         logger.info("Processing redirects");
         final var excludedFilesFromSitemap = new HashSet<File>(4);
         for (final var redirect : redirectService.getRedirects()) {
-            final var resFile = new File(outputDir, redirect.resource());
+            final var resFile = new File(outputDir, redirect.resource().endsWith("/") ? (redirect.resource() + "index.html") : redirect.resource());
             if (!resFile.getParentFile().exists()) {
                 resFile.getParentFile().mkdirs();
             }
