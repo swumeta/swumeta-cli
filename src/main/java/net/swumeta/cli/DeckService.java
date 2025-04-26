@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -40,9 +41,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class DeckService {
@@ -322,12 +324,6 @@ public class DeckService {
     }
 
     private static String md5(String name) {
-        try {
-            final var md = MessageDigest.getInstance("MD5");
-            final var digest = md.digest(name.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unable to calculate MD5 sum", e);
-        }
+        return DigestUtils.md5DigestAsHex(name.getBytes(StandardCharsets.UTF_8));
     }
 }
