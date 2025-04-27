@@ -64,14 +64,26 @@ public record Deck(
     }
 
     public record Match(
-            int round,
-            String opponentPlayer,
-            @Nullable URI opponentDeck,
-            Result result,
-            String record
-    ) {
+            @JsonProperty(required = true) int round,
+            @JsonProperty(required = true) String opponentPlayer,
+            @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable URI opponentDeck,
+            @JsonProperty(required = true, defaultValue = "unknown") Result result,
+            @JsonProperty(required = true, defaultValue = "0-0-0") String record
+    ) implements Comparable<Match> {
         public enum Result {
-            WIN, LOSS, DRAW
+            @JsonProperty("win") WIN,
+            @JsonProperty("loss") LOSS,
+            @JsonProperty("draw") DRAW,
+            @JsonProperty("bye") BYE,
+            @JsonProperty("unknown") UNKNOWN
+        }
+
+        @Override
+        public int compareTo(Match o) {
+            if (round == o.round) {
+                return result.compareTo(o.result);
+            }
+            return round < o.round ? -1 : 1;
         }
     }
 

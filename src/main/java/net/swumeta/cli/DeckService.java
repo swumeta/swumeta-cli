@@ -38,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -49,10 +50,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class DeckService {
-    private static final int CURRENT_VERSION = 1;
+    private static final int CURRENT_VERSION = 2;
+    private static final Pattern SCORE_PATTERN = Pattern.compile("(\\d+)-(\\d+)-(\\d+)");
     private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
             Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-020"),
             Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
@@ -257,17 +260,6 @@ public class DeckService {
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
 
-        String player = "melee.gg";
-        for (final var aElem : meleeDoc.getElementsByTag("a")) {
-            if (aElem.hasAttr("href")) {
-                final var href = aElem.attr("href");
-                if (href.startsWith("/Profile/Index/")) {
-                    player = href.replace("/Profile/Index/", "");
-                    break;
-                }
-            }
-        }
-
         final var swuContent = meleeDoc.getElementById("decklist-swu-text").text();
         final var lines = swuContent.split("\\r\\n|\\n|\\r");
 
@@ -330,7 +322,7 @@ public class DeckService {
 
         final var meleeDeckId = UriComponentsBuilder.fromUri(uri).build().getPathSegments().getLast();
         final var meleeDeckDetailsUri = UriComponentsBuilder.fromUri(uri).replacePath("Decklist").pathSegment("GetTournamentViewData", meleeDeckId).build().toUri();
-        logger.trace("Melee.gg deck details URI: {}->{}", uri, meleeDeckDetailsUri);
+        logger.debug("Melee.gg deck details URI: {} -> {}", uri, meleeDeckDetailsUri);
         final var meleeDeckWrapper = client.get().uri(meleeDeckDetailsUri).accept(MediaType.APPLICATION_JSON).retrieve().body(MeleeDeckWrapper.class);
         final MeleeDeckDetails meleeDeckDetails;
         try {
@@ -340,8 +332,11 @@ public class DeckService {
         }
         logger.trace("Melee.gg deck details: {}", meleeDeckDetails);
 
+        final var player = meleeDeckDetails.team.userName;
         final var matchRecord = meleeDeckDetails.team.matchRecord;
-        final var matches = new ArrayList<Deck.Match>(8);
+
+        final var tournamentId = Integer.parseInt(meleeDoc.getElementById("tournament-id-field").val());
+        final var matches = meleeDeckDetails.matches.stream().map(m -> toDeckMatch(tournamentId, m)).toList();
 
         return new Deck(
                 uri,
@@ -356,6 +351,104 @@ public class DeckService {
         );
     }
 
+    private Deck.Match toDeckMatch(int tournamentId, MeleeDeckMatch m) {
+        var record = "0-0-0";
+        Deck.Match.Result result = Deck.Match.Result.WIN;
+
+        if (m.result.contains("a bye")) {
+            result = Deck.Match.Result.BYE;
+            record = "1-0-0";
+        } else if (m.result.contains("Not reported")) {
+            result = Deck.Match.Result.UNKNOWN;
+        } else if (m.result.contains("forfeited the match")) {
+            result = Deck.Match.Result.DRAW;
+            record = "0-0-1";
+        } else {
+            final var scoreMatcher = SCORE_PATTERN.matcher(m.result);
+            if (!scoreMatcher.find()) {
+                throw new AppException("Unable to parse match record: " + m.result);
+            }
+            final var score1 = Integer.parseInt(scoreMatcher.group(1));
+            final var score2 = Integer.parseInt(scoreMatcher.group(2));
+            final var score3 = Integer.parseInt(scoreMatcher.group(3));
+
+            if (m.result.contains(" won ") && m.result.startsWith(m.opponentPlayer)) {
+                result = Deck.Match.Result.LOSS;
+                record = "%d-%d-%d".formatted(score2, score1, score3);
+            } else if (m.result.contains(" Draw")) {
+                result = Deck.Match.Result.DRAW;
+                record = "%d-%d-%d".formatted(score1, score2, score3);
+            } else {
+                record = "%d-%d-%d".formatted(score1, score2, score3);
+            }
+        }
+        return new Deck.Match(
+                m.round,
+                m.opponentPlayer,
+                m.opponentDeck == null ? findMeleeDeck(findRoundId(tournamentId), m.opponentPlayer) : createMeleeDeckUri(m.opponentDeck),
+                result,
+                record
+        );
+    }
+
+    private int findRoundId(int tournamentId) {
+        final var uri = UriComponentsBuilder.fromUriString("https://melee.gg/Tournament/View/").path(String.valueOf(tournamentId)).toUriString();
+        final var meleePage = client.get().uri(uri).retrieve().body(String.class);
+        final var meleeDoc = Jsoup.parse(meleePage);
+        final var standingsElem = meleeDoc.getElementById("standings-round-selector-container");
+        final var roundStandingsElems = standingsElem.getElementsByAttributeValue("data-is-completed", "True");
+        if (roundStandingsElems.isEmpty()) {
+            throw new AppException("Unable to find round id in tournament page: " + uri);
+        }
+
+        final var lastRoundElem = roundStandingsElems.last();
+        return Integer.parseInt(lastRoundElem.attr("data-id"));
+    }
+
+    private URI findMeleeDeck(int roundId, String username) {
+        final var body = new LinkedMultiValueMap<String, String>();
+        body.add("columns[0][data]", "Rank");
+        body.add("columns[0][name]", "Rank");
+        body.add("columns[0][searchable]", "true");
+        body.add("columns[0][orderable]", "true");
+        body.add("columns[0][search][value]", "");
+        body.add("columns[0][search][regex]", "false");
+        body.add("columns[1][data]", "Decklists");
+        body.add("columns[1][name]", "Decklists");
+        body.add("columns[1][searchable]", "false");
+        body.add("columns[1][orderable]", "false");
+        body.add("columns[1][search][value]", "");
+        body.add("columns[1][search][regex]", "false");
+        body.add("order[0][column]", "0");
+        body.add("order[0][dir]", "asc");
+        body.add("start", "0");
+        body.add("length", "1");
+        body.add("search[value]", username);
+        body.add("search[regex]", "false");
+        body.add("roundId", String.valueOf(roundId));
+
+        final var resp = client.post()
+                .uri("https://melee.gg/Standing/GetRoundStandings")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(body)
+                .retrieve().body(MeleeRoundStandings.class);
+        if (resp.data.isEmpty() || resp.data.get(0).decklists.isEmpty()) {
+            logger.warn("Unable to lookup deck from user {} in round {}", username, roundId);
+            return null;
+        }
+
+        final var deckId = resp.data.get(0).decklists.get(0).decklistId;
+        final var deckUrl = createMeleeDeckUri(deckId);
+        logger.trace("Found deck from user {} in round {}: {}", username, roundId, deckUrl);
+        return deckUrl;
+    }
+
+    private static URI createMeleeDeckUri(String meleeDeckId) {
+        Assert.notNull(meleeDeckId, "Melee deck id must not be null");
+        return UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(meleeDeckId).build().toUri();
+    }
+
     private static String md5(String name) {
         return DigestUtils.md5DigestAsHex(name.getBytes(StandardCharsets.UTF_8));
     }
@@ -368,27 +461,44 @@ public class DeckService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record MeleeDeckDetails(
             @JsonProperty(required = true) @JsonAlias("Team") MeleeDeckTeam team,
-            @JsonAlias("Matches") List<MeleeDeckMatches> matches
+            @JsonAlias("Matches") List<MeleeDeckMatch> matches
     ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record MeleeDeckTeam(
+            @JsonProperty(required = true) @JsonAlias("Username") String userName,
             @JsonProperty(required = true) @JsonAlias("MatchRecord") String matchRecord
     ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record MeleeDeckMatches(
+    private record MeleeDeckMatch(
             @JsonProperty(required = true) @JsonAlias("Round") int round,
             @JsonProperty(required = true) @JsonAlias("OpponentUsername") String opponentPlayer,
-            @JsonAlias("OpponentDecklistGuid") String opponentDeck
+            @JsonAlias("OpponentDecklistGuid") String opponentDeck,
+            @JsonProperty(required = true) @JsonAlias("Result") String result
     ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record VersionedDeck(
             @JsonProperty(required = true) int version
+    ) {
+    }
+
+    private record MeleeRoundStandings(
+            List<JsonPlayer> data
+    ) {
+    }
+
+    private record JsonPlayer(
+            @JsonAlias("Decklists") List<JsonPlayerDeck> decklists
+    ) {
+    }
+
+    private record JsonPlayerDeck(
+            @JsonAlias("DecklistId") String decklistId
     ) {
     }
 }
