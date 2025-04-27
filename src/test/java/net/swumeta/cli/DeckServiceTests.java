@@ -121,6 +121,51 @@ class DeckServiceTests {
         final var meleeRes = new ClassPathResource("/melee-deck.html");
         stubFor(get(urlEqualTo("/melee")).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE).withBody(meleeRes.getContentAsByteArray())));
 
+        final var om = new ObjectMapper();
+        final var meleeDeckDetails = """
+                {
+                    "Standings":[],
+                    "Team":{
+                        "Name":"Foo",
+                        "Username":"Foo",
+                        "Rank":"2",
+                        "MatchRecord":"1-1-0",
+                        "Points":"22"
+                    },
+                    "Matches":[
+                        {
+                            "Round":1,
+                            "Opponent":"Maudor",
+                            "OpponentUsername":"Maudor",
+                            "OpponentDecklistGuid":"75b9f198-1157-489a-b990-b2bd016cea91",
+                            "OpponentDecklistName":"Cassian Andor, Dedicated to the Rebellion - Colossus",
+                            "Result":"Maudor won 2-0-0"
+                        },
+                        {
+                            "Round":2,
+                            "Opponent":"cedou1002",
+                            "OpponentUsername":"cedou1002",
+                            "OpponentDecklistGuid":"42c5527c-b781-41a7-977c-b2bc0114d61c",
+                            "OpponentDecklistName":"Anakin Skywalker, What it Takes to Win - Colossus",
+                            "Result":"Foo won 1-0-0"
+                       }
+                    ]
+                }
+                """
+                .replace("\n", "")
+                .replace("\r", "");
+        final var meleeDeckWrapper = """
+                {
+                  "Error": false,
+                  "Errors": null,
+                  "Code": 200,
+                  "Message": "",
+                  "Json": %s,
+                  "Redirect": null
+                }
+                """.formatted(om.writeValueAsString(meleeDeckDetails.trim()));
+        stubFor(get(urlEqualTo("/Decklist/GetTournamentViewData/melee")).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).withBody(meleeDeckWrapper)));
+
         final var meleeUri = URI.create("http://melee.127.0.0.1.nip.io:" + wiremockPort + "/melee");
         final var deck = svc.load(meleeUri);
         assertThat(deck.leader()).isEqualTo(Card.Id.valueOf("JTL-009"));
@@ -138,7 +183,8 @@ class DeckServiceTests {
     void testLoadingWithJackson() throws IOException {
         final var deck = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
-                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3),
+                "2-1-0"
         );
 
         final var objectMapper = new ObjectMapper(new YAMLFactory());
@@ -148,7 +194,7 @@ class DeckServiceTests {
         assertThat(yamlOut).isEqualTo("""
                 ---
                 source: "%s"
-                author: "Me"
+                player: "Me"
                 format: "premier"
                 leader: "JTL-009"
                 base: "JTL-026"
@@ -158,6 +204,7 @@ class DeckServiceTests {
                 sideboard:
                 - card: "JTL-045"
                   count: 3
+                matchRecord: "2-1-0"
                 """.formatted(deck.source()));
 
         final var deck2 = objectMapper.readValue(yamlOut, Deck.class);

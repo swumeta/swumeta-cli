@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.factory.Bags;
+import org.springframework.lang.Nullable;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -37,16 +38,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record Deck(
         @JsonProperty(required = true) URI source,
-        @JsonProperty(required = true) String author,
+        @JsonProperty(required = true) String player,
         @JsonProperty(required = true) Format format,
         @JsonProperty(required = true) Card.Id leader,
         @JsonProperty(required = true) Card.Id base,
         @JsonProperty(required = true) @JsonSetter(nulls = Nulls.AS_EMPTY) @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> main,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSetter(nulls = Nulls.AS_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> sideboard
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSetter(nulls = Nulls.AS_EMPTY) @JsonSerialize(using = CardEntrySerializer.class) @JsonDeserialize(using = CardEntryDeserializer.class) ImmutableBag<Card.Id> sideboard,
+        @JsonProperty(required = true) String matchRecord,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) @JsonSetter(nulls = Nulls.AS_EMPTY) List<Match> matches
 ) {
     public String id() {
         return DigestUtils.md5DigestAsHex(
@@ -56,6 +61,18 @@ public record Deck(
     @JsonIgnore
     public boolean isValid() {
         return leader != null && base != null;
+    }
+
+    public record Match(
+            int round,
+            String opponentPlayer,
+            @Nullable URI opponentDeck,
+            Result result,
+            String record
+    ) {
+        public enum Result {
+            WIN, LOSS, DRAW
+        }
     }
 
     private record CardEntry(

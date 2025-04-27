@@ -16,6 +16,9 @@
 
 package net.swumeta.cli;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -31,14 +34,15 @@ import org.eclipse.collections.api.factory.Bags;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -48,6 +52,7 @@ import java.util.Map;
 
 @Service
 public class DeckService {
+    private static final int CURRENT_VERSION = 1;
     private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
             Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-019"),
             Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
@@ -58,6 +63,7 @@ public class DeckService {
     private final CardDatabaseService cardDatabaseService;
     private final RestClient client;
     private final AppConfig config;
+    private final ObjectMapper objectMapper;
     private final ObjectMapper yamlObjectMapper;
     private final LoadingCache<URI, Deck> deckCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::doLoad);
 
@@ -65,6 +71,7 @@ public class DeckService {
         this.cardDatabaseService = cardDatabaseService;
         this.client = client;
         this.config = config;
+        this.objectMapper = new ObjectMapper();
         this.yamlObjectMapper = new ObjectMapper(new YAMLFactory());
     }
 
@@ -84,14 +91,16 @@ public class DeckService {
         final var deckFile = toCachedFile(uri);
         if (deckFile.exists()) {
             try {
-                logger.debug("Loading deck from cache: {}", uri);
-                return yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
+                final var versionedDeck = yamlObjectMapper.readValue(deckFile, VersionedDeck.class);
+                if (CURRENT_VERSION == versionedDeck.version) {
+                    logger.debug("Loading deck from cache: {}", uri);
+                    return yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
+                }
             } catch (IOException e) {
                 logger.debug("Unable to read cached deck file: {}", deckFile, e);
             }
         }
 
-        final var host = uri.getHost();
         final var deck = loadMeleeDeck(uri);
 
         logger.debug("Caching deck: {}", uri);
@@ -99,7 +108,13 @@ public class DeckService {
             deckFile.getParentFile().mkdirs();
         }
         try {
-            yamlObjectMapper.writerFor(Deck.class).writeValue(deckFile, deck);
+            final var buf = new ByteArrayOutputStream(1024);
+            yamlObjectMapper.writeValue(buf, deck);
+            new PrintWriter(buf, true).println("version: %s".formatted(CURRENT_VERSION));
+
+            try (final var out = new FileOutputStream(deckFile)) {
+                StreamUtils.copy(buf.toByteArray(), out);
+            }
         } catch (IOException e) {
             logger.warn("Failed to cache deck: {}", uri, e);
         }
@@ -182,7 +197,7 @@ public class DeckService {
             deck.sideboard().forEachWithOccurrences((ObjectIntProcedure<Card.Id>) (card, count) -> swudbSideboard.add(new JsonSwudbCard(card.toString().replace("-", "_"), count)));
         }
         final var d = new JsonSwudbDeck(
-                new JsonSwudbMetadata(formatName(deck), deck.author()),
+                new JsonSwudbMetadata(formatName(deck), deck.player()),
                 new JsonSwudbCard(deck.leader().toString().replace("-", "_"), 1),
                 new JsonSwudbCard(deck.base().toString().replace("-", "_"), 1),
                 swudbDeck,
@@ -242,12 +257,12 @@ public class DeckService {
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
 
-        String author = "melee.gg";
+        String player = "melee.gg";
         for (final var aElem : meleeDoc.getElementsByTag("a")) {
             if (aElem.hasAttr("href")) {
                 final var href = aElem.attr("href");
                 if (href.startsWith("/Profile/Index/")) {
-                    author = href.replace("/Profile/Index/", "");
+                    player = href.replace("/Profile/Index/", "");
                     break;
                 }
             }
@@ -312,18 +327,68 @@ public class DeckService {
                 }
             }
         }
+
+        final var meleeDeckId = UriComponentsBuilder.fromUri(uri).build().getPathSegments().getLast();
+        final var meleeDeckDetailsUri = UriComponentsBuilder.fromUri(uri).replacePath("Decklist").pathSegment("GetTournamentViewData", meleeDeckId).build().toUri();
+        logger.trace("Melee.gg deck details URI: {}->{}", uri, meleeDeckDetailsUri);
+        final var meleeDeckWrapper = client.get().uri(meleeDeckDetailsUri).accept(MediaType.APPLICATION_JSON).retrieve().body(MeleeDeckWrapper.class);
+        final MeleeDeckDetails meleeDeckDetails;
+        try {
+            meleeDeckDetails = objectMapper.readerFor(MeleeDeckDetails.class).readValue(meleeDeckWrapper.json);
+        } catch (JsonProcessingException e) {
+            throw new AppException("Failed to parse Melee.gg deck details: " + uri, e);
+        }
+        logger.trace("Melee.gg deck details: {}", meleeDeckDetails);
+
+        final var matchRecord = meleeDeckDetails.team.matchRecord;
+        final var matches = new ArrayList<Deck.Match>(8);
+
         return new Deck(
                 uri,
-                author,
+                player,
                 Format.PREMIER,
                 leader,
                 base,
                 main.toImmutableBag(),
-                sideboard.toImmutableBag()
+                sideboard.toImmutableBag(),
+                matchRecord,
+                matches
         );
     }
 
     private static String md5(String name) {
         return DigestUtils.md5DigestAsHex(name.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private record MeleeDeckWrapper(
+            @JsonProperty(required = true) @JsonAlias("Json") String json
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record MeleeDeckDetails(
+            @JsonProperty(required = true) @JsonAlias("Team") MeleeDeckTeam team,
+            @JsonAlias("Matches") List<MeleeDeckMatches> matches
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record MeleeDeckTeam(
+            @JsonProperty(required = true) @JsonAlias("MatchRecord") String matchRecord
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record MeleeDeckMatches(
+            @JsonProperty(required = true) @JsonAlias("Round") int round,
+            @JsonProperty(required = true) @JsonAlias("OpponentUsername") String opponentPlayer,
+            @JsonAlias("OpponentDecklistGuid") String opponentDeck
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record VersionedDeck(
+            @JsonProperty(required = true) int version
+    ) {
     }
 }

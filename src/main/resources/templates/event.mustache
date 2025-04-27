@@ -33,6 +33,7 @@
               <th scope="col">Decklist</th>
               <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
               <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
+              <th scope="col" class="text-center d-none d-md-table-cell">Record</th>
               <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
               <th scope="col" class="text-end">Player</th>
             </tr>
@@ -59,20 +60,23 @@
                     <i class="bi bi-copy me-1"></i>.json
                   </button>
                 </td>
+                <td class="align-middle text-center fit">
+                  <span class="align-middle">{{deck.matchRecord}}</span>
+                </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
                   {{#aspects}}
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}
                 </td>
                 <td class="align-middle text-end fit">
-                  <span class="align-middle">{{deck.author}}</span>
+                  <span class="align-middle">{{deck.player}}</span>
                 </td>
               </tr>
             {{/decks}}
             </tbody>
             <tfooter>
               <tr class="text-center" id="showMoreSection">
-                <td colspan="6">
+                <td colspan="7">
                   <button class="btn btn-sw m-2" onclick="showMoreDecks();">
                     Show more <i class="bi bi-caret-down-fill"></i></button>
                 </td>

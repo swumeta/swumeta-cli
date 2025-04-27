@@ -56,12 +56,16 @@ public class TestHelper {
     }
 
     public Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard) {
+        return createDeck(leader, base, main, sideboard, "2-1-0");
+    }
+
+    public Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard, String matchRecord) {
         try {
             final var deckFile = File.createTempFile("deck-", ".yaml");
             deckFile.deleteOnExit();
 
             final var testUri = UriComponentsBuilder.fromUri(deckFile.toURI()).scheme("testfile").build().toUri();
-            final var deck = new Deck(testUri, "Me", Format.PREMIER, leader, base, main, sideboard);
+            final var deck = new Deck(testUri, "Me", Format.PREMIER, leader, base, main, sideboard, matchRecord, List.of());
             logger.trace("Saving test deck to file: {}", deckFile);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(deckFile, deck);
             return deck;
