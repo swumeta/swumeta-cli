@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
+import net.swumeta.cli.model.Set;
 import org.eclipse.collections.api.factory.Bags;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,11 @@ class DeckServiceTests {
     }
 
     @Test
+    void testFormatNameDagobah() {
+        assertThat(svc.formatName(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-021")))).isEqualTo("Boba Fett (JTL) - Blue");
+    }
+
+    @Test
     void testFormatLeader() {
         assertThat(svc.formatLeader(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026")))).isEqualTo("Boba Fett (JTL)");
     }
@@ -64,6 +70,24 @@ class DeckServiceTests {
     void testFormatBase() {
         assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026")))).isEqualTo("Red");
         assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-021")))).isEqualTo("Colossus");
+    }
+
+    @Test
+    void testFormatBaseDagobah() {
+        assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-021")))).isEqualTo("Blue");
+    }
+
+    @Test
+    void testGetArchetypeDagobah() {
+        final var archetype = svc.getArchetype(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-021")));
+        assertThat(archetype.base()).isNull();
+        assertThat(archetype.aspect()).isEqualTo(Card.Aspect.VIGILANCE);
+    }
+
+    @Test
+    void testFormatArchetypeDagobah() {
+        final var archetype = svc.getArchetype(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-021")));
+        assertThat(svc.formatArchetype(archetype)).isEqualTo("Boba Fett (JTL) - Blue");
     }
 
     @Test

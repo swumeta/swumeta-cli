@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 20
+type: "base"
+rarity: "common"
+aspects:
+- "vigilance"
+name: "Capital City"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_020_Capital_City_Base_4ab50bb7e0.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_020_Capital_City_Thumbnail_db82d5306a.png"

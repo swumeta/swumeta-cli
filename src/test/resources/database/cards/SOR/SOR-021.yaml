@@ -1,0 +1,10 @@
+---
+set: "SOR"
+number: 21
+type: "base"
+rarity: "common"
+aspects:
+- "vigilance"
+name: "Dagobah Swamp"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_021_Dagobah_Swamp_Base_d416015b8b.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_021_Dagobah_Swamp_Thumbnail_59e4315e34.png"

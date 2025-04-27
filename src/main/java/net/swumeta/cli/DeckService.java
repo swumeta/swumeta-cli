@@ -54,7 +54,7 @@ import java.util.Map;
 public class DeckService {
     private static final int CURRENT_VERSION = 1;
     private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
-            Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-019"),
+            Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-020"),
             Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
             Card.Aspect.AGGRESSION, Card.Id.valueOf("SOR-026"),
             Card.Aspect.CUNNING, Card.Id.valueOf("SOR-029")
