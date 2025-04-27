@@ -22,7 +22,10 @@ import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.Set;
 import org.eclipse.collections.api.factory.Bags;
+import org.json.JSONException;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +41,7 @@ import java.net.URI;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
@@ -91,7 +95,7 @@ class DeckServiceTests {
     }
 
     @Test
-    void testToSwudbJson() {
+    void testToSwudbJson() throws JSONException {
         final var deck = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
                 Bags.immutable.ofOccurrences(
                         Card.Id.valueOf("JTL-045"), 2,
@@ -103,28 +107,36 @@ class DeckServiceTests {
                 )
         );
         final var swdbJson = """
-                ---
-                metadata:
-                  name: "Boba Fett (JTL) - Red"
-                  author: "Me"
-                leader:
-                  id: "JTL_009"
-                  count: 1
-                base:
-                  id: "JTL_026"
-                  count: 1
-                deck:
-                - id: "JTL_045"
-                  count: 2
-                - id: "JTL_143"
-                  count: 2
-                sideboard:
-                - id: "JTL_045"
-                  count: 1
-                - id: "JTL_143"
-                  count: 1
+                {
+                  "metadata" : {
+                    "name" : "Boba Fett (JTL) - Red",
+                    "author" : "Me"
+                  },
+                  "leader" : {
+                    "id" : "JTL_009",
+                    "count" : 1
+                  },
+                  "base" : {
+                    "id" : "JTL_026",
+                    "count" : 1
+                  },
+                  "deck" : [ {
+                    "id" : "JTL_045",
+                    "count" : 2
+                  }, {
+                    "id" : "JTL_143",
+                    "count" : 2
+                  } ],
+                  "sideboard" : [ {
+                    "id" : "JTL_045",
+                    "count" : 1
+                  }, {
+                    "id" : "JTL_143",
+                    "count" : 1
+                  } ]
+                }
                 """;
-        assertThat(svc.toSwudbJson(deck)).isEqualTo(swdbJson);
+        assertEquals(swdbJson, svc.toSwudbJson(deck), JSONCompareMode.STRICT);
 
         final var deck2 = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
                 Bags.immutable.ofOccurrences(
@@ -137,7 +149,7 @@ class DeckServiceTests {
                 )
         );
         // Check that the output is always the same.
-        assertThat(svc.toSwudbJson(deck2)).isEqualTo(swdbJson);
+        assertEquals(swdbJson, svc.toSwudbJson(deck2), JSONCompareMode.STRICT);
     }
 
     @Test

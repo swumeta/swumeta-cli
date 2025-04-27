@@ -206,7 +206,7 @@ public class DeckService {
         Collections.sort(d.deck);
         Collections.sort(d.sideboard);
         try {
-            return yamlObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(d);
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(d);
         } catch (JsonProcessingException e) {
             throw new AppException("Failed to convert deck to swudb format", e);
         }
