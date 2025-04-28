@@ -10,14 +10,17 @@
 body {
     background-color: var(--sw-dark);
     color: var(--sw-light-text);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Cal Sans", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     min-height: 75rem;
-    padding-top: 4.5rem;
+    padding-top: 4rem;
 }
 
 .navbar {
     background-color: var(--sw-darker);
     box-shadow: 0 2px 10px rgba(255, 232, 31, 0.15);
+    height: 56px;
 }
 
 .navbar-brand {
@@ -31,10 +34,20 @@ body {
     color: var(--sw-light-text) !important;
     transition: color 0.3s;
     margin: 0 10px;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding: 0.5rem 0.5rem !important;
 }
 
-.nav-link:hover {
-    color: var(--sw-yellow) !important;
+.dropdown-item {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+}
+
+.navbar .nav-link:hover, .dropdown-item:hover {
+    transition: color 0.2s ease-in-out;
+    background-color: var(--sw-yellow);
+    color: var(--sw-dark) !important;
 }
 
 .hero {
@@ -99,10 +112,13 @@ body {
 }
 
 .section-title {
-    color: var(--sw-yellow);
+    color: darkgray;
     position: relative;
     display: inline-block;
     padding-bottom: 0.5em;
+    font-weight: 600 !important;
+    font-size: 160% !important;
+    letter-spacing: 1px;
 }
 
 footer {
@@ -116,6 +132,7 @@ footer {
     background-color: rgba(46, 103, 248, 0.1);
     border-left: 3px solid var(--sw-blue);
     padding: 1em;
+    border-radius: 0 14px 14px 0;
 }
 
 .info-banner p:last-child {
