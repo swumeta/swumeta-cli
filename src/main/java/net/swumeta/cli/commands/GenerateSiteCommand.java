@@ -151,10 +151,11 @@ class GenerateSiteCommand {
                             event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
                     new File(eventDir, statsFileName));
 
-            final var decks = Lists.immutable.<DeckWithRank>fromStream(event.decks().stream()
+            final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
                     .map(this::toDeckWithRank)
                     .filter(Objects::nonNull)
+                    .sorted()
             );
             final var leaderBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck())));
             final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
@@ -308,7 +309,7 @@ class GenerateSiteCommand {
     ) implements Comparable<KeyValue> {
         @Override
         public int compareTo(KeyValue o) {
-            if(value != o.value) {
+            if (value != o.value) {
                 return value < o.value ? -1 : 0;
             }
             return key.compareTo(o.key);
@@ -317,7 +318,14 @@ class GenerateSiteCommand {
 
     record DeckWithRank(int rank, boolean pending, Deck deck, String name, Card leader, Card base,
                         List<Card.Aspect> aspects,
-                        String swudbFormat) {
+                        String swudbFormat) implements Comparable<DeckWithRank> {
+        @Override
+        public int compareTo(DeckWithRank o) {
+            if (rank == o.rank) {
+                return name.compareTo(o.name);
+            }
+            return rank < o.rank ? -1 : 1;
+        }
     }
 
     @JStache(path = "/templates/event-stats.mustache")
