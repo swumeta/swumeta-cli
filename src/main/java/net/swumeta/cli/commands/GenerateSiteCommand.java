@@ -185,15 +185,15 @@ class GenerateSiteCommand {
         final var topDecks = Lists.immutable.fromStream(deckBag.topOccurrences(5).stream()
                 .limit(5)
                 .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalDecks * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
+                .sorted(Comparator.reverseOrder()));
         final var topCards = Lists.immutable.fromStream(cardBag.topOccurrences(5).stream()
                 .limit(5)
                 .map(e -> new KeyValue(cardDatabaseService.findById(e.getOne()).name(), (int) (e.getTwo() / (double) totalCards * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
+                .sorted(Comparator.reverseOrder()));
         final var top8Decks = Lists.immutable.fromStream(deckBagTop8.topOccurrences(5).stream()
                 .limit(5)
                 .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
-                .sorted(Comparator.comparingInt(KeyValue::value).reversed()));
+                .sorted(Comparator.reverseOrder()));
 
         renderToFile(new IndexModel(null,
                         null,
@@ -308,13 +308,10 @@ class GenerateSiteCommand {
     ) implements Comparable<KeyValue> {
         @Override
         public int compareTo(KeyValue o) {
-            if (key.compareTo(o.key) != 0) {
-                return key.compareTo(o.key);
+            if(value != o.value) {
+                return value < o.value ? -1 : 0;
             }
-            if (value == o.value) {
-                return 0;
-            }
-            return value < o.value ? -1 : 1;
+            return key.compareTo(o.key);
         }
     }
 
