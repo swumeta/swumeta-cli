@@ -61,6 +61,7 @@ import java.util.regex.Pattern;
 class GenerateSiteCommand {
     private final Logger logger = LoggerFactory.getLogger(GenerateSiteCommand.class);
     private final MetagameService metagameService;
+    private final EventService eventService;
     private final CardDatabaseService cardDatabaseService;
     private final DeckService deckService;
     private final DeckStatisticsService deckStatisticsService;
@@ -72,8 +73,9 @@ class GenerateSiteCommand {
     private final StaticResources staticResources;
     private final ObjectMapper objectMapper;
 
-    GenerateSiteCommand(MetagameService metagameService, CardDatabaseService cardDatabaseService, DeckService deckService, DeckStatisticsService deckStatisticsService, CardStatisticsService cardStatisticsService, RedirectService redirectService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
+    GenerateSiteCommand(MetagameService metagameService, EventService eventService, CardDatabaseService cardDatabaseService, DeckService deckService, DeckStatisticsService deckStatisticsService, CardStatisticsService cardStatisticsService, RedirectService redirectService, QuoteService quoteService, AppConfig config, StaticResources staticResources) {
         this.metagameService = metagameService;
+        this.eventService = eventService;
         this.deckService = deckService;
         this.cardDatabaseService = cardDatabaseService;
         this.deckStatisticsService = deckStatisticsService;
@@ -109,14 +111,12 @@ class GenerateSiteCommand {
                 quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
-        final var metagame = metagameService.getMetagame();
-
-        final var eventPages = new ArrayList<EventPage>(metagame.events().size());
+        final var eventPages = new ArrayList<EventPage>(16);
         final var tournamentsDir = new File(outputDir, "tournaments");
         if (!tournamentsDir.exists()) {
             tournamentsDir.mkdirs();
         }
-        for (final var event : metagame.events()) {
+        for (final var event : eventService.list()) {
             logger.info("Processing event: {}", event);
             if (event.hidden()) {
                 logger.debug("Skipping hidden event: {}", event);
@@ -174,6 +174,7 @@ class GenerateSiteCommand {
                 eventPages), new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
+        final var metagame = metagameService.getMetagame();
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.events()).cards();
         final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.events()).archetypes();
         final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(metagame.events(), 8).archetypes();
