@@ -400,6 +400,7 @@ class GenerateSiteCommand {
                         case Event.Type.RQ -> "Regional Qualifier";
                         case Event.Type.SQ -> "Sector Qualifier";
                         case Event.Type.MAJOR -> "Major Tournament";
+                        case Event.Type.MINOR -> "Minor Tournament";
                     };
                 }
                 if (o instanceof LocalDate d) {

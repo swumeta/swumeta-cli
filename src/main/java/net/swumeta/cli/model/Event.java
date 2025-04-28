@@ -56,6 +56,7 @@ public record Event(
 
     public enum Type {
         @JsonProperty("major") MAJOR,
+        @JsonProperty("minor") MINOR,
         @JsonProperty("planetary-qualifier") PQ,
         @JsonProperty("sector-qualifier") SQ,
         @JsonProperty("regional-qualifier") RQ,
