@@ -204,17 +204,14 @@ class GenerateSiteCommand {
                 new File(outputDir, "index.html"));
 
         logger.info("Processing redirects");
-        final var excludedFilesFromSitemap = new HashSet<File>(4);
         for (final var redirect : redirectService.getRedirects()) {
             final var resFile = new File(outputDir, redirect.resource().endsWith("/") ? (redirect.resource() + "index.html") : redirect.resource());
             if (!resFile.getParentFile().exists()) {
                 resFile.getParentFile().mkdirs();
             }
             renderToFile(new RedirectModel(redirect.target()), resFile);
-            excludedFilesFromSitemap.add(resFile);
         }
-
-        generateSitemap(outputDir, excludedFilesFromSitemap);
+        generateSitemap(outputDir, Set.of());
     }
 
     private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
