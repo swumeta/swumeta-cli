@@ -25,7 +25,13 @@
           <strong>No deck found</strong>: please try again later</p>
       {{/noDeck}}
       {{^noDeck}}
-        <div class="table-responsive">
+        <div id="decks-container" class="table-responsive">
+          <div class="search-container">
+            <input type="text" class="form-control search-input search" placeholder="Search..."
+                   onkeydown="showMoreDecks()" spellcheck="false" autocorrect="off" autocomplete="off"
+                   autocapitalize="off">
+            <i class="bi bi-search search-icon"></i>
+          </div>
           <table id="decks" class="table table-hover sw-table">
             <thead>
             <tr>
@@ -38,7 +44,7 @@
               <th scope="col" class="text-end">Player</th>
             </tr>
             </thead>
-            <tbody>
+            <tbody class="list">
             {{#decks}}
               <tr class="d-none">
                 <td class="align-middle text-end fit">
@@ -51,7 +57,7 @@
                        class="rounded rounded-1 d-inline-block me-2"/>
                   <img src="{{base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
                 </td>
-                <td class="align-middle">
+                <td class="align-middle deck-list">
                   <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{name}}</a></span>
                 </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
@@ -68,7 +74,7 @@
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}
                 </td>
-                <td class="align-middle text-end fit">
+                <td class="align-middle text-end fit deck-player">
                   <span class="align-middle">{{deck.player}}</span>
                 </td>
               </tr>
@@ -106,14 +112,14 @@
 {{^noDeck}}
   <script type="text/javascript">
     const leaderData = [
-      {{#leaderSerie}}
-        { value: {{value}}, name: "{{{key}}}" },
-      {{/leaderSerie}}
+    {{#leaderSerie}}
+      { value: {{value}}, name: "{{{key}}}" },
+    {{/leaderSerie}}
     ];
     const baseData = [
-      {{#baseSerie}}
-        { value: {{value}}, name: "{{{key}}}" },
-      {{/baseSerie}}
+    {{#baseSerie}}
+      { value: {{value}}, name: "{{{key}}}" },
+    {{/baseSerie}}
     ];
     createHorizontalBarChart('chart-leaders', leaderData, {
         title: 'Leaders',
@@ -151,6 +157,11 @@
   }
 
   function showMoreDecks() {
+    const showMoreSection = document.getElementById("showMoreSection");
+    if(showMoreSection.classList.contains("d-none")) {
+      return;
+    }
+
     const table = document.getElementById("decks");
     const rows = table.querySelectorAll("tr");
     let i = 0;
@@ -158,7 +169,6 @@
       row.classList.remove("d-none");
       i++;
     }
-    const showMoreSection = document.getElementById("showMoreSection");
     showMoreSection.classList.toggle("d-none", true);
   }
 
@@ -171,6 +181,13 @@
       row.classList.remove("d-none");
       i++;
     }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const options = {
+      valueNames: [ 'deck-list', 'deck-player' ]
+    };
+    const decksList = new List('decks-container', options);
   });
 </script>
 

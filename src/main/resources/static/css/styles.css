@@ -188,3 +188,23 @@ tr:hover .btn-copy {
     margin: 0;
     padding: 0;
 }
+
+.search-container {
+    position: relative;
+}
+
+.search-input {
+    height: 40px;
+    padding-left: 45px;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1em;
+}
+
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    color: #888;
+}
