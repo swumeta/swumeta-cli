@@ -42,15 +42,15 @@ public class MetagameService {
     }
 
     public Metagame getMetagame() {
-        logger.info("Listing events for the metagame");
-        final Predicate<Event> eventFilter = config.metagameMonths() < 1 ? null : new EventFilter(config.metagameMonths());
+        logger.debug("Listing events for the metagame");
+        final Predicate<Event> eventFilter = config.metagameMonths() < 1 ? null : new EventFilter(config.metagameMonths(), config.metagameLimit());
 
         final var events = eventService.list(eventFilter);
         if (events.isEmpty()) {
             throw new AppException("No events found");
         }
 
-        logger.info("Number of events part of the metagame: {}", events.size());
+        logger.debug("Number of events part of the metagame: {}", events.size());
         if (logger.isTraceEnabled()) {
             final var df = DateTimeFormatter.ISO_LOCAL_DATE;
             final var eventNames = events.stream()
@@ -72,8 +72,13 @@ public class MetagameService {
     private static class EventFilter implements Predicate<Event> {
         private final LocalDate dateLimit;
 
-        EventFilter(final int months) {
-            this.dateLimit = LocalDate.now().minusMonths(months);
+        EventFilter(final int months, final LocalDate hardLimit) {
+            final var dl = LocalDate.now().minusMonths(months);
+            if (dl.isBefore(hardLimit)) {
+                this.dateLimit = hardLimit;
+            } else {
+                this.dateLimit = dl;
+            }
         }
 
         @Override
