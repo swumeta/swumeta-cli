@@ -83,7 +83,7 @@ public class MetagameService {
 
         @Override
         public boolean test(Event event) {
-            return !event.hidden() && event.date().isAfter(limitDate);
+            return !event.hidden() && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
         }
     }
 }
