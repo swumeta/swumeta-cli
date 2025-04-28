@@ -70,20 +70,20 @@ public class MetagameService {
     }
 
     private static class EventFilter implements Predicate<Event> {
-        private final LocalDate dateLimit;
+        private final LocalDate limitDate;
 
         EventFilter(final int months, final LocalDate hardLimit) {
             final var dl = LocalDate.now().minusMonths(months);
-            if (dl.isBefore(hardLimit)) {
-                this.dateLimit = hardLimit;
+            if (hardLimit != null && dl.isBefore(hardLimit)) {
+                this.limitDate = hardLimit;
             } else {
-                this.dateLimit = dl;
+                this.limitDate = dl;
             }
         }
 
         @Override
         public boolean test(Event event) {
-            return !event.hidden() && event.date().isAfter(dateLimit);
+            return !event.hidden() && event.date().isAfter(limitDate);
         }
     }
 }
