@@ -39,12 +39,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -202,6 +201,27 @@ class GenerateSiteCommand {
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
+
+        logger.info("Processing matchups");
+        final var matchups = deckStatisticsService.getMatchups(metagame.events());
+        final var matchupsReport = new StringWriter();
+        final var matchupsReportWriter = new PrintWriter(matchupsReport);
+        final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
+        final var numberFormatter = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+        for (final var matchup : matchups) {
+            final var archetype = deckService.formatArchetype(matchup.archetype());
+            final double wr = matchup.winRate();
+            matchupsReportWriter.println();
+            matchupsReportWriter.println(archetype + " (" + percentFormatter.format(matchup.metaShare())
+                    + " meta) -> " + percentFormatter.format(matchup.winRate()) + " win based on "
+                    + numberFormatter.format(matchup.matchCount()) + " matches");
+            for (final var op : matchup.opponents()) {
+                matchupsReportWriter.println(" vs " + deckService.formatArchetype(op.archetype())
+                        + " -> " + percentFormatter.format(op.winRate()) + " win based on "
+                        + numberFormatter.format(op.results().size()) + " matches");
+            }
+        }
+        logger.info("Matchups:\n{}", matchupsReport.getBuffer());
 
         logger.info("Processing redirects");
         for (final var redirect : redirectService.getRedirects()) {

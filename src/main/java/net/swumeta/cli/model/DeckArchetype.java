@@ -21,7 +21,7 @@ import org.springframework.util.Assert;
 
 import java.util.Objects;
 
-public final class DeckArchetype {
+public final class DeckArchetype implements Comparable<DeckArchetype> {
     private final Card.Id leader;
     private final @Nullable Card.Aspect aspect;
     private final @Nullable Card.Id base;
@@ -67,5 +67,27 @@ public final class DeckArchetype {
     @Override
     public int hashCode() {
         return Objects.hash(leader, aspect, base);
+    }
+
+    @Override
+    public int compareTo(DeckArchetype o) {
+        if (leader.equals(o.leader)) {
+            if (base != null) {
+                return o.base != null ? base.compareTo(o.base) : -1;
+            } else if (o.base != null) {
+                return 1;
+            }
+            return aspect.compareTo(o.aspect);
+        }
+        return leader.compareTo(o.leader);
+    }
+
+    @Override
+    public String toString() {
+        return "DeckArchetype[" +
+                "leader=" + leader +
+                ", aspect=" + aspect +
+                ", base=" + base +
+                ']';
     }
 }

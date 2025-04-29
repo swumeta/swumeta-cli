@@ -69,6 +69,7 @@ public class DeckService {
     private final ObjectMapper objectMapper;
     private final ObjectMapper yamlObjectMapper;
     private final LoadingCache<URI, Deck> deckCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::doLoad);
+    private final LoadingCache<URI, DeckArchetype> deckArchetypeCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::createArchetype);
 
     DeckService(CardDatabaseService cardDatabaseService, RestClient client, AppConfig config) {
         this.cardDatabaseService = cardDatabaseService;
@@ -138,7 +139,11 @@ public class DeckService {
     }
 
     public DeckArchetype getArchetype(Deck deck) {
-        Assert.notNull(deck, "Deck must not be null");
+        return deckArchetypeCache.get(deck.source());
+    }
+
+    private DeckArchetype createArchetype(URI uri) {
+        final var deck = load(uri);
         final var baseCard = cardDatabaseService.findById(deck.base());
         return !baseCard.rarity().equals(Card.Rarity.COMMON) || baseCard.aspects().isEmpty()
                 ? DeckArchetype.valueOf(deck.leader(), deck.base())
@@ -304,7 +309,7 @@ public class DeckService {
                 final var cardSubtitle = parts.length > 2 ? parts[2] : null;
                 final var cards = cardDatabaseService.findByName(cardTitle, cardSubtitle);
                 if (cards.isEmpty()) {
-                    logger.warn("Unable to find card: {}", line);
+                    logger.debug("Unable to find card: {}", line);
                 } else {
                     final var card = cards.iterator().next();
                     if (inSectionLeaders) {
@@ -332,7 +337,7 @@ public class DeckService {
         }
         logger.trace("Melee.gg deck details: {}", meleeDeckDetails);
 
-        final var player = meleeDeckDetails.team.userName;
+        final var player = meleeDeckDetails.team.user;
         final var matchRecord = meleeDeckDetails.team.matchRecord;
 
         final var tournamentId = Integer.parseInt(meleeDoc.getElementById("tournament-id-field").val());
@@ -372,7 +377,7 @@ public class DeckService {
             final var score2 = Integer.parseInt(scoreMatcher.group(2));
             final var score3 = Integer.parseInt(scoreMatcher.group(3));
 
-            if (m.result.contains(" won ") && m.result.startsWith(m.opponentPlayer)) {
+            if (m.result.contains(" won ") && m.result.startsWith(m.opponentPlayerName)) {
                 result = Deck.Match.Result.LOSS;
                 record = "%d-%d-%d".formatted(score2, score1, score3);
             } else if (m.result.contains(" Draw")) {
@@ -467,7 +472,7 @@ public class DeckService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record MeleeDeckTeam(
-            @JsonProperty(required = true) @JsonAlias("Username") String userName,
+            @JsonProperty(required = true) @JsonAlias("Username") String user,
             @JsonProperty(required = true) @JsonAlias("MatchRecord") String matchRecord
     ) {
     }
@@ -475,6 +480,7 @@ public class DeckService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record MeleeDeckMatch(
             @JsonProperty(required = true) @JsonAlias("Round") int round,
+            @JsonProperty(required = true) @JsonAlias("Opponent") String opponentPlayerName,
             @JsonProperty(required = true) @JsonAlias("OpponentUsername") String opponentPlayer,
             @JsonAlias("OpponentDecklistGuid") String opponentDeck,
             @JsonProperty(required = true) @JsonAlias("Result") String result
