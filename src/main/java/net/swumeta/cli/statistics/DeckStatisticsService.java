@@ -34,16 +34,11 @@ public class DeckStatisticsService {
         this.deckService = deckService;
     }
 
-    public record DeckStatistics(
-            ImmutableBag<DeckArchetype> archetypes
-    ) {
-    }
-
-    public DeckStatistics getMostPlayedDecks(Iterable<Event> events) {
+    public ImmutableBag<DeckArchetype> getMostPlayedDecks(Iterable<Event> events) {
         return getMostPlayedDecks(events, 0);
     }
 
-    public DeckStatistics getMostPlayedDecks(Iterable<Event> events, int rankingMax) {
+    public ImmutableBag<DeckArchetype> getMostPlayedDecks(Iterable<Event> events, int rankingMax) {
         logger.debug("Computing statistics: most played decks ({})", rankingMax == 0 ? "all players" : ("top " + rankingMax));
 
         final var archetypes = Bags.mutable.<DeckArchetype>ofInitialCapacity(64);
@@ -65,6 +60,6 @@ public class DeckStatisticsService {
                 archetypes.add(deckType);
             }
         }
-        return new DeckStatistics(archetypes.toImmutableBag());
+        return archetypes.toImmutableBag();
     }
 }

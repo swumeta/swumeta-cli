@@ -137,9 +137,9 @@ class GenerateSiteCommand {
                     : Lists.immutable.<Link>empty();
 
             final var singleEvent = Collections.singleton(event);
-            final var deckBag = deckStatisticsService.getMostPlayedDecks(singleEvent).archetypes();
-            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(singleEvent, 64).archetypes();
-            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(singleEvent, 8).archetypes();
+            final var deckBag = deckStatisticsService.getMostPlayedDecks(singleEvent);
+            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(singleEvent, 64);
+            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(singleEvent, 8);
 
             final var leaderSeries = toLeaderSerie(deckBag);
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
@@ -177,8 +177,8 @@ class GenerateSiteCommand {
         logger.info("Processing metagame page");
         final var metagame = metagameService.getMetagame();
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.events()).cards();
-        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.events()).archetypes();
-        final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(metagame.events(), 8).archetypes();
+        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.events());
+        final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(metagame.events(), 8);
 
         final int totalDecks = deckBag.size();
         final int totalTop8Decks = deckBagTop8.size();
