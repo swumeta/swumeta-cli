@@ -100,6 +100,8 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
+        final var baseUri = UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri();
+
         final var aboutDir = new File(outputDir, "about");
         if (!aboutDir.exists()) {
             aboutDir.mkdirs();
@@ -107,6 +109,7 @@ class GenerateSiteCommand {
         renderToFile(new AboutModel("About", """
                 Discover swumeta.net, created by Alexandre (NotAlex), software engineer and Star Wars Unlimited player, to analyze matchups and optimize your decks against popular game leaders.
                 """,
+                UriComponentsBuilder.fromUri(baseUri).path("/about/").build().toUri(),
                 quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
@@ -147,6 +150,7 @@ class GenerateSiteCommand {
             final var statsFileName = "statistics.html";
             renderToFile(new EventStatsModel("Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
+                            UriComponentsBuilder.fromUri(baseUri).path(eventDirName).path("/").path(statsFileName).build().toUri(),
                             event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
                     new File(eventDir, statsFileName));
 
@@ -160,6 +164,7 @@ class GenerateSiteCommand {
             final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
             renderToFile(new EventModel(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
+                            UriComponentsBuilder.fromUri(baseUri).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri(),
                             event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
                             decks, decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
                             videoLinks),
@@ -171,6 +176,7 @@ class GenerateSiteCommand {
         Collections.sort(eventPages, Comparator.reverseOrder());
         renderToFile(new EventIndexModel("Tournaments",
                 "Star Wars Unlimited tournaments (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
+                UriComponentsBuilder.fromUri(baseUri).path("/tournaments/").build().toUri(),
                 eventPages), new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
@@ -289,7 +295,11 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/about.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record AboutModel(String title, String description, String quote) implements TemplateSupport {
+    record AboutModel(String title, String description, URI canonicalUrl, String quote) implements TemplateSupport {
+        @Override
+        public URI canonicalUrl() {
+            return canonicalUrl;
+        }
     }
 
     @JStache(path = "/templates/version.mustache")
@@ -299,7 +309,12 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/events.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventIndexModel(String title, String description, List<EventPage> events) implements TemplateSupport {
+    record EventIndexModel(String title, String description, URI canonicalUrl,
+                           List<EventPage> events) implements TemplateSupport {
+        @Override
+        public URI canonicalUrl() {
+            return canonicalUrl;
+        }
     }
 
     record EventPage(
@@ -313,11 +328,16 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventModel(String title, String description, Event event, String countryFlag, String statsPage,
+    record EventModel(String title, String description, URI canonicalUrl, Event event, String countryFlag,
+                      String statsPage,
                       ImmutableList<DeckWithRank> decks, boolean noDeck,
                       ImmutableList<KeyValue> leaderSerie,
                       ImmutableList<KeyValue> baseSerie,
                       ImmutableList<Link> videoLinks) implements TemplateSupport {
+        @Override
+        public URI canonicalUrl() {
+            return canonicalUrl;
+        }
     }
 
     record KeyValue(
@@ -347,10 +367,14 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(String title, String description, Event event, String countryFlag,
+    record EventStatsModel(String title, String description, URI canonicalUrl, Event event, String countryFlag,
                            ImmutableList<KeyValue> allLeaderSerie,
                            ImmutableList<KeyValue> top64LeaderSerie,
                            ImmutableList<KeyValue> top8LeaderSerie) implements TemplateSupport {
+        @Override
+        public URI canonicalUrl() {
+            return canonicalUrl;
+        }
     }
 
     interface TemplateSupport {
