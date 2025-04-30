@@ -1,0 +1,46 @@
+{{>templates/header.mustache}}
+
+<section class="container">
+  <h1 class="section-title text-center mb-1">Metagame &bull; Win rates</h1>
+  <p class="mb-0">This page is built using <strong>{{deckCount}} deck archetypes</strong> from {{eventCount}} events.
+  </p>
+  <p class="text-secondary">Work in progress...</p>
+
+  <div class="row">
+    {{#entries}}
+      <div class="col-lg-6 mb-3 mb-lg-0">
+        <div class="card rounded rounded-4">
+          <div class="flex card-img-top m-2 mb-0">
+            <img src="{{leaderArt}}" width="200" height="144"/>
+            <img src="{{baseArt}}" width="200" height="144"/>
+          </div>
+          <div class="card-body">
+            <h2 class="fs-5 card-title">{{archetype}}</h2>
+            <p>
+              <span class="text-secondary">meta share: </span>
+              <span class="fw-bold">{{metaShare}}</span>
+              &nbsp;&bull;&nbsp;
+              <span class="text-secondary">win rate: </span>
+              <span class="fw-bold">{{winRate}}</span>
+              &nbsp;&bull;&nbsp;
+              <span class="text-secondary">matches: </span>
+              <span class="fw-bold">{{matchCount}}</span>
+            </p>
+            <ul class="list-unstyled" style="font-size: 90%">
+              {{#opponents}}
+                <li class="meta-opponents">
+                  <p class="mb-0"><span class="text-secondary">vs</span> <strong>{{archetype}}</strong></p>
+                  <p><i class="bi bi-arrow-right-short"></i> <span class="fw-bold">{{winRate}}</span>
+                    <span class="text-secondary">win based on</span>
+                    <span class="fw-bold">{{matchCount}} matches</span></p>
+                </li>
+              {{/opponents}}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {{/entries}}
+  </div>
+</section>
+
+{{>templates/footer.mustache}}

@@ -153,12 +153,16 @@ public class DeckService {
     public String formatArchetype(DeckArchetype archetype) {
         Assert.notNull(archetype, "Deck archetype must not be null");
         final var leaderCard = cardDatabaseService.findById(archetype.leader());
-        final var base = archetype.base() == null ? DEFAULT_BASES.get(archetype.aspect()) : archetype.base();
+        final var base = lookupBase(archetype);
         return "%s (%s) - %s".formatted(
                 leaderCard.name(),
                 leaderCard.set(),
                 formatBase(base)
         );
+    }
+
+    public Card.Id lookupBase(DeckArchetype archetype) {
+        return archetype.base() == null ? DEFAULT_BASES.get(archetype.aspect()) : archetype.base();
     }
 
     public String formatName(Deck deck) {

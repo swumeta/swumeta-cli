@@ -200,3 +200,7 @@ tr:hover .btn-copy {
     transform: translateY(-50%);
     color: #888;
 }
+
+.meta-opponents:last-child p:last-child {
+    margin-bottom: 0;
+}
