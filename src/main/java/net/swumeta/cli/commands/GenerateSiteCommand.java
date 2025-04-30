@@ -106,10 +106,11 @@ class GenerateSiteCommand {
         if (!aboutDir.exists()) {
             aboutDir.mkdirs();
         }
-        renderToFile(new AboutModel("About", """
+        renderToFile(new AboutModel(new HtmlMeta(
+                "About", """
                 Discover swumeta.net, created by Alexandre (NotAlex), software engineer and Star Wars Unlimited player, to analyze matchups and optimize your decks against popular game leaders.
                 """,
-                UriComponentsBuilder.fromUri(baseUri).path("/about/").build().toUri(),
+                UriComponentsBuilder.fromUri(baseUri).path("/about/").build().toUri()),
                 quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
@@ -132,10 +133,8 @@ class GenerateSiteCommand {
                 eventDir.mkdirs();
             }
             final var countryFlag = event.location().countryFlag();
-            final var videoLinks = event.links() != null ?
-                    Lists.immutable.fromStream(event.links().stream()
-                            .map(this::createVideoEmbedLink)
-                            .filter(Objects::nonNull))
+            final var videoLinks = event.links() != null
+                    ? Lists.immutable.fromStream(event.links().stream().map(this::createVideoEmbedLink).filter(Objects::nonNull))
                     : Lists.immutable.<Link>empty();
 
             final var singleEvent = Collections.singleton(event);
@@ -148,9 +147,10 @@ class GenerateSiteCommand {
             final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
             final var statsFileName = "statistics.html";
-            renderToFile(new EventStatsModel("Statistics from " + event.name(),
+            renderToFile(new EventStatsModel(new HtmlMeta(
+                            "Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
-                            UriComponentsBuilder.fromUri(baseUri).path(eventDirName).path("/").path(statsFileName).build().toUri(),
+                            UriComponentsBuilder.fromUri(baseUri).path(eventDirName).path("/").path(statsFileName).build().toUri()),
                             event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
                     new File(eventDir, statsFileName));
 
@@ -162,22 +162,21 @@ class GenerateSiteCommand {
             );
             final var leaderBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck())));
             final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
-            renderToFile(new EventModel(event.name(),
+            renderToFile(new EventModel(new HtmlMeta(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
-                            UriComponentsBuilder.fromUri(baseUri).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri(),
+                            UriComponentsBuilder.fromUri(baseUri).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
                             event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
-                            decks, decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
-                            videoLinks),
+                            decks, !decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4), videoLinks.isEmpty() ? null : videoLinks),
                     new File(eventDir, "index.html"));
             eventPages.add(new EventPage(event, countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
         Collections.sort(eventPages, Comparator.reverseOrder());
-        renderToFile(new EventIndexModel("Tournaments",
-                "Star Wars Unlimited tournaments (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
-                UriComponentsBuilder.fromUri(baseUri).path("/tournaments/").build().toUri(),
-                eventPages), new File(outputDir, "/tournaments/index.html"));
+        renderToFile(new EventIndexModel(new HtmlMeta("Tournaments",
+                        "Star Wars Unlimited tournaments (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
+                        UriComponentsBuilder.fromUri(baseUri).path("/tournaments/").build().toUri()), eventPages),
+                new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
         final var metagame = metagameService.getMetagame();
@@ -201,9 +200,7 @@ class GenerateSiteCommand {
                 .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
                 .sorted(Comparator.reverseOrder()));
 
-        renderToFile(new IndexModel(null,
-                        null,
-                        UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri(),
+        renderToFile(new IndexModel(new HtmlMeta(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri()),
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards, top8Decks),
                 new File(outputDir, "index.html"));
@@ -281,25 +278,26 @@ class GenerateSiteCommand {
         return Lists.immutable.fromStream(result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).sorted());
     }
 
+    record HtmlMeta(
+            String title,
+            String description,
+            URI canonicalUrl
+    ) implements TemplateSupport {
+        HtmlMeta(URI canonicalUrl) {
+            this(null, null, canonicalUrl);
+        }
+    }
+
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record IndexModel(String title, String description, URI canonicalUrl,
-                      String lastEventDate, int totalDecks,
+    record IndexModel(HtmlMeta meta, String lastEventDate, int totalDecks,
                       ImmutableList<KeyValue> topDecks, ImmutableList<KeyValue> topCards,
                       ImmutableList<KeyValue> top8Decks) implements TemplateSupport {
-        @Override
-        public URI canonicalUrl() {
-            return canonicalUrl;
-        }
     }
 
     @JStache(path = "/templates/about.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record AboutModel(String title, String description, URI canonicalUrl, String quote) implements TemplateSupport {
-        @Override
-        public URI canonicalUrl() {
-            return canonicalUrl;
-        }
+    record AboutModel(HtmlMeta meta, String quote) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/version.mustache")
@@ -309,12 +307,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/events.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventIndexModel(String title, String description, URI canonicalUrl,
-                           List<EventPage> events) implements TemplateSupport {
-        @Override
-        public URI canonicalUrl() {
-            return canonicalUrl;
-        }
+    record EventIndexModel(HtmlMeta meta, List<EventPage> events) implements TemplateSupport {
     }
 
     record EventPage(
@@ -328,16 +321,12 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventModel(String title, String description, URI canonicalUrl, Event event, String countryFlag,
+    record EventModel(HtmlMeta meta, Event event, String countryFlag,
                       String statsPage,
-                      ImmutableList<DeckWithRank> decks, boolean noDeck,
+                      ImmutableList<DeckWithRank> decks, boolean hasDecks,
                       ImmutableList<KeyValue> leaderSerie,
                       ImmutableList<KeyValue> baseSerie,
                       ImmutableList<Link> videoLinks) implements TemplateSupport {
-        @Override
-        public URI canonicalUrl() {
-            return canonicalUrl;
-        }
     }
 
     record KeyValue(
@@ -367,23 +356,15 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(String title, String description, URI canonicalUrl, Event event, String countryFlag,
+    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag,
                            ImmutableList<KeyValue> allLeaderSerie,
                            ImmutableList<KeyValue> top64LeaderSerie,
                            ImmutableList<KeyValue> top8LeaderSerie) implements TemplateSupport {
-        @Override
-        public URI canonicalUrl() {
-            return canonicalUrl;
-        }
     }
 
     interface TemplateSupport {
         default int year() {
             return LocalDate.now().getYear();
-        }
-
-        default URI canonicalUrl() {
-            return null;
         }
 
         default ZonedDateTime now() {

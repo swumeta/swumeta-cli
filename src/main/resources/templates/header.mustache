@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{#title}}{{title}} - swumeta.net{{/title}}{{^title}}
-    swumeta.net, meta analysis for the Star Wars Unlimited card game{{/title}}</title>
-  {{#description}}
-    <meta name="description" content="{{description}}"/>
-  {{/description}}
-  {{^description}}
+  <title>{{#meta.title}}{{meta.title}} - swumeta.net{{/meta.title}}{{^meta.title}}
+    swumeta.net, meta analysis for the Star Wars Unlimited card game{{/meta.title}}</title>
+  {{#meta.description}}
+    <meta name="description" content="{{meta.description}}"/>
+  {{/meta.description}}
+  {{^meta.description}}
     <meta name="description"
           content="Your ultimate resource for Star Wars Unlimited card game meta analysis, deck building, and tournament insights"/>
-  {{/description}}
-  {{#canonicalUrl}}
-    <link rel="canonical" href="{{canonicalUrl}}"/>
-  {{/canonicalUrl}}
+  {{/meta.description}}
+  {{#meta.canonicalUrl}}
+    <link rel="canonical" href="{{meta.canonicalUrl}}"/>
+  {{/meta.canonicalUrl}}
   <meta name="googlebot" content="notranslate"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>

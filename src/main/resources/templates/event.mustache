@@ -3,7 +3,7 @@
 <section class="container">
   {{>templates/event-header.mustache}}
 
-  {{^noDeck}}
+  {{#hasDecks}}
     <div class="row">
       <div class="col-lg-6">
         <div id="chart-leaders" style="width: 100%; min-height: 400px"></div>
@@ -16,15 +16,15 @@
       <div class="col text-end"><a href="{{statsPage}}" class="sw-link" style="font-size: 90%">
         <i class="bi bi-bar-chart-fill me-2"></i>more statistics...</a></div>
     </div>
-  {{/noDeck}}
+  {{/hasDecks}}
 
   <div class="row">
     <div class="col-12">
-      {{#noDeck}}
+      {{^hasDecks}}
         <p class="my-4"><i class="text-warning bi bi-exclamation-triangle-fill me-1"></i>
           <strong>No deck found</strong>: please try again later</p>
-      {{/noDeck}}
-      {{^noDeck}}
+      {{/hasDecks}}
+      {{#hasDecks}}
         <div id="decks-container" class="table-responsive">
           <div class="search-container">
             <input type="text" class="form-control search-input search" placeholder="Search..."
@@ -90,7 +90,7 @@
             </tfooter>
           </table>
         </div>
-      {{/noDeck}}
+      {{/hasDecks}}
     </div>
   </div>
 </section>
@@ -109,7 +109,7 @@
   </div>
 </section>
 
-{{^noDeck}}
+{{#hasDecks}}
   <script type="text/javascript">
     const leaderData = [
     {{#leaderSerie}}
@@ -128,7 +128,7 @@
         title: 'Bases',
     });
   </script>
-{{/noDeck}}
+{{/hasDecks}}
 
 {{#decks}}
   <pre class="d-none" id="swudb-deck-{{deck.id}}">
