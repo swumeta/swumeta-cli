@@ -3,209 +3,43 @@
 <section class="container">
   {{>templates/event-header.mustache}}
 
-  <style>
-    .all-leaders {
-      height: 950px;
-    }
-    .top64-leaders {
-      height: 700px;
-    }
-    .top8-leaders {
-      height: 400px;
-    }
-  </style>
-
   <div class="row">
-    <div class="col text-center">
-      <button id="btn-all" class="btn btn-sw mx-1">All</button>
-      <button id="btn-top64" class="btn btn-sw mx-1">Top 64</button>
-      <button id="btn-top8" class="btn btn-sw mx-1">Top 8</button>
+    <div class="col">
+      <div id="chart-all-leaders" class="w-100"></div>
     </div>
   </div>
   <div class="row">
-    <div class="col mt-3 me-4">
-      <div id="chart-leaders" class="w-100 all-leaders"></div>
+    <div class="col">
+      <div id="chart-top64-leaders" class="w-100"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div id="chart-top64-survivors" class="w-100"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div id="chart-top8-leaders" class="w-100"></div>
     </div>
   </div>
 </section>
 
 <script type="text/javascript">
-  const allLeadersData = [
-      {{#allLeaderSerie}}
-        { value: {{value}}, name: "{{{key}}}" },
-      {{/allLeaderSerie}}
-    ];
-  const top64Data = [
-    {{#top64LeaderSerie}}
-      { value: {{value}}, name: "{{{key}}}" },
-    {{/top64LeaderSerie}}
-    ];
-  const top8Data = [
-    {{#top8LeaderSerie}}
-      { value: {{value}}, name: "{{{key}}}" },
-    {{/top8LeaderSerie}}
-  ];
-
-  // Chart initialization with dark theme
-  const chartDom = document.getElementById('chart-leaders');
-  const myChart = echarts.init(chartDom);
-
-  // Variable to track current dataset
-  let currentDataset = 'all';
-
-  let chartAlreadyInit = false;
-
-  // Function to update the chart with the selected dataset
-  function updateChart(datasetType) {
-      // Select the appropriate dataset
-      let dataToUse;
-      let chartTitle;
-
-      chartDom.classList.remove("all-leaders");
-      chartDom.classList.remove("top8-leaders");
-      chartDom.classList.remove("top64-leaders");
-
-      switch(datasetType) {
-          case 'top8':
-              dataToUse = top8Data;
-              chartTitle = "Top 8 Leaders";
-              chartDom.classList.add("top8-leaders");
-              break;
-          case 'top64':
-              dataToUse = top64Data;
-              chartTitle = "Top 64 Leaders";
-              chartDom.classList.add("top64-leaders");
-              break;
-          default:
-              dataToUse = allLeadersData;
-              chartTitle = "All Leaders";
-              chartDom.classList.add("all-leaders");
-      }
-
-      // Update current dataset tracker
-      currentDataset = datasetType;
-
-      // Sort data by decreasing value
-      const sortedData = [...dataToUse].sort((a, b) => b.value - a.value);
-
-      // Calculate total decks for percentages
-      const totalDecks = sortedData.reduce((sum, item) => sum + item.value, 0);
-
-      // Reverse data to display largest at the top
-      const reversedData = [...sortedData].reverse();
-
-      // Prepare data for ECharts
-      const names = reversedData.map(item => item.name);
-      const values = reversedData.map(item => item.value);
-
-      // Generate a color palette adapted to the number of leaders displayed
-      const colorPalette = generateColorPalette(sortedData.length);
-
-      const option = {
-          tooltip: {
-              trigger: 'axis',
-              axisPointer: {
-                  type: 'shadow'
-              },
-              formatter: function(params) {
-                  const data = params[0];
-                  const index = data.dataIndex;
-                  const percentage = (values[index] / totalDecks * 100).toFixed(1);
-                  return `<strong style="color:#000">${names[index]}</strong><br/>` +
-                         `<span style="color:#000">Number of decks: ${values[index]}</span><br/>` +
-                         `<span style="color:#000">Percentage: ${percentage}%</span>`;
-              }
-          },
-          title: {
-              text: chartTitle,
-              subtext: "swumeta.net",
-              left: 'center',
-              textStyle: {
-                  color: '#ffffff'
-              }
-          },
-          legend: {
-              show: false
-          },
-          grid: {
-              left: '5%',
-              right: '5%',
-              containLabel: true
-          },
-          backgroundColor: '#121212',
-          xAxis: {
-              type: 'value',
-              name: '',
-              nameLocation: 'middle',
-              nameGap: 30
-          },
-          yAxis: {
-              type: 'category',
-              data: names,
-              axisLabel: {
-                  fontSize: 12,
-                  margin: 8,
-                  color: '#e0e0e0',
-              }
-          },
-          series: [
-              {
-                  name: 'Number of decks',
-                  type: 'bar',
-                  data: values,
-                  itemStyle: {
-                      color: function(params) {
-                          return colorPalette[params.dataIndex];
-                      }
-                  },
-                  label: {
-                      show: true,
-                      position: 'right',
-                      formatter: '{c}',
-                      color: '#fff'
-                  }
-              }
-          ]
-      };
-
-      // Apply options to the chart
-      myChart.setOption(option);
-
-      switch(datasetType) {
-          case 'top8':
-              chartDom.classList.add("top8-leaders");
-              break;
-          case 'top64':
-              chartDom.classList.add("top64-leaders");
-              break;
-          default:
-              chartDom.classList.add("all-leaders");
-      }
-      if(chartAlreadyInit) {
-         myChart.resize();
-      }
-      chartAlreadyInit = true;
-  }
-
-  // Initialize with all leaders dataset
-  updateChart('all');
-
-  // Add events to buttons
-  document.getElementById('btn-top8').addEventListener('click', function() {
-      updateChart('top8');
-  });
-
-  document.getElementById('btn-top64').addEventListener('click', function() {
-      updateChart('top64');
-  });
-
-  document.getElementById('btn-all').addEventListener('click', function() {
-      updateChart('all');
-  });
-
-  // Resize the chart when the window changes size
-  window.addEventListener('resize', function() {
-      myChart.resize();
+  document.addEventListener('DOMContentLoaded', function() {
+    createHorizontalBarChart('chart-all-leaders', 'all-leaders.json', {
+      title: 'All Leaders',
+    });
+    createHorizontalBarChart('chart-top64-leaders', 'top64-leaders.json', {
+      title: 'Top 64 Leaders',
+    });
+    createHorizontalBarChart('chart-top8-leaders', 'top8-leaders.json', {
+      title: 'Top 8 Leaders',
+    });
+    createHorizontalBarChart('chart-top64-survivors', 'top64-survivors.json', {
+      title: 'Top 64 Survivors (%)',
+      valueAsPercentage: true
+    });
   });
 </script>
 

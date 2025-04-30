@@ -1,31 +1,9 @@
-/**
- * Generate a dynamic color palette based on the number of items
- * @param {number} numColors - Number of colors to generate
- * @return {array} Array of color strings in HSL format
- */
-function generateColorPalette(numColors) {
-    const colors = [];
-    for (let i = 0; i < numColors; i++) {
-        // Generate HSL colors well distributed across the spectrum
-        const hue = (i * 360 / numColors) % 360;
-        const saturation = 70 + Math.random() * 20; // between 70% and 90%
-        const lightness = 45 + Math.random() * 10;  // between 45% and 55%
-        colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
-    }
-    return colors;
-}
-
-/**
- * Create a horizontal bar chart
- * @param {string} containerId - ID of the HTML element to contain the chart
- * @param {string} dataUrl - Path to a JSON structure
- * @param {object} options - Optional configuration options
- */
 function createHorizontalBarChart(containerId, dataUrl, options = {}) {
     // Default options
     const defaultOptions = {
         title: 'Untitled',
         valueLabel: 'Value',
+        valueAsPercentage: false,
         dynamicHeight: true
     };
 
@@ -122,12 +100,18 @@ function createHorizontalBarChart(containerId, dataUrl, options = {}) {
         const newOption = {
             tooltip: {
                 formatter: function(params) {
-                    const data = params[0];
-                    const index = data.dataIndex;
-                    const percentage = (values[index] / totalValue * 100).toFixed(1);
-                    return `<strong style="color:#000">${names[index]}</strong><br/>` +
-                           `<span style="color:#000">${chartOptions.valueLabel}: ${values[index]}</span><br/>` +
-                           `<span style="color:#000">Percentage: ${percentage}%</span>`;
+                    if(chartOptions.valueAsPercentage) {
+                        const data = params[0];
+                        const index = data.dataIndex;
+                        return `<strong style="color:#000">${names[index]}</strong><br/>` +
+                               `<span style="color:#000">${values[index]}%</span>`;
+                    } else {
+                        const data = params[0];
+                        const index = data.dataIndex;
+                        const percentage = (values[index] / totalValue * 100).toFixed(1);
+                        return `<strong style="color:#000">${names[index]}</strong><br/>` +
+                               `<span style="color:#000">${values[index]} (${percentage}%)</span>`;
+                    }
                 }
             },
             yAxis: {

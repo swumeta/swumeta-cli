@@ -146,13 +146,29 @@ class GenerateSiteCommand {
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
             final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
+            final var mTop64SurvivorSeries = Lists.mutable.<KeyValue>ofInitialCapacity(32);
+            for (final var kv : leaderSeries) {
+                final var kv2Opt = leaderSeriesTop64.stream().filter(kv2 -> kv2.key.equals(kv.key)).findFirst();
+                if (kv2Opt.isEmpty()) {
+                    continue;
+                }
+                final var kv2 = kv2Opt.get();
+                final var rate = (int) Math.round(100d * kv2.value / kv.value);
+                mTop64SurvivorSeries.add(new KeyValue(kv.key, rate));
+            }
+            final var top64SurvivorSeries = mTop64SurvivorSeries.sortThis().toImmutable();
+
             final var statsFileName = "statistics.html";
             renderToFile(new EventStatsModel(new HtmlMeta(
                             "Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
                             UriComponentsBuilder.fromUri(baseUri).path(eventDirName).path("/").path(statsFileName).build().toUri()),
-                            event, countryFlag, leaderSeries, leaderSeriesTop64, leaderSeriesTop8),
+                            event, countryFlag),
                     new File(eventDir, statsFileName));
+            renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
+            renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
+            renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
+            renderToFile(new KeyValueModel(top64SurvivorSeries), new File(eventDir, "top64-survivors.json"));
 
             final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
@@ -366,10 +382,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag,
-                           ImmutableList<KeyValue> allLeaderSerie,
-                           ImmutableList<KeyValue> top64LeaderSerie,
-                           ImmutableList<KeyValue> top8LeaderSerie) implements TemplateSupport {
+    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag) implements TemplateSupport {
     }
 
     interface TemplateSupport {
