@@ -36,6 +36,7 @@ jobs:
     - name: Get image name
       id: image
       run: |
+        sudo apt-get update
         sudo apt-get install -y libxml2-utils
         chmod +x ./mvnw
         ./mvnw -q -B help:effective-pom -Doutput=pom-effective.xml
