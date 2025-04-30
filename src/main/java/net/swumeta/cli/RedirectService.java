@@ -63,7 +63,11 @@ public class RedirectService {
         final var baseUri = URI.create("https://" + config.domain());
         return Lists.immutable.fromStream(res.redirects.stream().map(e -> {
             final var paths = e.to.split("/");
-            final var target = UriComponentsBuilder.fromUri(baseUri).pathSegment(paths).build().toUri();
+            final var uriBuilder = UriComponentsBuilder.fromUri(baseUri).pathSegment(paths);
+            if (e.to.endsWith("/")) {
+                uriBuilder.path("/");
+            }
+            final var target = uriBuilder.build().toUri();
             return new Redirect(e.from, target);
         }));
     }

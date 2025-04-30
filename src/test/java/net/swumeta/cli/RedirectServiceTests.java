@@ -37,8 +37,16 @@ class RedirectServiceTests {
     void testGetRedirects() {
         final var redirects = svc.getRedirects();
         assertThat(redirects).isNotNull();
-        assertThat(redirects.size()).isEqualTo(1);
+        assertThat(redirects.size()).isEqualTo(2);
         assertThat(redirects.get(0).resource()).isEqualTo("/a.html");
         assertThat(redirects.get(0).target()).isEqualTo(URI.create("https://" + config.domain() + "/foo/b.html"));
+    }
+
+    @Test
+    void testKeepSlashAtTheEnd() {
+        final var redirects = svc.getRedirects();
+        assertThat(redirects).isNotNull();
+        assertThat(redirects.get(1).resource()).isEqualTo("/foo.html");
+        assertThat(redirects.get(1).target()).isEqualTo(URI.create("https://" + config.domain() + "/bar/"));
     }
 }

@@ -164,7 +164,7 @@ class GenerateSiteCommand {
                             decks, decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4),
                             videoLinks),
                     new File(eventDir, "index.html"));
-            eventPages.add(new EventPage(event, countryFlag, "/%s/%s".formatted(tournamentsDir.getName(), eventDirName)));
+            eventPages.add(new EventPage(event, countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
@@ -535,9 +535,13 @@ class GenerateSiteCommand {
             if (res.endsWith("/index.html")) {
                 res = res.replace("/index.html", "/");
             }
-            final var uri = UriComponentsBuilder.newInstance()
+            final var uriBuilder = UriComponentsBuilder.newInstance()
                     .scheme("https").host(config.domain())
-                    .pathSegment(res.split("/")).build().toUri();
+                    .pathSegment(res.split("/"));
+            if (res.endsWith("/")) {
+                uriBuilder.path("/");
+            }
+            final var uri = uriBuilder.build().toUri();
             sitemapEntries.add(new SitemapEntry(uri, getLastModified(htmlFile)));
         }
         sitemapEntries.add(new SitemapEntry(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri(),

@@ -1,3 +1,5 @@
 redirects:
 - from: /a.html
   to: /foo/b.html
+- from: /foo.html
+  to: /bar/
