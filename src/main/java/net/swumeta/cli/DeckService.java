@@ -265,7 +265,11 @@ public class DeckService {
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
 
-        final var swuContent = meleeDoc.getElementById("decklist-swu-text").text();
+        final var swuContentElem = meleeDoc.getElementById("decklist-swu-text");
+        if (swuContentElem == null) {
+            throw new AppException("No swudb.com content found: " + uri);
+        }
+        final var swuContent = swuContentElem.text();
         final var lines = swuContent.split("\\r\\n|\\n|\\r");
 
         Card.Id leader = null;

@@ -138,7 +138,10 @@ function createHorizontalBarChart(containerId, dataUrl, options = {}) {
             }]
         };
         if(chartOptions.dynamicHeight) {
-            const h = processedData.length * 40 + 80;
+            let h = (processedData.length * 40) + 10;
+            if(processedData.length > 32) {
+                h = (processedData.length * 30);
+            }
             chartDom.style.height = (h + "px");
         }
         myChart.hideLoading();
