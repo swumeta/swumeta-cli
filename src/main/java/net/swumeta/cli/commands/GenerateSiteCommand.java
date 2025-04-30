@@ -160,14 +160,16 @@ class GenerateSiteCommand {
                     .filter(Objects::nonNull)
                     .sorted()
             );
-            final var leaderBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck())));
-            final var baseBag = Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck())));
+            final var leaderBag = nMostCards(Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck()))), 4);
+            final var baseBag = nMostCards(Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck()))), 4);
             renderToFile(new EventModel(new HtmlMeta(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
                             UriComponentsBuilder.fromUri(baseUri).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
                             event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
-                            decks, !decks.isEmpty(), nMostCards(leaderBag, 4), nMostCards(baseBag, 4), videoLinks.isEmpty() ? null : videoLinks),
+                            decks, !decks.isEmpty(), videoLinks),
                     new File(eventDir, "index.html"));
+            renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
+            renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
             eventPages.add(new EventPage(event, countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
@@ -324,8 +326,6 @@ class GenerateSiteCommand {
     record EventModel(HtmlMeta meta, Event event, String countryFlag,
                       String statsPage,
                       ImmutableList<DeckWithRank> decks, boolean hasDecks,
-                      ImmutableList<KeyValue> leaderSerie,
-                      ImmutableList<KeyValue> baseSerie,
                       ImmutableList<Link> videoLinks) implements TemplateSupport {
     }
 
@@ -335,11 +335,21 @@ class GenerateSiteCommand {
     ) implements Comparable<KeyValue> {
         @Override
         public int compareTo(KeyValue o) {
+            if ("Others".equals(key)) {
+                return -1;
+            }
+            if ("Others".equals(o.key)) {
+                return 1;
+            }
             if (value != o.value) {
-                return value < o.value ? -1 : 0;
+                return value < o.value ? -1 : 1;
             }
             return key.compareTo(o.key);
         }
+    }
+
+    @JStache(path = "/templates/kv.mustache")
+    record KeyValueModel(ImmutableList<KeyValue> series) implements TemplateSupport {
     }
 
     record DeckWithRank(int rank, boolean pending, Deck deck, String name, Card leader, Card base,

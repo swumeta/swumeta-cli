@@ -111,21 +111,13 @@
 
 {{#hasDecks}}
   <script type="text/javascript">
-    const leaderData = [
-    {{#leaderSerie}}
-      { value: {{value}}, name: "{{{key}}}" },
-    {{/leaderSerie}}
-    ];
-    const baseData = [
-    {{#baseSerie}}
-      { value: {{value}}, name: "{{{key}}}" },
-    {{/baseSerie}}
-    ];
-    createHorizontalBarChart('chart-leaders', leaderData, {
+    document.addEventListener('DOMContentLoaded', function() {
+      createHorizontalBarChart('chart-leaders', 'usage-leaders.json', {
         title: 'Leaders',
-    });
-    createHorizontalBarChart('chart-bases', baseData, {
+      });
+      createHorizontalBarChart('chart-bases', 'usage-bases.json', {
         title: 'Bases',
+      });
     });
   </script>
 {{/hasDecks}}
