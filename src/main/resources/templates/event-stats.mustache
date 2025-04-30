@@ -9,18 +9,19 @@
     </div>
   </div>
   <div class="row">
-    <div class="col">
+    <div class="col-xl-6">
       <div id="chart-top64-leaders" class="w-100"></div>
     </div>
-  </div>
-  <div class="row">
-    <div class="col">
+    <div class="col-xl-6">
       <div id="chart-top64-survivors" class="w-100"></div>
     </div>
   </div>
   <div class="row">
-    <div class="col">
+    <div class="col-xl-6">
       <div id="chart-top8-leaders" class="w-100"></div>
+    </div>
+    <div class="col-xl-6">
+      <div id="chart-top8-survivors" class="w-100"></div>
     </div>
   </div>
 </section>
@@ -38,6 +39,10 @@
     });
     createHorizontalBarChart('chart-top64-survivors', 'top64-survivors.json', {
       title: 'Top 64 Survivors (%)',
+      valueAsPercentage: true
+    });
+    createHorizontalBarChart('chart-top8-survivors', 'top8-survivors.json', {
+      title: 'Top 8 Survivors (%)',
       valueAsPercentage: true
     });
   });

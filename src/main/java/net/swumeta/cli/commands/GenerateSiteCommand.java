@@ -146,18 +146,6 @@ class GenerateSiteCommand {
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
             final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
-            final var mTop64SurvivorSeries = Lists.mutable.<KeyValue>ofInitialCapacity(32);
-            for (final var kv : leaderSeries) {
-                final var kv2Opt = leaderSeriesTop64.stream().filter(kv2 -> kv2.key.equals(kv.key)).findFirst();
-                if (kv2Opt.isEmpty()) {
-                    continue;
-                }
-                final var kv2 = kv2Opt.get();
-                final var rate = (int) Math.round(100d * kv2.value / kv.value);
-                mTop64SurvivorSeries.add(new KeyValue(kv.key, rate));
-            }
-            final var top64SurvivorSeries = mTop64SurvivorSeries.sortThis().toImmutable();
-
             final var statsFileName = "statistics.html";
             renderToFile(new EventStatsModel(new HtmlMeta(
                             "Statistics from " + event.name(),
@@ -168,7 +156,8 @@ class GenerateSiteCommand {
             renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
             renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
             renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
-            renderToFile(new KeyValueModel(top64SurvivorSeries), new File(eventDir, "top64-survivors.json"));
+            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-survivors.json"));
+            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-survivors.json"));
 
             final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
@@ -276,6 +265,20 @@ class GenerateSiteCommand {
             keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("\"", " "), card.set()), archetypes.size()));
         });
         return keyValues.toImmutableSortedList();
+    }
+
+    private ImmutableList<KeyValue> computeSurvivorRates(ImmutableList<KeyValue> leaders, ImmutableList<KeyValue> survivorBracket) {
+        final var survivorSeries = Lists.mutable.<KeyValue>ofInitialCapacity(survivorBracket.size());
+        for (final var kv : leaders) {
+            final var kv2Opt = survivorBracket.stream().filter(kv2 -> kv2.key.equals(kv.key)).findFirst();
+            if (kv2Opt.isEmpty()) {
+                continue;
+            }
+            final var kv2 = kv2Opt.get();
+            final var rate = (int) Math.round(100d * kv2.value / kv.value);
+            survivorSeries.add(new KeyValue(kv.key, rate));
+        }
+        return survivorSeries.sortThis().toImmutable();
     }
 
     private ImmutableList<KeyValue> nMostCards(Bag<String> bag, int n) {
