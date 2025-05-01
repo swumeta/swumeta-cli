@@ -78,7 +78,7 @@ public class DeckStatisticsService {
     public ImmutableList<DeckArchetypeMatchup> getMatchups(Iterable<Event> events) {
         logger.debug("Computing matchups");
 
-        final var mostPlayedDecks = getMostPlayedDecks(events);
+        final var mostPlayedDecks = getMostPlayedDecks(events, 64);
         final var matchups = Maps.mutable.<DeckArchetypeVersus, MutableBag<Deck.Match.Result>>ofInitialCapacity(mostPlayedDecks.sizeDistinct());
 
         for (final var event : events) {
@@ -104,6 +104,13 @@ public class DeckStatisticsService {
                     }
                     results.add(m.result());
                 }
+            }
+        }
+
+        for (final var i = matchups.values().iterator(); i.hasNext(); ) {
+            final var results = i.next();
+            if (results.size() < META_MINIMUM_MATCH_COUNT) {
+                i.remove();
             }
         }
 
@@ -137,11 +144,8 @@ public class DeckStatisticsService {
         }
         for (final var i = output.iterator(); i.hasNext(); ) {
             final var m = i.next();
-            for (final var j = m.opponents.iterator(); j.hasNext(); ) {
-                final var op = j.next();
-                if (op.results.size() < META_MINIMUM_MATCH_COUNT) {
-                    j.remove();
-                }
+            if (doubleEquals(m.metaShare, 0)) {
+                i.remove();
             }
             if (m.opponents.isEmpty()) {
                 i.remove();
