@@ -78,10 +78,13 @@ public class DeckStatisticsService {
     public ImmutableList<DeckArchetypeMatchup> getMatchups(Iterable<Event> events) {
         logger.debug("Computing matchups");
 
-        final var mostPlayedDecks = getMostPlayedDecks(events, 64);
+        final var events64players = Lists.immutable.fromStream(
+                Lists.mutable.withAll(events).stream().filter(e -> e.players() >= 64)
+        );
+        final var mostPlayedDecks = getMostPlayedDecks(events64players, 64);
         final var matchups = Maps.mutable.<DeckArchetypeVersus, MutableBag<Deck.Match.Result>>ofInitialCapacity(mostPlayedDecks.sizeDistinct());
 
-        for (final var event : events) {
+        for (final var event : events64players) {
             for (final var deck : getEventDecks(event)) {
                 final var archetype = deckService.getArchetype(deck);
                 if (!mostPlayedDecks.contains(archetype)) {

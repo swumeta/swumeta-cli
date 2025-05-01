@@ -246,7 +246,7 @@ class GenerateSiteCommand {
         renderToFile(new MetaWinRatesModel(new HtmlMeta("Metagame - Win rates", """
                         Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
                         """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
-                        metagame.events().size(), matchups.size(), matchCount,
+                        matchups.size(), matchCount,
                         Lists.immutable.fromStream(matchups.stream().map(this::toWinRateEntry)),
                         Lists.immutable.fromStream(matchups.stream().map(this::toWinRateDataEntry))),
                 new File(winRatesDir, "index.html"));
@@ -435,7 +435,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/meta-winrates.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record MetaWinRatesModel(HtmlMeta meta, int eventCount, int deckCount, int matchCount,
+    record MetaWinRatesModel(HtmlMeta meta, int deckCount, int matchCount,
                              ImmutableList<MetaWinRateEntry> entries,
                              ImmutableList<MetaWinRateDataEntry> dataEntries) implements TemplateSupport {
     }

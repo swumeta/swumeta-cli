@@ -3,10 +3,10 @@
 <section class="container">
   <h1 class="section-title text-center mb-1">Metagame &bull; Win rates</h1>
   <p class="mb-3">This page is built using <strong>{{deckCount}}</strong> popular deck archetypes
-    which made Top 64 in <strong>{{eventCount}}</strong> events, based on <strong>{{matchCount}}</strong> matches.</p>
+    which made Top 64 in events with 64+ players, based on <strong>{{matchCount}}</strong> matches.</p>
 
   <div class="row mb-1 sm-m-4">
-    <div class="col py-2">
+    <div class="col py-1">
       <div id="chart-meta" class="w-100 mb-1" style="height: 600px; height: 25vw; min-height: 200px"></div>
     </div>
   </div>
@@ -124,8 +124,8 @@
           name: 'Win rate (%)',
           nameLocation: 'middle',
           nameGap: 30,
-          min: winRateRange.min,
-          max: winRateRange.max,
+          min: 0,
+          max: Math.max(70, winRateRange.max),
           splitNumber: 10,
           axisLine: {
               show: true
@@ -143,8 +143,8 @@
           name: 'Meta share (%)',
           nameLocation: 'middle',
           nameGap: 30,
-          min: metaShareRange.min,
-          max: metaShareRange.max,
+          min: 0,
+          max: Math.max(20, metaShareRange.max),
           splitNumber: 10,
           axisLine: {
               show: true
