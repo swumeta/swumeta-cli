@@ -70,6 +70,7 @@ public class MetagameService {
     }
 
     private static class EventFilter implements Predicate<Event> {
+        private final LocalDate now = LocalDate.now();
         private final LocalDate limitDate;
 
         EventFilter(final int months, final LocalDate hardLimit) {
@@ -83,7 +84,9 @@ public class MetagameService {
 
         @Override
         public boolean test(Event event) {
-            return !event.hidden() && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
+            return !event.hidden()
+                    && (event.date().isBefore(now) || event.date().isEqual(now))
+                    && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
         }
     }
 }
