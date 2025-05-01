@@ -244,7 +244,7 @@ class GenerateSiteCommand {
         }
 
         renderToFile(new MetaWinRatesModel(new HtmlMeta("Metagame - Win rates", """
-                        Win rates report for the Star Wars Unlimited card game, based on the most played decks during major tournaments"
+                        Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
                         """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
                         metagame.events().size(), matchups.size(), matchCount,
                         Lists.immutable.fromStream(matchups.stream().map(this::toWinRateEntry)),
