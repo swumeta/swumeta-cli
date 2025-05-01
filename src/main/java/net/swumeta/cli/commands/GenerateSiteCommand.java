@@ -242,7 +242,8 @@ class GenerateSiteCommand {
                         Win rates report for the Star Wars Unlimited card game, based on the most played decks during major tournaments"
                         """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
                         metagame.events().size(), matchups.size(),
-                        Lists.immutable.fromStream(matchups.stream().map(this::toWinRateEntry))),
+                        Lists.immutable.fromStream(matchups.stream().map(this::toWinRateEntry)),
+                        Lists.immutable.fromStream(matchups.stream().map(this::toWinRateDataEntry))),
                 new File(winRatesDir, "index.html"));
 
         logger.info("Processing redirects");
@@ -314,7 +315,7 @@ class GenerateSiteCommand {
     private MetaWinRateEntry toWinRateEntry(DeckStatisticsService.DeckArchetypeMatchup m) {
         final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
         return new MetaWinRateEntry(
-                deckService.formatArchetype(m.archetype()),
+                deckService.formatArchetype(m.archetype()).replace("\"", " "),
                 cardDatabaseService.findById(m.archetype().leader()).art(),
                 cardDatabaseService.findById(deckService.lookupBase(m.archetype())).art(),
                 percentFormatter.format(m.metaShare()),
@@ -326,6 +327,15 @@ class GenerateSiteCommand {
                                 percentFormatter.format(op.winRate()),
                                 op.results().size())
                         ))
+        );
+    }
+
+    private MetaWinRateDataEntry toWinRateDataEntry(DeckStatisticsService.DeckArchetypeMatchup m) {
+        return new MetaWinRateDataEntry(
+                deckService.formatArchetype(m.archetype()).replace("\"", " "),
+                (int) Math.round(100d * m.metaShare()),
+                (int) Math.round(100d * m.winRate()),
+                m.matchCount()
         );
     }
 
@@ -421,7 +431,8 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/meta-winrates.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record MetaWinRatesModel(HtmlMeta meta, int eventCount, int deckCount,
-                             ImmutableList<MetaWinRateEntry> entries) implements TemplateSupport {
+                             ImmutableList<MetaWinRateEntry> entries,
+                             ImmutableList<MetaWinRateDataEntry> dataEntries) implements TemplateSupport {
     }
 
     record MetaWinRateEntry(
@@ -439,6 +450,14 @@ class GenerateSiteCommand {
             String archetype,
             String winRate,
             int matchCount
+    ) {
+    }
+
+    record MetaWinRateDataEntry(
+            String archetype,
+            int meta,
+            int win,
+            int matches
     ) {
     }
 
