@@ -56,6 +56,7 @@ import java.util.regex.Pattern;
 public class DeckService {
     private static final int CURRENT_VERSION = 2;
     private static final Pattern SCORE_PATTERN = Pattern.compile("(\\d+)-(\\d+)-(\\d+)");
+    private static final Pattern SCORE_PATTERN2 = Pattern.compile("(\\d+)-(\\d+)");
     private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
             Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-020"),
             Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
@@ -377,15 +378,28 @@ public class DeckService {
             result = Deck.Match.Result.DRAW;
             record = "0-0-1";
         } else {
-            final var scoreMatcher = SCORE_PATTERN.matcher(m.result);
-            if (!scoreMatcher.find()) {
-                throw new AppException("Unable to parse match record: " + m.result);
-            }
-            final var score1 = Integer.parseInt(scoreMatcher.group(1));
-            final var score2 = Integer.parseInt(scoreMatcher.group(2));
-            final var score3 = Integer.parseInt(scoreMatcher.group(3));
+            var score1 = 0;
+            var score2 = 0;
+            var score3 = 0;
 
-            if (m.result.contains(" won ") && m.result.startsWith(m.opponentPlayerName)) {
+            var scoreMatcher = SCORE_PATTERN.matcher(m.result);
+            if (!scoreMatcher.find()) {
+                scoreMatcher = SCORE_PATTERN2.matcher(m.result);
+                if (!scoreMatcher.find()) {
+                    throw new AppException("Unable to parse match record: " + m.result);
+                } else {
+                    score1 = Integer.parseInt(scoreMatcher.group(1));
+                    score2 = Integer.parseInt(scoreMatcher.group(2));
+                }
+            } else {
+                score1 = Integer.parseInt(scoreMatcher.group(1));
+                score2 = Integer.parseInt(scoreMatcher.group(2));
+                score3 = Integer.parseInt(scoreMatcher.group(3));
+            }
+
+            if (m.opponentPlayerName == null) {
+                result = Deck.Match.Result.UNKNOWN;
+            } else if (m.result.contains(" won ") && m.result.startsWith(m.opponentPlayerName)) {
                 result = Deck.Match.Result.LOSS;
                 record = "%d-%d-%d".formatted(score2, score1, score3);
             } else if (m.result.contains(" Draw")) {
