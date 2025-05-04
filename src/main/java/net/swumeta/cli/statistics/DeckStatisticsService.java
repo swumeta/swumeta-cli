@@ -99,6 +99,9 @@ public class DeckStatisticsService {
                         continue;
                     }
                     final var opArchetype = deckService.getArchetype(opDeck);
+                    if (archetype.equals(opArchetype)) {
+                        continue;
+                    }
                     final var key = new DeckArchetypeVersus(archetype, opArchetype);
                     var results = matchups.get(key);
                     if (results == null) {
