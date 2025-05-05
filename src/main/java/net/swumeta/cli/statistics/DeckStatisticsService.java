@@ -39,6 +39,7 @@ import java.util.Objects;
 @Service
 public class DeckStatisticsService {
     private static final int META_MINIMUM_MATCH_COUNT = 8;
+    private static final int META_MAXIMUM_PLAYER_RANK = 64;
     private final Logger logger = LoggerFactory.getLogger(DeckStatisticsService.class);
     private DeckService deckService;
 
@@ -79,7 +80,7 @@ public class DeckStatisticsService {
         logger.debug("Computing matchups");
 
         final var events64players = Lists.immutable.fromStream(
-                Lists.mutable.withAll(events).stream().filter(e -> e.players() >= 64)
+                Lists.mutable.withAll(events).stream().filter(e -> e.players() >= META_MAXIMUM_PLAYER_RANK)
         );
         final var mostPlayedDecks = getMostPlayedDecks(events64players, 64);
         final var matchups = Maps.mutable.<DeckArchetypeVersus, MutableBag<Deck.Match.Result>>ofInitialCapacity(mostPlayedDecks.sizeDistinct());
@@ -165,7 +166,9 @@ public class DeckStatisticsService {
 
     private LazyIterable<Deck> getEventDecks(Event event) {
         return Lists.immutable.fromStream(
-                event.decks().stream().map(Event.DeckEntry::url)
+                event.decks().stream()
+                        .filter(d -> d.rank() <= META_MAXIMUM_PLAYER_RANK)
+                        .map(Event.DeckEntry::url)
                         .filter(Objects::nonNull)
                         .map(deckService::load)
                         .filter(Deck::isValid)
