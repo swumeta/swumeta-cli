@@ -1,4 +1,4 @@
-function createHorizontalBarChart(containerId, dataUrl, options = {}) {
+function createHorizontalBarChart(elem, dataUrl, options = {}) {
     // Default options
     const defaultOptions = {
         title: 'Untitled',
@@ -11,11 +11,7 @@ function createHorizontalBarChart(containerId, dataUrl, options = {}) {
     const chartOptions = {...defaultOptions, ...options};
 
     // Get container element
-    const chartDom = document.getElementById(containerId);
-    if (!chartDom) {
-        console.error(`Container with ID "${containerId}" not found`);
-        return;
-    }
+    const chartDom = elem[0];
 
     // Chart options
     const option = {
@@ -138,3 +134,20 @@ function createHorizontalBarChart(containerId, dataUrl, options = {}) {
     // Return chart instance for further manipulation if needed
     return myChart;
 }
+
+function initBarChart(elem) {
+    const dataTitle = elem.attr("data-title");
+    const dataPercent = "true" == elem.attr("percent")
+    const dataUrl = elem.attr("data-url");
+    const options = {
+          title: dataTitle,
+          valueAsPercentage: dataPercent
+    };
+    createHorizontalBarChart(elem, dataUrl, options);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $(".bar-chart").each(function() {
+        initBarChart($(this));
+    });
+});

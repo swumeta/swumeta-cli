@@ -6,10 +6,10 @@
   {{#hasDecks}}
     <div class="row">
       <div class="col-lg-6">
-        <div id="chart-leaders" style="width: 100%; min-height: 400px"></div>
+        <div style="width: 100%; min-height: 400px" class="bar-chart" data-url="usage-leaders.json" data-title="Leaders"></div>
       </div>
       <div class="col-lg-6">
-        <div id="chart-bases" style="width: 100%; min-height: 400px"></div>
+        <div id="chart-bases" style="width: 100%; min-height: 400px" class="bar-chart" data-url="usage-bases.json" data-title="Bases"></div>
       </div>
     </div>
     <div class="row mb-4">
@@ -108,19 +108,6 @@
     {{/videoLinks}}
   </div>
 </section>
-
-{{#hasDecks}}
-  <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-      createHorizontalBarChart('chart-leaders', 'usage-leaders.json', {
-        title: 'Leaders',
-      });
-      createHorizontalBarChart('chart-bases', 'usage-bases.json', {
-        title: 'Bases',
-      });
-    });
-  </script>
-{{/hasDecks}}
 
 {{#decks}}
   <pre class="d-none" id="swudb-deck-{{deck.id}}">

@@ -67,8 +67,8 @@ public class StaticResources {
     private Resource siteManifest;
     @Value("classpath:/static/js/ga.js")
     private Resource gaJs;
-    @Value("classpath:/static/js/chart.js")
-    private Resource chartJs;
+    @Value("classpath:/static/js/charts.js")
+    private Resource chartsJs;
     @Value("classpath:/static/js/winrates.js")
     private Resource winratesJs;
 
@@ -100,7 +100,7 @@ public class StaticResources {
         final var jsDir = new File(targetDir, "js");
         jsDir.mkdirs();
         copyResourceToFile(gaJs, jsDir);
-        copyResourceToFile(chartJs, jsDir);
+        copyResourceToFile(chartsJs, jsDir);
         copyResourceToFile(winratesJs, jsDir);
     }
 

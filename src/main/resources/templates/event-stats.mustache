@@ -15,47 +15,25 @@
   </div>
   <div class="row">
     <div class="col">
-      <div id="chart-all-leaders" class="w-100"></div>
+      <div class="bar-chart w-100" data-url="all-leaders.json" data-title="All Leaders"></div>
     </div>
   </div>
   <div class="row">
     <div class="col-xl-6">
-      <div id="chart-top64-leaders" class="w-100"></div>
+      <div class="bar-chart w-100" data-url="top64-leaders.json" data-title="Top 64 Leaders"></div>
     </div>
     <div class="col-xl-6">
-      <div id="chart-top64-conversion" class="w-100"></div>
+      <div class="bar-chart w-100" data-url="top64-conversion.json" data-title="Top 64 Conversion (%)" data-percent="true"></div>
     </div>
   </div>
   <div class="row">
     <div class="col-xl-6">
-      <div id="chart-top8-leaders" class="w-100"></div>
+      <div class="bar-chart w-100" data-url="top8-leaders.json" data-title="Top 8 Leaders"></div>
     </div>
     <div class="col-xl-6">
-      <div id="chart-top8-conversion" class="w-100"></div>
+      <div class="bar-chart w-100" data-url="top8-conversion.json" data-title="Top 8 Conversion (%)" data-percent="true"></div>
     </div>
   </div>
 </section>
-
-<script type="text/javascript">
-  document.addEventListener('DOMContentLoaded', function() {
-    createHorizontalBarChart('chart-all-leaders', 'all-leaders.json', {
-      title: 'All Leaders',
-    });
-    createHorizontalBarChart('chart-top64-leaders', 'top64-leaders.json', {
-      title: 'Top 64 Leaders',
-    });
-    createHorizontalBarChart('chart-top8-leaders', 'top8-leaders.json', {
-      title: 'Top 8 Leaders',
-    });
-    createHorizontalBarChart('chart-top64-conversion', 'top64-conversion.json', {
-      title: 'Top 64 Conversion (%)',
-      valueAsPercentage: true
-    });
-    createHorizontalBarChart('chart-top8-conversion', 'top8-conversion.json', {
-      title: 'Top 8 Conversion (%)',
-      valueAsPercentage: true
-    });
-  });
-</script>
 
 {{>templates/footer.mustache}}
