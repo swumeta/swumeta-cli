@@ -122,6 +122,9 @@ function createHorizontalBarChart(elem, dataUrl, options = {}) {
             if(processedData.length > 32) {
                 h = (processedData.length * 30);
             }
+            if(h < 100) {
+                h = 140;
+            }
             chartDom.style.height = (h + "px");
         }
         myChart.hideLoading();
