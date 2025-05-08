@@ -198,13 +198,13 @@ class GenerateSiteCommand {
         logger.info("Processing metagame page");
         final var metagame = metagameService.getMetagame();
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.decks());
-        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.decks());
+        final var deckBag = cardStatisticsService.getMostPlayedCards(metagame.decks(), c -> c.type().equals(Card.Type.LEADER));
 
         final int totalDecks = deckBag.size();
         final int totalCards = cardBag.size();
         final var topDecks = Lists.immutable.fromStream(deckBag.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) Math.round((100d * e.getTwo() / totalDecks))))
+                .map(e -> new KeyValue(cardDatabaseService.formatName(e.getOne()), (int) Math.round((100d * e.getTwo() / totalDecks))))
                 .sorted(Comparator.reverseOrder()));
         final var topCards = Lists.immutable.fromStream(cardBag.topOccurrences(5).stream()
                 .limit(5)
