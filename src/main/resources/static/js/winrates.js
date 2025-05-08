@@ -69,8 +69,156 @@ function initWinratesMatrix(elem) {
     });
 }
 
+function calculateAxisRange(data, property, padding = 0.1) {
+    const values = data.map(item => item[property]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min;
+
+    return {
+        min: Math.floor(min - range * padding),
+        max: Math.ceil(max + range * padding)
+    };
+}
+
+function getColorByMatches(matches) {
+    const minMatches = 8;
+    const maxMatches = 128;
+
+    const normalized = Math.min(Math.max((matches - minMatches) / (maxMatches - minMatches), 0), 1);
+
+    const r = Math.floor(224 - normalized * (224 - 176));
+    const g = Math.floor(224 - normalized * (224 - 58));
+    const b = Math.floor(224 - normalized * (224 - 46));
+
+    return `rgb(${r},${g},${b})`;
+}
+
+function calculateSymbolSize(matches) {
+    return 24;
+}
+
+function initWinratesChart(elem) {
+    const dataUrl = elem.attr("data-url");
+    $.getJSON(dataUrl).done(function(jsonData) {
+        const filteredData = jsonData.data.filter(item => item.meta >= 2);
+        const winRateRange = calculateAxisRange(filteredData, 'win');
+        const metaShareRange = calculateAxisRange(filteredData, 'meta');
+
+        const chartData = filteredData.map(item => ({
+            name: item.name,
+            value: [item.win, item.meta, item.matches],
+            matches: item.matches,
+            itemStyle: {
+                color: getColorByMatches(item.matches)
+            }
+        }));
+
+        const option = {
+          title: {
+              text: 'Win rate vs Meta share',
+              subtext: "swumeta.net",
+              left: 'center',
+              textStyle: {
+                  color: '#ffffff'
+              }
+          },
+          backgroundColor: '#121212',
+          tooltip: {
+              trigger: 'item',
+              formatter: function(params) {
+                  const win = params.value[0];
+                  const meta = params.value[1];
+                  const matches = params.value[2];
+                  const name = params.data.name;
+                  return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Matches: ${matches}`;
+              }
+          },
+          xAxis: {
+              type: 'value',
+              name: 'Win rate (%)',
+              nameLocation: 'middle',
+              nameGap: 30,
+              min: 0,
+              max: Math.max(70, winRateRange.max),
+              splitNumber: 10,
+              axisLine: {
+                  show: true
+              },
+              splitLine: {
+                  show: true,
+                  lineStyle: {
+                      type: 'dashed',
+                      opacity: 0.7
+                  }
+              }
+          },
+          yAxis: {
+              type: 'value',
+              name: 'Meta share (%)',
+              nameLocation: 'middle',
+              nameGap: 30,
+              min: 0,
+              max: Math.max(20, metaShareRange.max),
+              splitNumber: 10,
+              axisLine: {
+                  show: true
+              },
+              splitLine: {
+                  show: true,
+                  lineStyle: {
+                      type: 'dashed',
+                      opacity: 0.7
+                  }
+              }
+          },
+          grid: {
+              left: '5%',
+              right: '5%',
+              bottom: '10%',
+              top: '15%',
+              containLabel: true
+          },
+          series: [{
+              type: 'scatter',
+              symbolSize: function(data) {
+                  return calculateSymbolSize(data[2]);
+              },
+              data: chartData,
+              label: {
+                  show: false,
+                  formatter: function(params) {
+                      return params.data.name;
+                  },
+                  position: 'top',
+                  fontSize: 12
+              },
+              emphasis: {
+                  label: {
+                      show: false
+                  },
+                  itemStyle: {
+                      shadowBlur: 10,
+                      shadowColor: 'rgba(0, 0, 0, 0.5)'
+                  }
+              }
+          }]
+        };
+
+        const chartDom = elem[0];
+        const myChart = echarts.init(chartDom);
+        myChart.setOption(option);
+        window.addEventListener('resize', function() {
+          myChart.resize();
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     $(".winrates-container").each(function() {
         initWinratesMatrix($(this));
+    });
+    $(".winrates-chart").each(function() {
+        initWinratesChart($(this));
     });
 });

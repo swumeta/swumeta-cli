@@ -166,17 +166,8 @@ class GenerateSiteCommand {
 
             final var leaderMatchups = deckStatisticsService.getLeaderMatchups(
                     event.decks().stream().map(Event.DeckEntry::url).filter(Objects::nonNull).toList());
-            renderToFile(new WinrateMatrixModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup -> new WinrateMatrixEntry(
-                    new WinrateMatrixLeader(
-                            cardDatabaseService.formatName(matchup.leader()),
-                            cardDatabaseService.findById(matchup.leader()).thumbnail()
-                    ),
-                    Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
-                            cardDatabaseService.formatName(op.opponent()),
-                            (int) Math.round(100d * op.winRate()),
-                            op.results().size()
-                    )))
-            )))), new File(eventDir, "winrates-matrix.json"));
+            renderToFile(toMinrateMatrixModel(leaderMatchups), new File(eventDir, "winrates-matrix.json"));
+            renderToFile(toWinRateDataModel(leaderMatchups), new File(eventDir, "winrates-chart.json"));
 
             final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
@@ -225,31 +216,11 @@ class GenerateSiteCommand {
                         totalDecks, topDecks, topCards),
                 new File(outputDir, "index.html"));
 
-        logger.info("Processing matchups");
-        final var matchups = deckStatisticsService.getMatchups(metagame.decks());
-        /*
-        final var matchupsReport = new StringWriter();
-        final var matchupsReportWriter = new PrintWriter(matchupsReport);
-        for (final var matchup : matchups) {
-            final var archetype = deckService.formatArchetype(matchup.archetype());
-            matchupsReportWriter.println();
-            matchupsReportWriter.println(archetype + " (" + percentFormatter.format(matchup.metaShare())
-                    + " meta) -> " + percentFormatter.format(matchup.winRate()) + " win based on "
-                    + numberFormatter.format(matchup.matchCount()) + " matches");
-            for (final var op : matchup.opponents()) {
-                matchupsReportWriter.println(" vs " + deckService.formatArchetype(op.archetype())
-                        + " -> " + percentFormatter.format(op.winRate()) + " win based on "
-                        + numberFormatter.format(op.results().size()) + " matches");
-            }
-        }
-        logger.info("Matchups:\n{}", matchupsReport.getBuffer());
-         */
-
         logger.info("Processing matchups based on {} decks", metagame.decks().size());
-        final var matchups2 = deckStatisticsService.getLeaderMatchups(metagame.decks());
+        final var matchups = deckStatisticsService.getLeaderMatchups(metagame.decks());
         final var matchups2Report = new StringWriter();
         final var matchups2ReportWriter = new PrintWriter(matchups2Report);
-        for (final var matchup : matchups2) {
+        for (final var matchup : matchups) {
             final var leader = cardDatabaseService.formatName(matchup.leader());
             matchups2ReportWriter.println();
             matchups2ReportWriter.println(leader + " (" + percentFormatter.format(matchup.metaShare()) + " meta) -> "
@@ -270,17 +241,17 @@ class GenerateSiteCommand {
         }
 
         var matchCount = 0;
-        for (final var m : matchups2) {
+        for (final var m : matchups) {
             matchCount += m.matchCount();
         }
 
-        renderToFile(new MetaWinRatesModel(new HtmlMeta("Metagame - Win rates", """
+        renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win rates", """
                         Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
                         """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
-                        matchups.size(), matchCount,
-                        Lists.immutable.fromStream(matchups.stream().map(this::toWinRateEntry)),
-                        Lists.immutable.fromStream(matchups.stream().map(this::toWinRateDataEntry))),
+                        metagame.decks().size(), matchCount),
                 new File(winRatesDir, "index.html"));
+        renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
+        renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
 
         logger.info("Processing redirects");
         for (final var redirect : redirectService.getRedirects()) {
@@ -346,33 +317,6 @@ class GenerateSiteCommand {
             result.put("Others", othersTotal);
         }
         return Lists.immutable.fromStream(result.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).sorted());
-    }
-
-    private MetaWinRateEntry toWinRateEntry(DeckStatisticsService.DeckArchetypeMatchup m) {
-        final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
-        return new MetaWinRateEntry(
-                deckService.formatArchetype(m.archetype()).replace("\"", " "),
-                cardDatabaseService.findById(m.archetype().leader()).art(),
-                cardDatabaseService.findById(deckService.lookupBase(m.archetype())).art(),
-                percentFormatter.format(m.metaShare()),
-                percentFormatter.format(m.winRate()),
-                m.matchCount(),
-                Lists.immutable.fromStream(
-                        m.opponents().stream().map(op -> new MetaWinRateOpponent(
-                                deckService.formatArchetype(op.archetype()),
-                                percentFormatter.format(op.winRate()),
-                                op.results().size())
-                        ))
-        );
-    }
-
-    private MetaWinRateDataEntry toWinRateDataEntry(DeckStatisticsService.DeckArchetypeMatchup m) {
-        return new MetaWinRateDataEntry(
-                deckService.formatArchetype(m.archetype()).replace("\"", " "),
-                (int) Math.round(100d * m.metaShare()),
-                (int) Math.round(100d * m.winRate()),
-                m.matchCount()
-        );
     }
 
     record HtmlMeta(
@@ -465,35 +409,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/meta-winrates.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record MetaWinRatesModel(HtmlMeta meta, int deckCount, int matchCount,
-                             ImmutableList<MetaWinRateEntry> entries,
-                             ImmutableList<MetaWinRateDataEntry> dataEntries) implements TemplateSupport {
-    }
-
-    record MetaWinRateEntry(
-            String archetype,
-            URI leaderArt,
-            URI baseArt,
-            String metaShare,
-            String winRate,
-            int matchCount,
-            ImmutableList<MetaWinRateOpponent> opponents
-    ) {
-    }
-
-    record MetaWinRateOpponent(
-            String archetype,
-            String winRate,
-            int matchCount
-    ) {
-    }
-
-    record MetaWinRateDataEntry(
-            String archetype,
-            int meta,
-            int win,
-            int matches
-    ) {
+    record MetaWinratesModel(HtmlMeta meta, int deckCount, int matchCount) implements TemplateSupport {
     }
 
     interface TemplateSupport {
@@ -734,6 +650,21 @@ class GenerateSiteCommand {
     ) implements TemplateSupport {
     }
 
+    @JStache(path = "/templates/winrates-data.mustache")
+    @JStacheConfig
+    record WinrateDataModel(
+            ImmutableList<WinrateDataEntry> series
+    ) {
+    }
+
+    record WinrateDataEntry(
+            String leader,
+            int winRate,
+            int metaShare,
+            int matches
+    ) {
+    }
+
     @JStache(path = "/templates/winrates.mustache")
     @JStacheConfig
     record WinrateMatrixModel(
@@ -758,6 +689,28 @@ class GenerateSiteCommand {
             int winRate,
             int matches
     ) {
+    }
+
+    private WinrateMatrixModel toMinrateMatrixModel(ImmutableList<DeckStatisticsService.LeaderMatchup> leaderMatchups) {
+        return new WinrateMatrixModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup -> new WinrateMatrixEntry(
+                new WinrateMatrixLeader(
+                        cardDatabaseService.formatName(matchup.leader()),
+                        cardDatabaseService.findById(matchup.leader()).thumbnail()
+                ),
+                Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
+                        cardDatabaseService.formatName(op.opponent()),
+                        (int) Math.round(100d * op.winRate()),
+                        op.results().size()
+                )))
+        ))));
+    }
+
+    private WinrateDataModel toWinRateDataModel(ImmutableList<DeckStatisticsService.LeaderMatchup> leaderMatchups) {
+        return new WinrateDataModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup ->
+                new WinrateDataEntry(cardDatabaseService.formatName(matchup.leader()),
+                        (int) Math.round(100d * matchup.winRate()), (int) Math.round(100d * matchup.metaShare()),
+                        matchup.matchCount())))
+        );
     }
 
     private String formatDate(Event e) {

@@ -2,214 +2,22 @@
 
 <section class="container">
   <h1 class="section-title text-center mb-1">Metagame &bull; Win rates</h1>
-  <div class="info-banner mb-3" style="font-size: 90%">
-    <p>This page analyzes <strong>{{deckCount}}</strong> popular deck archetypes
-      that reached Top 64 in events with 64+ players, based on <strong>{{matchCount}}</strong> matches.</p>
-    <p><strong>Only Top 64 decks</strong> are considered, as we want to focus on the decks that performed best.</p>
+  <div class="info-banner mb-4" style="font-size: 90%">
+    <p>This page analyzes <strong>{{deckCount}}</strong> decks in major Star Wars Unlimited tournaments with 64+ players,
+      based on <strong>{{matchCount}}</strong> matches.</p>
   </div>
 
   <div class="row mb-1 sm-m-4">
     <div class="col py-1">
-      <div id="chart-meta" class="w-100 mb-1" style="height: 600px; height: 25vw; min-height: 200px"></div>
+      {{>templates/winrates-chart.mustache}}
     </div>
   </div>
 
   <div class="row">
-    {{#entries}}
-      <div class="col-lg-6 mb-3 mb-lg-0 sm-mt-2 mt-0">
-        <div class="card rounded rounded-4 overflow-auto p-2" style="height: 700px">
-          <div class="container card-img-top mb-0">
-            <div class="row">
-              <div class="col-6">
-                <img class="img-fluid rounded rounded-4" src="{{leaderArt}}"/>
-              </div>
-              <div class="col-6">
-                <img class="img-fluid rounded rounded-4" src="{{baseArt}}"/>
-              </div>
-            </div>
-          </div>
-          <div class="card-body pb-1">
-            <h2 class="fs-5 card-title w-100 text-truncate">{{archetype}}</h2>
-            <p>
-              <span class="text-secondary">meta: </span>
-              <span class="fw-bold">{{metaShare}}</span>
-              &bull;
-              <span class="text-secondary">win rate: </span>
-              <span class="fw-bold">{{winRate}}</span>
-              &bull;
-              <span class="text-secondary">matches: </span>
-              <span class="fw-bold">{{matchCount}}</span>
-            </p>
-            <ul class="list-unstyled" style="font-size: 90%">
-              {{#opponents}}
-                <li class="meta-opponents">
-                  <p class="mb-0"><span class="text-secondary">vs</span> <strong>{{archetype}}</strong></p>
-                  <p><i class="bi bi-arrow-right-short"></i> <span class="fw-bold">{{winRate}}</span>
-                    <span class="text-secondary">win based on</span>
-                    <span class="fw-bold">{{matchCount}} matches</span></p>
-                </li>
-              {{/opponents}}
-            </ul>
-          </div>
-        </div>
-      </div>
-    {{/entries}}
+    <div class="col">
+      {{>templates/winrates-table.mustache}}
+    </div>
   </div>
 </section>
-
-<script type="text/javascript">
-  document.addEventListener('DOMContentLoaded', function() {
-    const data = [
-  {{#dataEntries}}
-    { "name": "{{{archetype}}}", meta: {{meta}}, win: {{win}}, matches: {{matches}} }{{^-last}},{{/-last}}
-  {{/dataEntries}}
-  ];
-
-  function calculateAxisRange(data, property, padding = 0.1) {
-      const values = data.map(item => item[property]);
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const range = max - min;
-
-      return {
-          min: Math.floor(min - range * padding),
-          max: Math.ceil(max + range * padding)
-      };
-  }
-
-  function getColorByMatches(matches) {
-      const minMatches = 8;
-      const maxMatches = 64;
-
-      const normalized = Math.min(Math.max((matches - minMatches) / (maxMatches - minMatches), 0), 1);
-
-      const r = Math.floor(224 - normalized * (224 - 176));
-      const g = Math.floor(224 - normalized * (224 - 58));
-      const b = Math.floor(224 - normalized * (224 - 46));
-
-      return `rgb(${r},${g},${b})`;
-  }
-
-  const winRateRange = calculateAxisRange(data, 'win');
-  const metaShareRange = calculateAxisRange(data, 'meta');
-
-  const chartData = data.map(item => ({
-      name: item.name,
-      value: [item.win, item.meta, item.matches],
-      matches: item.matches,
-      itemStyle: {
-          color: getColorByMatches(item.matches)
-      }
-  }));
-
-  const option = {
-      title: {
-          text: 'Win rate vs Meta share',
-          subtext: "swumeta.net",
-          left: 'center',
-          textStyle: {
-              color: '#ffffff'
-          }
-      },
-      backgroundColor: '#121212',
-      tooltip: {
-          trigger: 'item',
-          formatter: function(params) {
-              const win = params.value[0];
-              const meta = params.value[1];
-              const matches = params.value[2];
-              const name = params.data.name;
-              return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Matches: ${matches}`;
-          }
-      },
-      xAxis: {
-          type: 'value',
-          name: 'Win rate (%)',
-          nameLocation: 'middle',
-          nameGap: 30,
-          min: 0,
-          max: Math.max(70, winRateRange.max),
-          splitNumber: 10,
-          axisLine: {
-              show: true
-          },
-          splitLine: {
-              show: true,
-              lineStyle: {
-                  type: 'dashed',
-                  opacity: 0.7
-              }
-          }
-      },
-      yAxis: {
-          type: 'value',
-          name: 'Meta share (%)',
-          nameLocation: 'middle',
-          nameGap: 30,
-          min: 0,
-          max: Math.max(20, metaShareRange.max),
-          splitNumber: 10,
-          axisLine: {
-              show: true
-          },
-          splitLine: {
-              show: true,
-              lineStyle: {
-                  type: 'dashed',
-                  opacity: 0.7
-              }
-          }
-      },
-      grid: {
-          left: '5%',
-          right: '5%',
-          bottom: '10%',
-          top: '15%',
-          containLabel: true
-      },
-      series: [{
-          type: 'scatter',
-          symbolSize: function(data) {
-              return calculateSymbolSize(data[2]);
-          },
-          data: chartData,
-          label: {
-              show: false,
-              formatter: function(params) {
-                  return params.data.name;
-              },
-              position: 'top',
-              fontSize: 12
-          },
-          emphasis: {
-              label: {
-                  show: false
-              },
-              itemStyle: {
-                  shadowBlur: 10,
-                  shadowColor: 'rgba(0, 0, 0, 0.5)'
-              }
-          }
-      }]
-  };
-
-  function calculateSymbolSize(matches) {
-      const minSize = 10;
-      const maxSize = 25;
-
-      const minMatches = 8;
-      const maxMatches = 96;
-
-      return minSize + ((matches - minMatches) / (maxMatches - minMatches)) * (maxSize - minSize);
-  }
-
-  const chartDom = document.getElementById("chart-meta");
-  const myChart = echarts.init(chartDom);
-  myChart.setOption(option);
-  window.addEventListener('resize', function() {
-      myChart.resize();
-  });
-});
-</script>
 
 {{>templates/footer.mustache}}

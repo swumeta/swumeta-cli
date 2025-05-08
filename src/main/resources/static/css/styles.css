@@ -304,3 +304,8 @@ tr:hover .btn-copy {
 .winrates-container tbody td .matches {
     font-size: 80%;
 }
+
+.winrates-chart {
+    width: 100%;
+    height: 50vh;
+}

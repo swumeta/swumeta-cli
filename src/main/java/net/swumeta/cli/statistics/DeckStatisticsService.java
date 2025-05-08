@@ -16,7 +16,6 @@
 
 package net.swumeta.cli.statistics;
 
-import net.swumeta.cli.CardDatabaseService;
 import net.swumeta.cli.DeckService;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
@@ -35,9 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -45,15 +41,11 @@ public class DeckStatisticsService {
     private static final ImmutableSet<Deck.Match.Result> VALID_MATCH_RESULTS = Sets.immutable.of(
             Deck.Match.Result.WIN, Deck.Match.Result.LOSS, Deck.Match.Result.BYE, Deck.Match.Result.DRAW
     );
-    private static final int META_MINIMUM_MATCH_COUNT = 8;
-    private static final int META_MINIMUM_OPPONENT_COUNT = 3;
     private final Logger logger = LoggerFactory.getLogger(DeckStatisticsService.class);
     private final DeckService deckService;
-    private final CardDatabaseService cardDatabaseService;
 
-    DeckStatisticsService(DeckService deckService, CardDatabaseService cardDatabaseService) {
+    DeckStatisticsService(DeckService deckService) {
         this.deckService = deckService;
-        this.cardDatabaseService = cardDatabaseService;
     }
 
     public ImmutableBag<DeckArchetype> getMostPlayedDecks(Iterable<URI> decks) {
@@ -127,178 +119,6 @@ public class DeckStatisticsService {
         return allLeadersMatchups.toImmutableList();
     }
 
-    public ImmutableList<DeckArchetypeMatchup> getMatchups(Iterable<URI> decks) {
-        logger.debug("Computing statistics: matchups");
-
-        final var mostPlayedDecks = doGetMostPlayedDecks(decks);
-        final var matchups = Maps.mutable.<DeckArchetypeVersus, MutableBag<Deck.Match.Result>>ofInitialCapacity(mostPlayedDecks.sizeDistinct());
-        for (final var deckUri : decks) {
-            final var deck = deckService.load(deckUri);
-            if (!deck.isValid()) {
-                continue;
-            }
-            final var archetype = deckService.getArchetype(deck);
-            for (final var m : deck.matches()) {
-                if (m.opponentDeck() == null) {
-                    continue;
-                }
-                final var opDeck = deckService.load(m.opponentDeck());
-                if (!opDeck.isValid()) {
-                    continue;
-                }
-                final var opArchetype = deckService.getArchetype(opDeck);
-                if (archetype.equals(opArchetype)) {
-                    continue;
-                }
-                final var key = new DeckArchetypeVersus(archetype, opArchetype);
-                var results = matchups.get(key);
-                if (results == null) {
-                    results = Bags.mutable.ofInitialCapacity(32);
-                    matchups.put(key, results);
-                }
-                results.add(m.result());
-            }
-        }
-
-        for (final var i = matchups.values().iterator(); i.hasNext(); ) {
-            final var results = i.next();
-            if (results.size() < META_MINIMUM_MATCH_COUNT) {
-                i.remove();
-            }
-        }
-
-        final var output = Lists.mutable.<MutableDeckArchetypeMatchup>ofInitialCapacity(matchups.size());
-        for (final var e : matchups.entrySet()) {
-            MutableDeckArchetypeMatchup m = null;
-            for (final var candidate : output) {
-                if (candidate.archetype.equals(e.getKey().archetype)) {
-                    m = candidate;
-                    break;
-                }
-            }
-            if (m == null) {
-                final var archetype = e.getKey().archetype();
-                final var metaShare = mostPlayedDecks.occurrencesOf(archetype) / (double) mostPlayedDecks.size();
-                m = new MutableDeckArchetypeMatchup(archetype, metaShare, new ArrayList<>(8));
-                output.add(m);
-            }
-            MutableDeckArchetypeOpponent op = null;
-            for (final var candidate : m.opponents) {
-                if (candidate.archetype.equals(e.getKey().opponent)) {
-                    op = candidate;
-                    break;
-                }
-            }
-            if (op == null) {
-                op = new MutableDeckArchetypeOpponent(e.getKey().opponent(), Bags.mutable.ofInitialCapacity(8));
-                m.opponents.add(op);
-            }
-            op.results.addAll(e.getValue());
-        }
-        for (final var i = output.iterator(); i.hasNext(); ) {
-            final var m = i.next();
-            if (doubleEquals(m.metaShare, 0)) {
-                i.remove();
-            }
-            if (m.opponents.isEmpty()) {
-                i.remove();
-            }
-        }
-        return Lists.immutable.fromStream(
-                output.stream().map(MutableDeckArchetypeMatchup::toImmutable)
-                        .sorted(Comparator.comparingDouble(DeckArchetypeMatchup::metaShare).reversed())
-        );
-    }
-
-    record DeckArchetypeVersus(
-            DeckArchetype archetype,
-            DeckArchetype opponent
-    ) {
-    }
-
-    private record MutableDeckArchetypeMatchup(
-            DeckArchetype archetype,
-            double metaShare,
-            List<MutableDeckArchetypeOpponent> opponents
-    ) {
-        DeckArchetypeMatchup toImmutable() {
-            return new DeckArchetypeMatchup(archetype, metaShare, Lists.immutable.fromStream(
-                    opponents.stream().map(MutableDeckArchetypeOpponent::toImmutable).sorted(Comparator.reverseOrder()))
-            );
-        }
-    }
-
-    public record DeckArchetypeMatchup(
-            DeckArchetype archetype,
-            double metaShare,
-            ImmutableList<DeckArchetypeOpponent> opponents
-    ) implements Comparable<DeckArchetypeMatchup> {
-        @Override
-        public int compareTo(DeckArchetypeMatchup o) {
-            if (archetype.equals(o.archetype)) {
-                return 0;
-            }
-            final double winRate1 = winRate();
-            final double winRate2 = o.winRate();
-            if (doubleEquals(winRate1, winRate2)) {
-                return 0;
-            }
-            return winRate1 < winRate2 ? -1 : 1;
-        }
-
-        public double winRate() {
-            int winCount = 0;
-            int total = 0;
-            for (final var op : opponents) {
-                winCount += op.results.occurrencesOf(Deck.Match.Result.WIN);
-                total += op.results.size();
-            }
-            return winCount / (double) total;
-        }
-
-        public int matchCount() {
-            int total = 0;
-            for (final var op : opponents) {
-                total += op.results.size();
-            }
-            return total;
-        }
-    }
-
-    private static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) < 0.01;
-    }
-
-    private record MutableDeckArchetypeOpponent(
-            DeckArchetype archetype,
-            MutableBag<Deck.Match.Result> results
-    ) {
-        DeckArchetypeOpponent toImmutable() {
-            return new DeckArchetypeOpponent(archetype, results.toImmutable());
-        }
-    }
-
-    public record DeckArchetypeOpponent(
-            DeckArchetype archetype,
-            ImmutableBag<Deck.Match.Result> results
-    ) implements Comparable<DeckArchetypeOpponent> {
-        @Override
-        public int compareTo(DeckArchetypeOpponent o) {
-            final var winRate1 = winRate();
-            final var winRate2 = o.winRate();
-            if (doubleEquals(winRate1, winRate2)) {
-                return archetype.compareTo(o.archetype);
-            }
-            return winRate1 < winRate2 ? -1 : 1;
-        }
-
-        public double winRate() {
-            int winCount = results.occurrencesOf(Deck.Match.Result.WIN);
-            int total = results.size();
-            return winCount / (double) total;
-        }
-    }
-
     public record LeaderMatchup(
             Card.Id leader,
             double metaShare,
@@ -330,12 +150,6 @@ public class DeckStatisticsService {
         public double winRate() {
             return results.isEmpty() ? 0d : results.occurrencesOf(Deck.Match.Result.WIN) / (double) results.size();
         }
-    }
-
-    record MutableLeaderMatchupEntry(
-            Card.Id opponent,
-            MutableBag<Deck.Match.Result> results
-    ) {
     }
 
     record LeaderOpponentKey(
