@@ -367,7 +367,7 @@ public class DeckService {
 
     private Deck.Match toDeckMatch(int tournamentId, MeleeDeckMatch m) {
         var record = "0-0-0";
-        Deck.Match.Result result = Deck.Match.Result.WIN;
+        Deck.Match.Result result = Deck.Match.Result.UNKNOWN;
 
         if (m.result.contains("a bye")) {
             result = Deck.Match.Result.BYE;
@@ -406,6 +406,7 @@ public class DeckService {
                 result = Deck.Match.Result.DRAW;
                 record = "%d-%d-%d".formatted(score1, score2, score3);
             } else {
+                result = Deck.Match.Result.WIN;
                 record = "%d-%d-%d".formatted(score1, score2, score3);
             }
         }

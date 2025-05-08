@@ -17,11 +17,15 @@
 package net.swumeta.cli;
 
 import net.swumeta.cli.model.Event;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
@@ -29,6 +33,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class MetagameService {
+    private static final ImmutableSet<Event.Type> VALID_EVENT_TYPES = Sets.immutable.of(
+            Event.Type.GS, Event.Type.RQ, Event.Type.SQ, Event.Type.PQ
+    );
     private final Logger logger = LoggerFactory.getLogger(MetagameService.class);
     private final EventService eventService;
     private final AppConfig config;
@@ -38,7 +45,7 @@ public class MetagameService {
         this.config = config;
     }
 
-    public record Metagame(LocalDate date, ImmutableList<Event> events) {
+    public record Metagame(LocalDate date, ImmutableList<Event> events, ImmutableList<URI> decks) {
     }
 
     public Metagame getMetagame() {
@@ -50,7 +57,24 @@ public class MetagameService {
             throw new AppException("No events found");
         }
 
+        final var deckUris = Lists.mutable.<URI>ofInitialCapacity(64);
+        for (final var event : events) {
+            if (event.players() < 1) {
+                continue;
+            }
+            final int topDecksSize = (int) Math.max(1, Math.round(event.players() * 0.1d));
+            var cardCount = 0;
+            for (final var entry : event.decks()) {
+                if (/* cardCount > topDecksSize ||*/ entry.url() == null) {
+                    continue;
+                }
+                deckUris.add(entry.url());
+                ++cardCount;
+            }
+        }
+
         logger.debug("Number of events part of the metagame: {}", events.size());
+        logger.debug("Number of decks part of the metagame: {}", deckUris.size());
         if (logger.isTraceEnabled()) {
             final var df = DateTimeFormatter.ISO_LOCAL_DATE;
             final var eventNames = events.stream()
@@ -66,7 +90,7 @@ public class MetagameService {
             }
         }
 
-        return new Metagame(lastDate, events);
+        return new Metagame(lastDate, events, deckUris.toImmutable());
     }
 
     private static class EventFilter implements Predicate<Event> {
@@ -85,6 +109,8 @@ public class MetagameService {
         @Override
         public boolean test(Event event) {
             return !event.hidden()
+                    && VALID_EVENT_TYPES.contains(event.type())
+                    && event.players() >= 32
                     && (event.date().isBefore(now) || event.date().isEqual(now))
                     && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
         }

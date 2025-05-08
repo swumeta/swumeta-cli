@@ -91,6 +91,9 @@ class GenerateSiteCommand {
     void run(File outputDir) {
         logger.info("Generating website...");
 
+        final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
+        final var numberFormatter = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+
         logger.debug("Output directory: {}", outputDir);
         outputDir.mkdirs();
 
@@ -138,9 +141,11 @@ class GenerateSiteCommand {
                     : Lists.immutable.<Link>empty();
 
             final var singleEvent = Collections.singleton(event);
-            final var deckBag = deckStatisticsService.getMostPlayedDecks(singleEvent);
-            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(singleEvent, 64);
-            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(singleEvent, 8);
+            final var deckUris = Lists.immutable.fromStream(event.decks().stream()
+                    .filter(d -> d.url() != null).map(Event.DeckEntry::url));
+            final var deckBag = deckStatisticsService.getMostPlayedDecks(deckUris);
+            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(deckUris.take(64));
+            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(deckUris.take(8));
 
             final var leaderSeries = toLeaderSerie(deckBag);
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
@@ -158,6 +163,20 @@ class GenerateSiteCommand {
             renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
             renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-survivors.json"));
             renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-survivors.json"));
+
+            final var leaderMatchups = deckStatisticsService.getLeaderMatchups(
+                    event.decks().stream().map(Event.DeckEntry::url).filter(Objects::nonNull).toList());
+            renderToFile(new WinrateMatrixModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup -> new WinrateMatrixEntry(
+                    new WinrateMatrixLeader(
+                            cardDatabaseService.formatName(matchup.leader()),
+                            cardDatabaseService.findById(matchup.leader()).thumbnail()
+                    ),
+                    Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
+                            cardDatabaseService.formatName(op.opponent()),
+                            (int) Math.round(100d * op.winRate()),
+                            op.results().size()
+                    )))
+            )))), new File(eventDir, "winrates-matrix.json"));
 
             final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
@@ -187,37 +206,30 @@ class GenerateSiteCommand {
 
         logger.info("Processing metagame page");
         final var metagame = metagameService.getMetagame();
-        final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.events()).cards();
-        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.events());
-        final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(metagame.events(), 8);
+        final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.decks());
+        final var deckBag = deckStatisticsService.getMostPlayedDecks(metagame.decks());
 
         final int totalDecks = deckBag.size();
-        final int totalTop8Decks = deckBagTop8.size();
         final int totalCards = cardBag.size();
         final var topDecks = Lists.immutable.fromStream(deckBag.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalDecks * 100)))
+                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) Math.round((100d * e.getTwo() / totalDecks))))
                 .sorted(Comparator.reverseOrder()));
         final var topCards = Lists.immutable.fromStream(cardBag.topOccurrences(5).stream()
                 .limit(5)
-                .map(e -> new KeyValue(cardDatabaseService.findById(e.getOne()).name(), (int) (e.getTwo() / (double) totalCards * 100)))
-                .sorted(Comparator.reverseOrder()));
-        final var top8Decks = Lists.immutable.fromStream(deckBagTop8.topOccurrences(5).stream()
-                .limit(5)
-                .map(e -> new KeyValue(deckService.formatArchetype(e.getOne()), (int) (e.getTwo() / (double) totalTop8Decks * 100)))
+                .map(e -> new KeyValue(cardDatabaseService.findById(e.getOne()).name(), (int) Math.round((100d * e.getTwo() / totalCards))))
                 .sorted(Comparator.reverseOrder()));
 
         renderToFile(new IndexModel(new HtmlMeta(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri()),
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
-                        totalDecks, topDecks, topCards, top8Decks),
+                        totalDecks, topDecks, topCards),
                 new File(outputDir, "index.html"));
 
         logger.info("Processing matchups");
-        final var matchups = deckStatisticsService.getMatchups(metagame.events());
+        final var matchups = deckStatisticsService.getMatchups(metagame.decks());
+        /*
         final var matchupsReport = new StringWriter();
         final var matchupsReportWriter = new PrintWriter(matchupsReport);
-        final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
-        final var numberFormatter = NumberFormat.getIntegerInstance(Locale.ENGLISH);
         for (final var matchup : matchups) {
             final var archetype = deckService.formatArchetype(matchup.archetype());
             matchupsReportWriter.println();
@@ -231,6 +243,25 @@ class GenerateSiteCommand {
             }
         }
         logger.info("Matchups:\n{}", matchupsReport.getBuffer());
+         */
+
+        logger.info("Processing matchups based on {} decks", metagame.decks().size());
+        final var matchups2 = deckStatisticsService.getLeaderMatchups(metagame.decks());
+        final var matchups2Report = new StringWriter();
+        final var matchups2ReportWriter = new PrintWriter(matchups2Report);
+        for (final var matchup : matchups2) {
+            final var leader = cardDatabaseService.formatName(matchup.leader());
+            matchups2ReportWriter.println();
+            matchups2ReportWriter.println(leader + " (" + percentFormatter.format(matchup.metaShare()) + " meta) -> "
+                    + percentFormatter.format(matchup.winRate()) + " win based on "
+                    + numberFormatter.format(matchup.matchCount()) + " matches");
+            for (final var op : matchup.opponents()) {
+                matchups2ReportWriter.println(" vs " + cardDatabaseService.formatName(op.opponent()) + " -> "
+                        + percentFormatter.format(op.winRate()) + " win based on "
+                        + numberFormatter.format(op.results().size()) + " matches");
+            }
+        }
+        logger.info("Matchups:\n{}", matchups2Report.getBuffer());
 
         final var metaDir = new File(outputDir, "meta");
         final var winRatesDir = new File(metaDir, "win-rates");
@@ -239,7 +270,7 @@ class GenerateSiteCommand {
         }
 
         var matchCount = 0;
-        for (final var m : matchups) {
+        for (final var m : matchups2) {
             matchCount += m.matchCount();
         }
 
@@ -357,8 +388,7 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/index.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record IndexModel(HtmlMeta meta, String lastEventDate, int totalDecks,
-                      ImmutableList<KeyValue> topDecks, ImmutableList<KeyValue> topCards,
-                      ImmutableList<KeyValue> top8Decks) implements TemplateSupport {
+                      ImmutableList<KeyValue> topDecks, ImmutableList<KeyValue> topCards) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/about.mustache")
@@ -702,6 +732,32 @@ class GenerateSiteCommand {
     record RedirectModel(
             URI target
     ) implements TemplateSupport {
+    }
+
+    @JStache(path = "/templates/winrates.mustache")
+    @JStacheConfig
+    record WinrateMatrixModel(
+            ImmutableList<WinrateMatrixEntry> entries
+    ) {
+    }
+
+    record WinrateMatrixEntry(
+            WinrateMatrixLeader leader,
+            ImmutableList<WinrateMatrixOpponent> opponents
+    ) {
+    }
+
+    record WinrateMatrixLeader(
+            String name,
+            URI art
+    ) {
+    }
+
+    record WinrateMatrixOpponent(
+            String name,
+            int winRate,
+            int matches
+    ) {
     }
 
     private String formatDate(Event e) {

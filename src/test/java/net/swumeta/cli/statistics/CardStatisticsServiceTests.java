@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,12 +46,11 @@ class CardStatisticsServiceTests {
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 3),
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 1)
         );
-        final var event = helper.createEvent("Foo", LocalDate.now(), List.of(deck1, deck2));
-        final var stats = svc.getMostPlayedCards(List.of(event));
+        final var stats = svc.getMostPlayedCards(List.of(deck1.source(), deck2.source()));
         assertThat(stats).isNotNull();
-        assertThat(stats.cards().sizeDistinct()).isEqualTo(6);
-        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(5);
-        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(4);
+        assertThat(stats.sizeDistinct()).isEqualTo(6);
+        assertThat(stats.occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(5);
+        assertThat(stats.occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(4);
     }
 
     @Test
@@ -69,11 +67,10 @@ class CardStatisticsServiceTests {
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
         );
-        final var event = helper.createEvent("Foo", LocalDate.now(), List.of(deck1, deck2, deck3));
-        final var stats = svc.getMostPlayedCards(List.of(event), c -> Card.Type.LEADER.equals(c.type()));
+        final var stats = svc.getMostPlayedCards(List.of(deck1.source(), deck2.source(), deck3.source()), c -> Card.Type.LEADER.equals(c.type()));
         assertThat(stats).isNotNull();
-        assertThat(stats.cards().sizeDistinct()).isEqualTo(2);
-        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("JTL-009"))).isEqualTo(1);
-        assertThat(stats.cards().occurrencesOf(Card.Id.valueOf("SOR-008"))).isEqualTo(2);
+        assertThat(stats.sizeDistinct()).isEqualTo(2);
+        assertThat(stats.occurrencesOf(Card.Id.valueOf("JTL-009"))).isEqualTo(1);
+        assertThat(stats.occurrencesOf(Card.Id.valueOf("SOR-008"))).isEqualTo(2);
     }
 }

@@ -69,6 +69,8 @@ public class StaticResources {
     private Resource gaJs;
     @Value("classpath:/static/js/chart.js")
     private Resource chartJs;
+    @Value("classpath:/static/js/winrates.js")
+    private Resource winratesJs;
 
     public void copyToDirectory(File targetDir) throws IOException {
         final var cssDir = new File(targetDir, "css");
@@ -99,6 +101,7 @@ public class StaticResources {
         jsDir.mkdirs();
         copyResourceToFile(gaJs, jsDir);
         copyResourceToFile(chartJs, jsDir);
+        copyResourceToFile(winratesJs, jsDir);
     }
 
     private void copyResourceToFile(Resource res, File targetDir) throws IOException {

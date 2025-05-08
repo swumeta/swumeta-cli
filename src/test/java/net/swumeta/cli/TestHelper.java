@@ -56,16 +56,32 @@ public class TestHelper {
     }
 
     public Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard) {
-        return createDeck(leader, base, main, sideboard, "2-1-0");
+        return createDeck(leader, base, main, sideboard, "0-0-0", List.of());
     }
 
-    public Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard, String matchRecord) {
+    public Deck updateMatches(Deck deck, String matchRecord, List<Deck.Match> matches) {
+        try {
+            final var deckFile = new File(UriComponentsBuilder.fromUri(deck.source()).scheme("file").build().toUri());
+            logger.trace("Updating test deck to file: {}", deckFile);
+            final var newDeck = new Deck(
+                    deck.source(), deck.player(), deck.format(), deck.leader(), deck.base(), deck.main(), deck.sideboard(),
+                    matchRecord, matches
+            );
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(deckFile, newDeck);
+            return newDeck;
+        } catch (IOException e) {
+            throw new AppException("Failed to update test deck", e);
+        }
+    }
+
+    private Deck createDeck(Card.Id leader, Card.Id base, ImmutableBag<Card.Id> main, ImmutableBag<Card.Id> sideboard, String matchRecord,
+                            List<Deck.Match> matches) {
         try {
             final var deckFile = File.createTempFile("deck-", ".yaml");
             deckFile.deleteOnExit();
 
             final var testUri = UriComponentsBuilder.fromUri(deckFile.toURI()).scheme("testfile").build().toUri();
-            final var deck = new Deck(testUri, "Me", Format.PREMIER, leader, base, main, sideboard, matchRecord, List.of());
+            final var deck = new Deck(testUri, "Me", Format.PREMIER, leader, base, main, sideboard, matchRecord, matches);
             logger.trace("Saving test deck to file: {}", deckFile);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(deckFile, deck);
             return deck;

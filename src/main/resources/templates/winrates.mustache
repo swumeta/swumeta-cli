@@ -1,0 +1,21 @@
+{
+  "data": [
+  {{#entries}}
+    {
+      "leader": {
+        "name": "{{leader.name}}",
+        "art": "{{{leader.art}}}"
+      },
+      "opponents": [
+        {{#opponents}}
+        {
+          "name": "{{name}}",
+          "winrate": {{winRate}},
+          "matches": {{matches}}
+        }{{^-last}},{{/-last}}
+        {{/opponents}}
+      ]
+    }{{^-last}},{{/-last}}
+  {{/entries}}
+  ]
+}

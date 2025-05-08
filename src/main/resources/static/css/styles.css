@@ -204,3 +204,103 @@ tr:hover .btn-copy {
 .meta-opponents:last-child p:last-child {
     margin-bottom: 0;
 }
+
+.winrates-container {
+    max-width: 100%;
+    max-height: 800px;
+    overflow: auto;
+    position: relative;
+    background-color: var(--sw-dark);
+    margin-bottom: 2em;
+    text-align: center;
+}
+
+.winrates-container-ready {
+    border: 1px solid #444;
+    border-radius: 8px;
+}
+
+.winrates-container table {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.winrates-container img {
+    border-radius: 8px;
+}
+
+.winrates-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--sw-dark);
+    z-index: 2;
+}
+
+.winrates-container tbody td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: var(--sw-dark);
+    z-index: 1;
+    width: 1%;
+    white-space: nowrap;
+}
+
+.winrates-container thead th:first-child {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 3;
+    background-color: var(--sw-dark);
+}
+
+.winrates-container th, .winrates-container td {
+    padding: 8px;
+    text-align: center;
+}
+
+.winrates-container tbody td {
+    position: relative;
+    height: 40px;
+}
+
+.winrates-container tbody td .entry {
+    border-radius: 6px;
+    height: 100%;
+    display: grid;
+    place-items: center;
+}
+
+.winrates-container tbody td .loss {
+    background: #b03a2e;
+}
+
+.winrates-container tbody td .even {
+    background: #A86523;
+}
+
+.winrates-container tbody td .win {
+    background: #626F47;
+}
+
+.winrates-container tbody td .na {
+    background: #222;
+    height: 100%;
+    color: #666;
+}
+
+.winrates-container tbody td .mirror {
+    background: var(--sw-dark);
+    color: #888;
+    height: 100%;
+}
+
+.winrates-container tbody td .winrate {
+    font-size: 100%;
+    font-weight: bold;
+}
+
+.winrates-container tbody td .matches {
+    font-size: 80%;
+}

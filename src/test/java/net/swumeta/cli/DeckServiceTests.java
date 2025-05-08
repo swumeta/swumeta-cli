@@ -20,11 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
-import net.swumeta.cli.model.Set;
 import org.eclipse.collections.api.factory.Bags;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -219,8 +218,7 @@ class DeckServiceTests {
     void testLoadingWithJackson() throws IOException {
         final var deck = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026"),
                 Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
-                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3),
-                "2-1-0"
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
         );
 
         final var objectMapper = new ObjectMapper(new YAMLFactory());
@@ -240,7 +238,7 @@ class DeckServiceTests {
                 sideboard:
                 - card: "JTL-045"
                   count: 3
-                matchRecord: "2-1-0"
+                matchRecord: "0-0-0"
                 """.formatted(deck.source()));
 
         final var deck2 = objectMapper.readValue(yamlOut, Deck.class);

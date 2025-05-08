@@ -64,6 +64,11 @@ public class CardDatabaseService {
         }
     }
 
+    public String formatName(Card.Id id) {
+        final var card = findById(id);
+        return "%s (%s)".formatted(card.name(), card.set());
+    }
+
     private Card loadById(Card.Id id) {
         Assert.notNull(id, "Card id must not be null");
         logger.trace("Loading card by id: {}", id);
