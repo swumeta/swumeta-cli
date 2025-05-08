@@ -16,10 +16,7 @@
 
 package net.swumeta.cli.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
+import com.fasterxml.jackson.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -65,7 +62,7 @@ public record Event(
 
     public record DeckEntry(
             @JsonProperty(required = true) int rank,
-            @JsonProperty(defaultValue = "false") boolean pending,
+            @JsonInclude(JsonInclude.Include.NON_DEFAULT) @JsonProperty(defaultValue = "false") boolean pending,
             URI url
     ) {
     }

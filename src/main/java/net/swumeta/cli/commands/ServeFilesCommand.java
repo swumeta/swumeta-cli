@@ -35,7 +35,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 @Component
-class ServeFilesCommand {
+class
+ServeFilesCommand {
     private final Logger logger = LoggerFactory.getLogger(ServeFilesCommand.class);
     private static final Map<String, String> MIME_TYPES = new HashMap<>();
 

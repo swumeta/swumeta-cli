@@ -21,7 +21,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.shell.command.CommandRegistration;
 
 import java.io.File;
-import java.net.URI;
 
 @Configuration(proxyBeanMethods = false)
 class CommandConfig {
@@ -78,18 +77,12 @@ class CommandConfig {
     }
 
     @Bean
-    CommandRegistration getMeleeDecks(GetMeleeDecksCommand cmd) {
+    CommandRegistration syncEvents(SyncEventsCommand cmd) {
         return CommandRegistration.builder()
-                .command("get-melee-decks")
-                .description("Get the list of decks from a melee.gg page")
-                .withOption().longNames("url").shortNames('u').description("melee.gg URL").type(URI.class).required().and()
-                .withOption().longNames("max").shortNames('m').description("Maximum number of decks to retrieve").required(false).type(Integer.TYPE).defaultValue("0").and()
-                .withOption().longNames("round").shortNames('r').description("Round id").required(false).type(Integer.TYPE).defaultValue("0").and()
+                .command("sync-events")
+                .description("Sync events")
                 .withTarget().consumer(ctx -> {
-                    final var url = (URI) ctx.getOptionValue("url");
-                    final var max = (Integer) ctx.getOptionValue("max");
-                    final var round = (Integer) ctx.getOptionValue("round");
-                    cmd.run(url, max, round);
+                    cmd.run();
                 })
                 .and().build();
     }
