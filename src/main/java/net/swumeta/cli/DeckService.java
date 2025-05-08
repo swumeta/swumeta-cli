@@ -410,10 +410,20 @@ public class DeckService {
                 record = "%d-%d-%d".formatted(score1, score2, score3);
             }
         }
+
+        URI opponentDeck = null;
+        if (!Deck.Match.Result.BYE.equals(result) && !Deck.Match.Result.UNKNOWN.equals(result)) {
+            if (m.opponentDeck == null) {
+                opponentDeck = findMeleeDeck(findRoundId(tournamentId), m.opponentPlayer);
+            } else {
+                opponentDeck = createMeleeDeckUri(m.opponentDeck);
+            }
+        }
+
         return new Deck.Match(
                 m.round,
                 m.opponentPlayer,
-                m.opponentDeck == null ? findMeleeDeck(findRoundId(tournamentId), m.opponentPlayer) : createMeleeDeckUri(m.opponentDeck),
+                opponentDeck,
                 result,
                 record
         );
