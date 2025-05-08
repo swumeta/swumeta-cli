@@ -161,8 +161,8 @@ class GenerateSiteCommand {
             renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
             renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
             renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
-            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-survivors.json"));
-            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-survivors.json"));
+            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-conversion.json"));
+            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-conversion.json"));
 
             final var leaderMatchups = deckStatisticsService.getLeaderMatchups(
                     event.decks().stream().map(Event.DeckEntry::url).filter(Objects::nonNull).toList());
