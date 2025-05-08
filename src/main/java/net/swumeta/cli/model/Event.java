@@ -30,7 +30,7 @@ public record Event(
         @JsonInclude(JsonInclude.Include.NON_DEFAULT) int players,
         @JsonProperty(required = true) LocalDate date,
         Location location,
-        @JsonProperty(defaultValue = "false") boolean hidden,
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT) @JsonProperty(defaultValue = "false") boolean hidden,
         @JsonProperty(defaultValue = "premier") Format format,
         URI melee,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
