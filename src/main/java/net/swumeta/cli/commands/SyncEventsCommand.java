@@ -33,7 +33,7 @@ class SyncEventsCommand {
     void run() {
         logger.info("Synchronizing events");
         for (final var event : eventService.list()) {
-            logger.info("Processing event: {}", event.name());
+            logger.info("Processing event: {}", event);
             eventService.sync(event);
         }
     }
