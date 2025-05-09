@@ -659,8 +659,8 @@ class GenerateSiteCommand {
 
     record WinrateDataEntry(
             String leader,
-            int winRate,
-            int metaShare,
+            String winRate,
+            String metaShare,
             int matches
     ) {
     }
@@ -686,12 +686,14 @@ class GenerateSiteCommand {
 
     record WinrateMatrixOpponent(
             String name,
-            int winRate,
+            String winRate,
             int matches
     ) {
     }
 
     private WinrateMatrixModel toMinrateMatrixModel(ImmutableList<DeckStatisticsService.LeaderMatchup> leaderMatchups) {
+        final var nf = NumberFormat.getNumberInstance(Locale.ENGLISH);
+        nf.setMaximumFractionDigits(1);
         return new WinrateMatrixModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup -> new WinrateMatrixEntry(
                 new WinrateMatrixLeader(
                         cardDatabaseService.formatName(matchup.leader()),
@@ -699,16 +701,18 @@ class GenerateSiteCommand {
                 ),
                 Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
                         cardDatabaseService.formatName(op.opponent()),
-                        (int) Math.round(100d * op.winRate()),
+                        nf.format(100d * op.winRate()),
                         op.results().size()
                 )))
         ))));
     }
 
     private WinrateDataModel toWinRateDataModel(ImmutableList<DeckStatisticsService.LeaderMatchup> leaderMatchups) {
+        final var nf = NumberFormat.getNumberInstance(Locale.ENGLISH);
+        nf.setMaximumFractionDigits(1);
         return new WinrateDataModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup ->
                 new WinrateDataEntry(cardDatabaseService.formatName(matchup.leader()),
-                        (int) Math.round(100d * matchup.winRate()), (int) Math.round(100d * matchup.metaShare()),
+                        nf.format(100d * matchup.winRate()), nf.format(100d * matchup.metaShare()),
                         matchup.matchCount())))
         );
     }
