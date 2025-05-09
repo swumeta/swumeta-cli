@@ -140,7 +140,7 @@ function createHorizontalBarChart(elem, dataUrl, options = {}) {
 
 function initBarChart(elem) {
     const dataTitle = elem.attr("data-title");
-    const dataPercent = "true" == elem.attr("percent")
+    const dataPercent = elem.attr("data-percent") == "true";
     const dataUrl = elem.attr("data-url");
     const options = {
           title: dataTitle,
