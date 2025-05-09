@@ -81,7 +81,7 @@ public class EventService {
     public Event sync(Event event) {
         Assert.notNull(event, "Event must not be null");
         if (event.melee() == null) {
-            logger.warn("Event '{}' has no Melee.gg link", event.name());
+            logger.warn("Event '{}' has no Melee.gg link", event);
             return event;
         }
 
@@ -168,10 +168,10 @@ public class EventService {
             }
         }
         if (eventFile == null) {
-            throw new AppException("Unable to find file for event: " + event.name());
+            throw new AppException("Unable to find file for event: " + event);
         }
         try {
-            logger.info("Saving event '{}' to file: {}", event.name(), eventFile);
+            logger.info("Saving event '{}' to file: {}", event, eventFile);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(eventFile, newEvent);
         } catch (IOException e) {
             throw new AppException("Failed to save event to file: " + eventFile, e);
