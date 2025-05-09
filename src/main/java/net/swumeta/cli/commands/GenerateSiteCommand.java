@@ -659,7 +659,7 @@ class GenerateSiteCommand {
 
     record WinrateDataEntry(
             String leader,
-            String winRate,
+            int winRate,
             String metaShare,
             int matches
     ) {
@@ -686,7 +686,7 @@ class GenerateSiteCommand {
 
     record WinrateMatrixOpponent(
             String name,
-            String winRate,
+            int winRate,
             int matches
     ) {
     }
@@ -701,7 +701,7 @@ class GenerateSiteCommand {
                 ),
                 Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
                         cardDatabaseService.formatName(op.opponent()),
-                        nf.format(100d * op.winRate()),
+                        (int) Math.round(100d * op.winRate()),
                         op.results().size()
                 )))
         ))));
@@ -712,7 +712,7 @@ class GenerateSiteCommand {
         nf.setMaximumFractionDigits(1);
         return new WinrateDataModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup ->
                 new WinrateDataEntry(cardDatabaseService.formatName(matchup.leader()),
-                        nf.format(100d * matchup.winRate()), nf.format(100d * matchup.metaShare()),
+                        (int) Math.round(100d * matchup.winRate()), nf.format(100d * matchup.metaShare()),
                         matchup.matchCount())))
         );
     }
