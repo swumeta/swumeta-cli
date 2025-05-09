@@ -154,8 +154,9 @@ public class EventService {
             }
         }
 
+        final var newPlayers = deckUris.isEmpty() ? event.players() : deckUris.size();
         final var newEvent = new Event(
-                event.name(), event.type(), deckUris.size(), event.date(), event.location(), event.hidden(), event.format(),
+                event.name(), event.type(), newPlayers, event.date(), event.location(), event.hidden(), event.format(),
                 event.melee(), event.contributors(), event.links(), deckUris
         );
 
