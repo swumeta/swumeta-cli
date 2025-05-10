@@ -39,7 +39,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -218,31 +220,15 @@ class GenerateSiteCommand {
 
         logger.info("Processing matchups based on {} decks", metagame.decks().size());
         final var matchups = deckStatisticsService.getLeaderMatchups(metagame.decks());
-        final var matchups2Report = new StringWriter();
-        final var matchups2ReportWriter = new PrintWriter(matchups2Report);
-        for (final var matchup : matchups) {
-            final var leader = cardDatabaseService.formatName(matchup.leader());
-            matchups2ReportWriter.println();
-            matchups2ReportWriter.println(leader + " (" + percentFormatter.format(matchup.metaShare()) + " meta) -> "
-                    + percentFormatter.format(matchup.winRate()) + " win based on "
-                    + numberFormatter.format(matchup.matchCount()) + " matches");
-            for (final var op : matchup.opponents()) {
-                matchups2ReportWriter.println(" vs " + cardDatabaseService.formatName(op.opponent()) + " -> "
-                        + percentFormatter.format(op.winRate()) + " win based on "
-                        + numberFormatter.format(op.results().size()) + " matches");
-            }
+        var matchCount = 0;
+        for (final var m : matchups) {
+            matchCount += m.matchCount();
         }
-        logger.info("Matchups:\n{}", matchups2Report.getBuffer());
 
         final var metaDir = new File(outputDir, "meta");
         final var winRatesDir = new File(metaDir, "win-rates");
         if (!winRatesDir.exists()) {
             winRatesDir.mkdirs();
-        }
-
-        var matchCount = 0;
-        for (final var m : matchups) {
-            matchCount += m.matchCount();
         }
 
         renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win rates", """
