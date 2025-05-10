@@ -655,7 +655,14 @@ class GenerateSiteCommand {
             int winRate,
             String metaShare,
             int matches
-    ) {
+    ) implements Comparable<WinrateDataEntry> {
+        @Override
+        public int compareTo(WinrateDataEntry o) {
+            if (leader.equals(o.leader)) {
+                return winRate > o.winRate ? -1 : 1;
+            }
+            return leader.compareTo(o.leader);
+        }
     }
 
     @JStache(path = "/templates/winrates.mustache")
@@ -706,7 +713,7 @@ class GenerateSiteCommand {
         return new WinrateDataModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup ->
                 new WinrateDataEntry(cardDatabaseService.formatName(matchup.leader()),
                         (int) Math.round(100d * matchup.winRate()), nf.format(100d * matchup.metaShare()),
-                        matchup.matchCount())))
+                        matchup.matchCount())).sorted())
         );
     }
 
