@@ -233,7 +233,7 @@ class GenerateSiteCommand {
             winRatesDir.mkdirs();
         }
 
-        renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win rates", """
+        renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win Rates", """
                         Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
                         """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
                         numberFormatter.format(metagame.decks().size()), numberFormatter.format(matchCount)),
