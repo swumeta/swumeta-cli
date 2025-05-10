@@ -189,8 +189,8 @@ class GenerateSiteCommand {
                     new File(eventDir, "index.html"));
             renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
             renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
-            eventPages.add(new EventPage(event, metagame.events().contains(event), countryFlag,
-                    "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
+            eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event),
+                    countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
@@ -344,7 +344,7 @@ class GenerateSiteCommand {
     }
 
     record EventPage(
-            Event event, boolean metaRelevant, String countryFlag, String page
+            Event event, boolean newLabel, boolean metaRelevant, String countryFlag, String page
     ) implements Comparable<EventPage> {
         @Override
         public int compareTo(EventPage o) {
@@ -712,6 +712,19 @@ class GenerateSiteCommand {
 
     private String formatDate(Event e) {
         return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(Locale.ENGLISH).format(e.date());
+    }
+
+    private boolean isEventNew(Event e) {
+        return !e.hidden() && hasDecks(e) && LocalDate.now().minusDays(3).isBefore(e.date());
+    }
+
+    private boolean hasDecks(Event e) {
+        for (final var deck : e.decks()) {
+            if (deck.url() != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String toLowercaseAscii(String s) {

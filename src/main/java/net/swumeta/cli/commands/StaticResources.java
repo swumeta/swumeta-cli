@@ -39,6 +39,8 @@ public class StaticResources {
     private Resource blueskySvg;
     @Value("classpath:/static/images/starfield.jpg")
     private Resource starfieldJpg;
+    @Value("classpath:/static/images/new-label.png")
+    private Resource newLabelPng;
     @Value("classpath:/static/images/aspect_aggression.png")
     private Resource aspectAggressionPng;
     @Value("classpath:/static/images/aspect_command.png")
@@ -82,6 +84,7 @@ public class StaticResources {
         copyResourceToFile(logoSvg, imagesDir);
         copyResourceToFile(blueskySvg, imagesDir);
         copyResourceToFile(starfieldJpg, imagesDir);
+        copyResourceToFile(newLabelPng, imagesDir);
         copyResourceToFile(aspectAggressionPng, imagesDir);
         copyResourceToFile(aspectCommandPng, imagesDir);
         copyResourceToFile(aspectCunningPng, imagesDir);

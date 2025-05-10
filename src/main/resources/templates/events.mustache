@@ -41,7 +41,9 @@
             <span class="align-middle text-secondary" style="font-size: 80%">{{event.date}}</span></td>
           <td class="align-middle fit">{{#metaRelevant}}<i class="bi bi-star-fill" style="color: var(--sw-yellow)"></i>{{/metaRelevant}}</td>
           <td class="align-middle event-name">
-            <span class="align-middle"><a href="{{page}}">{{event.name}}</a></span>
+            <span class="align-middle">
+              <a href="{{page}}">{{event.name}}</a>{{#newLabel}}<img class="ms-2" src="/images/new-label.png" width="38" height="20"/>{{/newLabel}}
+            </span>
           </td>
           <td class="align-middle fit d-none d-md-table-cell event-type">
             <span class="align-middle">{{event.type}}</span>
