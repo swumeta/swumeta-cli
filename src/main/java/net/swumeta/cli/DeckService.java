@@ -86,6 +86,25 @@ public class DeckService {
         return deckCache.get(uri);
     }
 
+    public void delete(Iterable<URI> decks) {
+        if (decks == null) {
+            return;
+        }
+        for (final var deckUri : decks) {
+            if (deckUri == null) {
+                continue;
+            }
+            final var deckFile = toCachedFile(deckUri);
+            if (deckFile.exists()) {
+                deckFile.delete();
+            }
+            final var skipDeckFile = new File(deckFile + ".skip");
+            if (skipDeckFile.exists()) {
+                skipDeckFile.delete();
+            }
+        }
+    }
+
     private File toCachedFile(URI uri) {
         final var deckCacheDir = new File(config.cache(), "decks");
         final var deckFileName = md5(UriComponentsBuilder.fromUri(uri).port(80).toUriString()) + ".yaml";

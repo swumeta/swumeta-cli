@@ -44,11 +44,13 @@ import java.util.function.Predicate;
 public class EventService {
     private static final Predicate<Event> NULL_FILTER = e -> true;
     private final Logger logger = LoggerFactory.getLogger(EventService.class);
+    private final DeckService deckService;
     private final AppConfig config;
     private final RestClient client;
     private final ObjectMapper objectMapper;
 
-    EventService(AppConfig config, RestClient client) {
+    EventService(DeckService deckService, AppConfig config, RestClient client) {
+        this.deckService = deckService;
         this.config = config;
         this.client = client;
         this.objectMapper = new ObjectMapper(new YAMLFactory());
@@ -159,6 +161,14 @@ public class EventService {
                 event.name(), event.type(), newPlayers, event.date(), event.location(), event.hidden(), event.format(),
                 event.melee(), event.contributors(), event.links(), deckUris
         );
+
+        if (newEvent.equals(event)) {
+            logger.debug("Event is already up-to-date: {}", newEvent);
+            return event;
+        }
+
+        logger.info("Deleting cache for event: {}", newEvent);
+        deckService.delete(event.decks().stream().map(Event.DeckEntry::url).toList());
 
         File eventFile = null;
         for (final var fileCandidate : getEventFiles()) {
