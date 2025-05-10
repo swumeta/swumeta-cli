@@ -16,6 +16,7 @@
 
 package net.swumeta.cli.statistics;
 
+import net.swumeta.cli.AppException;
 import net.swumeta.cli.DeckService;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -56,7 +58,14 @@ public class DeckStatisticsService {
     private ImmutableBag<DeckArchetype> doGetMostPlayedDecks(Iterable<URI> decks) {
         return Bags.immutable.<DeckArchetype>fromStream(
                 StreamSupport.stream(decks.spliterator(), false)
-                        .map(deckService::load)
+                        .map(uri -> {
+                            try {
+                                return deckService.load(uri);
+                            } catch (AppException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
                         .filter(Deck::isValid)
                         .map(deckService::getArchetype)
         );
@@ -66,7 +75,12 @@ public class DeckStatisticsService {
         final var matchups = Maps.mutable.<LeaderOpponentKey, MutableBag<Deck.Match.Result>>ofInitialCapacity(32);
         final var leaders = Bags.mutable.<Card.Id>ofInitialCapacity(32);
         for (final var deckUri : decks) {
-            final var deck = deckService.load(deckUri);
+            final Deck deck;
+            try {
+                deck = deckService.load(deckUri);
+            } catch (AppException e) {
+                continue;
+            }
             if (deck.leader() == null) {
                 continue;
             }
@@ -76,7 +90,12 @@ public class DeckStatisticsService {
                 if (match.opponentDeck() == null) {
                     continue;
                 }
-                final var opDeck = deckService.load(match.opponentDeck());
+                final Deck opDeck;
+                try {
+                    opDeck = deckService.load(match.opponentDeck());
+                } catch (AppException e) {
+                    continue;
+                }
                 if (opDeck.leader() == null) {
                     continue;
                 }

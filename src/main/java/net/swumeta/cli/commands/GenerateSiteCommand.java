@@ -265,7 +265,12 @@ class GenerateSiteCommand {
     }
 
     private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
-        final var deck = deckService.load(e.url());
+        final Deck deck;
+        try {
+            deck = deckService.load(e.url());
+        } catch (AppException ignore) {
+            return null;
+        }
         if (!deck.isValid()) {
             return null;
         }

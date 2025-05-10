@@ -16,9 +16,11 @@
 
 package net.swumeta.cli.statistics;
 
+import net.swumeta.cli.AppException;
 import net.swumeta.cli.CardDatabaseService;
 import net.swumeta.cli.DeckService;
 import net.swumeta.cli.model.Card;
+import net.swumeta.cli.model.Deck;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.factory.Bags;
@@ -58,7 +60,12 @@ public class CardStatisticsService {
         };
 
         for (final var deckUri : decks) {
-            final var deck = deckService.load(deckUri);
+            final Deck deck;
+            try {
+                deck = deckService.load(deckUri);
+            } catch (AppException ignore) {
+                continue;
+            }
             if (!deck.isValid()) {
                 continue;
             }

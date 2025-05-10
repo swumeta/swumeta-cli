@@ -46,6 +46,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -94,6 +96,11 @@ public class DeckService {
 
     private Deck doLoad(URI uri) {
         final var deckFile = toCachedFile(uri);
+        final var skipMarkerFile = new File(deckFile + ".skip");
+        if (skipMarkerFile.exists()) {
+            throw new AppException("Skipping Melee.gg deck: " + uri);
+        }
+
         if (deckFile.exists()) {
             try {
                 final var versionedDeck = yamlObjectMapper.readValue(deckFile, VersionedDeck.class);
@@ -106,12 +113,24 @@ public class DeckService {
             }
         }
 
-        final var deck = loadMeleeDeck(uri);
-
-        logger.debug("Caching deck: {}", uri);
         if (!deckFile.getParentFile().exists()) {
             deckFile.getParentFile().mkdirs();
         }
+
+        final Deck deck;
+        try {
+            deck = loadMeleeDeck(uri);
+        } catch (AppException e) {
+            logger.warn("Failed to load deck from Melee.gg: {}", uri);
+            try {
+                Files.writeString(skipMarkerFile.toPath(), uri.toASCIIString(),
+                        StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+            } catch (IOException ignore) {
+            }
+            throw e;
+        }
+
+        logger.debug("Caching deck: {}", uri);
         try {
             final var buf = new ByteArrayOutputStream(1024);
             yamlObjectMapper.writeValue(buf, deck);
@@ -274,7 +293,10 @@ public class DeckService {
         if (swuContentElem == null) {
             throw new AppException("No swudb.com content found: " + uri);
         }
-        final var swuContent = swuContentElem.text();
+        final var swuContent = swuContentElem.text().trim();
+        if (swuContent.isEmpty()) {
+            throw new AppException("No swudb.com content found: " + uri);
+        }
         final var lines = swuContent.split("\\r\\n|\\n|\\r");
 
         Card.Id leader = null;
