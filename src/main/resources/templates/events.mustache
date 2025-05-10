@@ -12,6 +12,8 @@
       qualifying (with 32+ players) that isn't featured here, please contact us with the tournament details,
       and we'll consider adding it to our database.
       Your contributions help keep this resource valuable for the entire Star Wars Unlimited community.</p>
+    <p>Tournaments marked with a star (<i class="bi bi-star-fill"></i>)
+      are included in the metagame calculation due to their significance.</p>
   </div>
 
   <div id="events-container" class="table-responsive">
@@ -26,6 +28,7 @@
       <thead>
       <tr>
         <th scope="col">Date</th>
+        <th scope="col"></th>
         <th scope="col">Name</th>
         <th scope="col" class="d-none d-md-table-cell">Type</th>
         <th scope="col" class="text-center">Country</th>
@@ -36,6 +39,7 @@
         <tr>
           <td class="align-middle fit">
             <span class="align-middle text-secondary" style="font-size: 80%">{{event.date}}</span></td>
+          <td class="align-middle fit">{{#metaRelevant}}<i class="bi bi-star-fill" style="color: var(--sw-yellow)"></i>{{/metaRelevant}}</td>
           <td class="align-middle event-name">
             <span class="align-middle"><a href="{{page}}">{{event.name}}</a></span>
           </td>

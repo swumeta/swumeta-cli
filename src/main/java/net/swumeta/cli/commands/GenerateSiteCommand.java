@@ -119,6 +119,8 @@ class GenerateSiteCommand {
                 quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
+        final var metagame = metagameService.getMetagame();
+
         final var eventPages = new ArrayList<EventPage>(16);
         final var tournamentsDir = new File(outputDir, "tournaments");
         if (!tournamentsDir.exists()) {
@@ -187,7 +189,8 @@ class GenerateSiteCommand {
                     new File(eventDir, "index.html"));
             renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
             renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
-            eventPages.add(new EventPage(event, countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
+            eventPages.add(new EventPage(event, metagame.events().contains(event), countryFlag,
+                    "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
@@ -198,7 +201,6 @@ class GenerateSiteCommand {
                 new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
-        final var metagame = metagameService.getMetagame();
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.decks());
         final var deckBag = cardStatisticsService.getMostPlayedCards(metagame.decks(), c -> c.type().equals(Card.Type.LEADER));
 
@@ -342,7 +344,7 @@ class GenerateSiteCommand {
     }
 
     record EventPage(
-            Event event, String countryFlag, String page
+            Event event, boolean metaRelevant, String countryFlag, String page
     ) implements Comparable<EventPage> {
         @Override
         public int compareTo(EventPage o) {

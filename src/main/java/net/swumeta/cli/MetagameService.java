@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Service
 public class MetagameService {
     private static final ImmutableSet<Event.Type> VALID_EVENT_TYPES = Sets.immutable.of(
-            Event.Type.GS, Event.Type.RQ, Event.Type.SQ, Event.Type.PQ
+            Event.Type.GS, Event.Type.RQ, Event.Type.SQ, Event.Type.PQ, Event.Type.MAJOR
     );
     private final Logger logger = LoggerFactory.getLogger(MetagameService.class);
     private final EventService eventService;
@@ -110,9 +110,19 @@ public class MetagameService {
         public boolean test(Event event) {
             return !event.hidden()
                     && VALID_EVENT_TYPES.contains(event.type())
+                    && hasDecks(event)
                     && event.players() >= 32
                     && (event.date().isBefore(now) || event.date().isEqual(now))
                     && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
         }
+    }
+
+    private static boolean hasDecks(Event e) {
+        for (final var deck : e.decks()) {
+            if (deck.url() != null) {
+                return true;
+            }
+        }
+        return false;
     }
 }
