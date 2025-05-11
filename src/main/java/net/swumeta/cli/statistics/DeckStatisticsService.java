@@ -84,6 +84,10 @@ public class DeckStatisticsService {
             if (deck.leader() == null) {
                 continue;
             }
+            if ("--".equals(deck.matchRecord())) {
+                logger.debug("Skipping deck from matchups: {}", deckUri);
+                continue;
+            }
             leaders.add(deck.leader());
 
             for (final var match : deck.matches()) {
@@ -97,6 +101,10 @@ public class DeckStatisticsService {
                     continue;
                 }
                 if (opDeck.leader() == null) {
+                    continue;
+                }
+                if ("--".equals(opDeck.matchRecord())) {
+                    logger.debug("Skipping opponent deck from matchups: {}", opDeck.source());
                     continue;
                 }
                 final var key = new LeaderOpponentKey(deck.leader(), opDeck.leader());
