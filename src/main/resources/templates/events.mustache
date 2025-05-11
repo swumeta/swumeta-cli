@@ -4,11 +4,11 @@
   <h1 class="section-title">{{meta.title}}</h1>
 
   <div class="info-banner" style="font-size: 90%">
-    <p>This page features a curated selection of Star Wars Unlimited tournaments that have made a significant impact on
+    <p class="d-none d-md-block">This page features a curated selection of Star Wars Unlimited tournaments that have made a significant impact on
       the competitive metagame. To maintain quality and relevance, we only include events with at least 32 participants.
       This approach ensures that the tournament data represented here reflects substantial competitive environments
       where meaningful strategies and deck trends can be observed.</p>
-    <p>While we strive to include all major tournaments, this listing is not exhaustive. If you know of a
+    <p class="d-none d-md-block">While we strive to include all major tournaments, this listing is not exhaustive. If you know of a
       qualifying (with 32+ players) that isn't featured here, please contact us with the tournament details,
       and we'll consider adding it to our database.
       Your contributions help keep this resource valuable for the entire Star Wars Unlimited community.</p>
@@ -31,8 +31,8 @@
         <th scope="col"></th>
         <th scope="col">Name</th>
         <th scope="col" class="d-none d-md-table-cell">Type</th>
-        <th scope="col" class="text-center">Country</th>
-        <th scope="col" class="text-end">Players</th>
+        <th scope="col" class="text-center"><span class="d-none d-md-block">Country</span></th>
+        <th scope="col" class="text-end"><span class="d-none d-md-block">Players</span></th>
       </tr>
       <tbody class="list">
       {{#events}}
@@ -42,7 +42,7 @@
           <td class="align-middle fit">{{#metaRelevant}}<i class="bi bi-star-fill" style="color: var(--sw-yellow)"></i>{{/metaRelevant}}</td>
           <td class="align-middle event-name">
             <span class="align-middle">
-              <a href="{{page}}">{{event.name}}</a>{{#newLabel}}<img class="ms-2" src="/images/new-label.png" width="38" height="20"/>{{/newLabel}}
+              <a href="{{page}}">{{event.name}}</a>{{#newLabel}}<img class="ms-2 d-none d-md-inline" src="/images/new-label.png" width="38" height="20"/>{{/newLabel}}
             </span>
           </td>
           <td class="align-middle fit d-none d-md-table-cell event-type">
