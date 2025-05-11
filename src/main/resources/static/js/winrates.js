@@ -49,7 +49,7 @@ function initWinratesMatrix(elem) {
                         entry.addClass("na");
                         entry.html("N/A");
                     } else {
-                        if(wr >=60) {
+                        if(wr >= 55) {
                             entry.addClass("win")
                         } else if(wr >= 45) {
                             entry.addClass("even");
