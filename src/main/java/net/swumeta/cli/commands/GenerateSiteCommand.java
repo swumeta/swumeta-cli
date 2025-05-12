@@ -90,9 +90,10 @@ class GenerateSiteCommand {
         this.objectMapper.findAndRegisterModules();
     }
 
-    void run(File outputDir) {
+    void run() {
         logger.info("Generating website...");
 
+        final var outputDir = config.output();
         logger.debug("Output directory: {}", outputDir);
         outputDir.mkdirs();
 

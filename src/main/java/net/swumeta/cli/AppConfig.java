@@ -27,6 +27,7 @@ import java.util.List;
 public record AppConfig(
         String domain,
         File database,
+        File output,
         File cache,
         int metagameMonths,
         LocalDate metagameLimit,

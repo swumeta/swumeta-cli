@@ -29,10 +29,8 @@ class CommandConfig {
         return CommandRegistration.builder()
                 .command("generate-site")
                 .description("Generate website")
-                .withOption().longNames("output").shortNames('o').description("Output directory").type(File.class).defaultValue("public").required(false).and()
                 .withTarget().consumer(ctx -> {
-                    final var output = (File) ctx.getOptionValue("output");
-                    cmd.run(output);
+                    cmd.run();
                 })
                 .and().build();
     }
