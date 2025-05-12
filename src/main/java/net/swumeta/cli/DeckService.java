@@ -115,38 +115,43 @@ public class DeckService {
 
     private Deck doLoad(URI uri) {
         final var deckFile = toCachedFile(uri);
+        if (!deckFile.getParentFile().exists()) {
+            deckFile.getParentFile().mkdirs();
+        }
         final var skipMarkerFile = new File(deckFile + ".skip");
         if (skipMarkerFile.exists()) {
-            throw new AppException("Skipping Melee.gg deck: " + uri);
+            throw new AppException("Skipping melee.gg deck: " + uri);
         }
 
+        Deck deck = null;
         if (deckFile.exists()) {
             try {
                 final var versionedDeck = yamlObjectMapper.readValue(deckFile, VersionedDeck.class);
                 if (CURRENT_VERSION == versionedDeck.version) {
                     logger.debug("Loading deck from cache: {}", uri);
-                    return yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
+                    deck = yamlObjectMapper.readerFor(Deck.class).readValue(deckFile);
                 }
             } catch (IOException e) {
                 logger.debug("Unable to read cached deck file: {}", deckFile, e);
             }
         }
-
-        if (!deckFile.getParentFile().exists()) {
-            deckFile.getParentFile().mkdirs();
+        if (deck != null) {
+            return deck;
         }
 
-        final Deck deck;
         try {
             deck = loadMeleeDeck(uri);
         } catch (AppException e) {
-            logger.warn("Failed to load deck from Melee.gg: {}", uri);
+            logger.debug("Unable to load deck from melee.gg: {}", uri, e);
+        }
+        if (deck == null) {
+            logger.warn("Failed to load deck from melee.gg: {}", uri);deck = null;
             try {
                 Files.writeString(skipMarkerFile.toPath(), uri.toASCIIString(),
                         StandardCharsets.UTF_8, StandardOpenOption.CREATE);
             } catch (IOException ignore) {
             }
-            throw e;
+            throw new AppException("Failed to load deck: " + uri);
         }
 
         logger.debug("Caching deck: {}", uri);
@@ -373,6 +378,10 @@ public class DeckService {
                     }
                 }
             }
+        }
+
+        if (leader == null || base == null) {
+            throw new AppException("No leader or base set in deck: " + uri);
         }
 
         final var meleeDeckId = UriComponentsBuilder.fromUri(uri).build().getPathSegments().getLast();
