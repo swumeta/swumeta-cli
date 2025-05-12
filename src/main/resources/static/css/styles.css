@@ -215,6 +215,25 @@ tr:hover .btn-copy {
     text-align: center;
 }
 
+.winrates-matrix .modal-body {
+    padding: 0 !important;
+    background-color: var(--sw-dark) !important;
+}
+
+.winrates-matrix-fullscreen {
+    overflow: unset !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: fit-content !important;
+    margin: 0em !important;
+    padding: 0em !important;
+}
+
+.winrates-matrix .go-fullscreen {
+    position: fixed;
+    z-index: 10;
+}
+
 .winrates-matrix-ready {
     border: 1px solid #444;
     border-radius: 8px;

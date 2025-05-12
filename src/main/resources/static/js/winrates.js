@@ -1,12 +1,15 @@
 function initWinratesMatrix(elem) {
+    const embedded = "true" == elem.attr("data-embedded");
     const dataUrl = elem.attr("data-url");
     $.getJSON(dataUrl).done(function(jsonData) {
-        elem.empty();
+        elem.find(".spinner-border").remove();
 
         const table = $("<table></table>");
         table.addClass("table-responsive");
         elem.append(table);
-        elem.addClass("winrates-matrix-ready");
+        if(!embedded) {
+            elem.addClass("winrates-matrix-ready");
+        }
 
         const thead = $("<thead></thead>");
         table.append(thead);
@@ -67,6 +70,49 @@ function initWinratesMatrix(elem) {
             });
         });
     });
+
+    if(!embedded) {
+        const container = elem[0];
+        const button = elem.find(".go-fullscreen").get(0);
+        let isHovering = false;
+
+        function updatePosition() {
+            if(isHovering) {
+                const rect = container.getBoundingClientRect();
+                button.style.top = (rect.top + 20) + 'px';
+                button.style.left = (rect.right - button.offsetWidth - 30) + 'px';
+            }
+        }
+        container.addEventListener('mouseenter', () => {
+            isHovering = true;
+            updatePosition();
+            button.style.opacity = '1';
+        });
+
+        container.addEventListener('mouseleave', () => {
+            isHovering = false;
+            button.style.opacity = '0';
+        });
+
+        container.addEventListener('scroll', updatePosition);
+
+        button.addEventListener('click', () => {
+            const dlgBody = elem.find(".modal-body");
+            dlgBody.empty();
+            const dlgMatrix = $("<div></div>");
+            dlgMatrix.addClass("winrates-matrix");
+            dlgMatrix.addClass("winrates-matrix-fullscreen");
+            dlgMatrix.attr("data-url", "winrates-matrix.json");
+            dlgMatrix.attr("data-embedded", "true");
+            initWinratesMatrix(dlgMatrix);
+            dlgBody.append(dlgMatrix);
+
+            const dlg = new bootstrap.Modal(elem.find(".modal").get(0), {});
+            dlg.show();
+        });
+        window.addEventListener('scroll', updatePosition);
+        window.addEventListener('resize', updatePosition);
+    }
 }
 
 function calculateAxisRange(data, property, padding = 0.1) {
