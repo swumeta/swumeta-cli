@@ -93,9 +93,6 @@ class GenerateSiteCommand {
     void run(File outputDir) {
         logger.info("Generating website...");
 
-        final var percentFormatter = NumberFormat.getPercentInstance(Locale.ENGLISH);
-        final var numberFormatter = NumberFormat.getIntegerInstance(Locale.ENGLISH);
-
         logger.debug("Output directory: {}", outputDir);
         outputDir.mkdirs();
 
@@ -233,11 +230,11 @@ class GenerateSiteCommand {
             winRatesDir.mkdirs();
         }
 
+        final var metaHeader = new MetaHeader(metagame, matchCount);
         renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win Rates", """
-                        Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
-                        """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
-                        numberFormatter.format(metagame.decks().size()), numberFormatter.format(matchCount)),
-                new File(winRatesDir, "index.html"));
+                Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
+                """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
+                metaHeader), new File(winRatesDir, "index.html"));
         renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
         renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
 
@@ -402,7 +399,22 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/meta-winrates.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record MetaWinratesModel(HtmlMeta meta, String deckCount, String matchCount) implements TemplateSupport {
+    record MetaWinratesModel(HtmlMeta meta, MetaHeader header) implements TemplateSupport {
+    }
+
+    record MetaHeader(
+            MetagameService.Metagame metagame,
+            int _matchCount
+    ) {
+        String deckCount() {
+            final var nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+            return nf.format(metagame.decks().size());
+        }
+
+        String matchCount() {
+            final var nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+            return nf.format(_matchCount);
+        }
     }
 
     interface TemplateSupport {
