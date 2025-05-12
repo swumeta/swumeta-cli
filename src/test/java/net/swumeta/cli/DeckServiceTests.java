@@ -36,7 +36,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
-import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -244,5 +243,14 @@ class DeckServiceTests {
         final var deck2 = objectMapper.readValue(yamlOut, Deck.class);
         assertThat(deck2.main()).isEqualTo(deck.main());
         assertThat(deck2.sideboard()).isEqualTo(deck.sideboard());
+    }
+
+    @Test
+    void testFormatBaseAlias() {
+        final var deck = helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("SOR-022"),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-143"), 2),
+                Bags.immutable.ofOccurrences(Card.Id.valueOf("JTL-045"), 3)
+        );
+        assertThat(svc.formatBase(deck)).isEqualTo("ECL");
     }
 }

@@ -65,6 +65,9 @@ public class DeckService {
             Card.Aspect.AGGRESSION, Card.Id.valueOf("SOR-026"),
             Card.Aspect.CUNNING, Card.Id.valueOf("SOR-029")
     );
+    private static final Map<Card.Id, String> CARD_NAME_ALIASES = Map.of(
+            Card.Id.valueOf("SOR-022"), "ECL"
+    );
     private final Logger logger = LoggerFactory.getLogger(DeckService.class);
     private final CardDatabaseService cardDatabaseService;
     private final RestClient client;
@@ -145,7 +148,8 @@ public class DeckService {
             logger.debug("Unable to load deck from melee.gg: {}", uri, e);
         }
         if (deck == null) {
-            logger.warn("Failed to load deck from melee.gg: {}", uri);deck = null;
+            logger.warn("Failed to load deck from melee.gg: {}", uri);
+            deck = null;
             try {
                 Files.writeString(skipMarkerFile.toPath(), uri.toASCIIString(),
                         StandardCharsets.UTF_8, StandardOpenOption.CREATE);
@@ -227,6 +231,10 @@ public class DeckService {
 
     private String formatBase(Card.Id base) {
         Assert.notNull(base, "Base must not be null");
+        final var alias = CARD_NAME_ALIASES.get(base);
+        if (alias != null) {
+            return alias;
+        }
         final var baseCard = cardDatabaseService.findById(base);
         if (baseCard.rarity().equals(Card.Rarity.COMMON)) {
             if (baseCard.aspects().isEmpty()) {
