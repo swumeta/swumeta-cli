@@ -74,25 +74,12 @@ function initWinratesMatrix(elem) {
     if(!embedded) {
         const container = elem[0];
         const button = elem.find(".go-fullscreen").get(0);
-        let isHovering = false;
 
         function updatePosition() {
-            if(isHovering) {
-                const rect = container.getBoundingClientRect();
-                button.style.top = (rect.top + 20) + 'px';
-                button.style.left = (rect.right - button.offsetWidth - 30) + 'px';
-            }
+            const rect = container.getBoundingClientRect();
+            button.style.top = (rect.top + 20) + 'px';
+            button.style.left = (rect.right - button.offsetWidth - 20) + 'px';
         }
-        container.addEventListener('mouseenter', () => {
-            isHovering = true;
-            updatePosition();
-            button.style.opacity = '1';
-        });
-
-        container.addEventListener('mouseleave', () => {
-            isHovering = false;
-            button.style.opacity = '0';
-        });
 
         container.addEventListener('scroll', updatePosition);
 
@@ -112,6 +99,7 @@ function initWinratesMatrix(elem) {
         });
         window.addEventListener('scroll', updatePosition);
         window.addEventListener('resize', updatePosition);
+        updatePosition();
     }
 }
 
