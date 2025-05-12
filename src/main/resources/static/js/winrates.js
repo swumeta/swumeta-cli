@@ -95,7 +95,7 @@ function getColorByMatches(matches) {
 }
 
 function calculateSymbolSize(matches) {
-    return 24;
+    return 32;
 }
 
 function initWinratesChart(elem) {
@@ -140,7 +140,7 @@ function initWinratesChart(elem) {
               nameLocation: 'middle',
               nameGap: 30,
               min: 0,
-              max: Math.max(70, winRateRange.max),
+              max: Math.max(60, winRateRange.max),
               splitNumber: 10,
               axisLine: {
                   show: true
@@ -159,7 +159,7 @@ function initWinratesChart(elem) {
               nameLocation: 'middle',
               nameGap: 30,
               min: 0,
-              max: Math.max(20, metaShareRange.max),
+              max: Math.max(15, metaShareRange.max),
               splitNumber: 10,
               axisLine: {
                   show: true
