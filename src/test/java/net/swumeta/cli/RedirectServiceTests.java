@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.net.URI;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -39,7 +38,7 @@ class RedirectServiceTests {
         assertThat(redirects).isNotNull();
         assertThat(redirects.size()).isEqualTo(2);
         assertThat(redirects.get(0).resource()).isEqualTo("/a.html");
-        assertThat(redirects.get(0).target()).isEqualTo(URI.create("https://" + config.domain() + "/foo/b.html"));
+        assertThat(redirects.get(0).target()).isEqualTo(UriComponentsBuilder.fromUri(config.base()).pathSegment("foo", "b.html").build().toUri());
     }
 
     @Test
@@ -47,6 +46,6 @@ class RedirectServiceTests {
         final var redirects = svc.getRedirects();
         assertThat(redirects).isNotNull();
         assertThat(redirects.get(1).resource()).isEqualTo("/foo.html");
-        assertThat(redirects.get(1).target()).isEqualTo(URI.create("https://" + config.domain() + "/bar/"));
+        assertThat(redirects.get(1).target()).isEqualTo(UriComponentsBuilder.fromUri(config.base()).pathSegment("bar/").build().toUri());
     }
 }

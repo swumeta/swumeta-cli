@@ -60,10 +60,9 @@ public class RedirectService {
             throw new AppException("Failed target load res resource file: " + redirectFile, e);
         }
 
-        final var baseUri = URI.create("https://" + config.domain());
         return Lists.immutable.fromStream(res.redirects.stream().map(e -> {
             final var paths = e.to.split("/");
-            final var uriBuilder = UriComponentsBuilder.fromUri(baseUri).pathSegment(paths);
+            final var uriBuilder = UriComponentsBuilder.fromUri(config.base()).pathSegment(paths);
             if (e.to.endsWith("/")) {
                 uriBuilder.path("/");
             }

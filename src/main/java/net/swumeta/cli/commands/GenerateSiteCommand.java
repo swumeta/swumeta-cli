@@ -103,8 +103,6 @@ class GenerateSiteCommand {
             throw new RuntimeException("Failed to copy static resources", e);
         }
 
-        final var baseUri = UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri();
-
         final var aboutDir = new File(outputDir, "about");
         if (!aboutDir.exists()) {
             aboutDir.mkdirs();
@@ -113,7 +111,7 @@ class GenerateSiteCommand {
                 "About", """
                 Discover swumeta.net, created by Alexandre (NotAlex), software engineer and Star Wars Unlimited player, to analyze matchups and optimize your decks against popular game leaders.
                 """,
-                UriComponentsBuilder.fromUri(baseUri).path("/about/").build().toUri()),
+                UriComponentsBuilder.fromUri(config.base()).path("/about/").build().toUri()),
                 quoteService.randomQuote()), new File(aboutDir, "index.html"));
         renderToFile(new VersionModel(), new File(outputDir, "version.json"));
 
@@ -157,7 +155,7 @@ class GenerateSiteCommand {
             renderToFile(new EventStatsModel(new HtmlMeta(
                             "Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
-                            UriComponentsBuilder.fromUri(baseUri).path(eventDirName).path("/").path(statsFileName).build().toUri()),
+                            UriComponentsBuilder.fromUri(config.base()).path(eventDirName).path("/").path(statsFileName).build().toUri()),
                             event, countryFlag),
                     new File(eventDir, statsFileName));
             renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
@@ -181,7 +179,7 @@ class GenerateSiteCommand {
             final var baseBag = nMostCards(Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck()))), 4);
             renderToFile(new EventModel(new HtmlMeta(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
-                            UriComponentsBuilder.fromUri(baseUri).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
+                            UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
                             event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
                             decks, !decks.isEmpty(), videoLinks),
                     new File(eventDir, "index.html"));
@@ -195,7 +193,7 @@ class GenerateSiteCommand {
         Collections.sort(eventPages, Comparator.reverseOrder());
         renderToFile(new EventIndexModel(new HtmlMeta("Tournaments",
                         "Star Wars Unlimited tournaments (Planetary Qualifier, Sector Qualifier, Regional Qualifier, Galactic Championship)",
-                        UriComponentsBuilder.fromUri(baseUri).path("/tournaments/").build().toUri()), eventPages),
+                        UriComponentsBuilder.fromUri(config.base()).path("/tournaments/").build().toUri()), eventPages),
                 new File(outputDir, "/tournaments/index.html"));
 
         logger.info("Processing metagame page");
@@ -213,7 +211,7 @@ class GenerateSiteCommand {
                 .map(e -> new KeyValue(cardDatabaseService.findById(e.getOne()).name(), (int) Math.round((100d * e.getTwo() / totalCards))))
                 .sorted(Comparator.reverseOrder()));
 
-        renderToFile(new IndexModel(new HtmlMeta(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri()),
+        renderToFile(new IndexModel(new HtmlMeta(config.base()),
                         DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(metagame.date()),
                         totalDecks, topDecks, topCards),
                 new File(outputDir, "index.html"));
@@ -234,7 +232,7 @@ class GenerateSiteCommand {
         final var metaHeader = new MetaHeader(metagame, matchCount);
         renderToFile(new MetaWinratesModel(new HtmlMeta("Metagame - Win Rates", """
                 Win rates report for the Star Wars Unlimited card game, including the meta share, based on the most played deck archetypes in major tournaments
-                """, UriComponentsBuilder.fromUri(baseUri).path("/meta/win-rates/").build().toUri()),
+                """, UriComponentsBuilder.fromUri(config.base()).path("/meta/win-rates/").build().toUri()),
                 metaHeader), new File(winRatesDir, "index.html"));
         renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
         renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
@@ -259,7 +257,7 @@ class GenerateSiteCommand {
         }
         renderToFile(new MetaTop8Model(new HtmlMeta("Metagame - Top 8", """
                 Statistics about Top 8 decks of the Star Wars Unlimited metagame
-                """, UriComponentsBuilder.fromUri(baseUri).path("/meta/top8/").build().toUri()),
+                """, UriComponentsBuilder.fromUri(config.base()).path("/meta/top8/").build().toUri()),
                 metaHeader), new File(top8Dir, "index.html"));
         renderToFile(new KeyValueModel(toSeries(top8Leaders)), new File(top8Dir, "top8-leaders.json"));
         renderToFile(new KeyValueModel(toSeries(top8LeadersWinners)), new File(top8Dir, "top8-leaders-winners.json"));
@@ -570,7 +568,7 @@ class GenerateSiteCommand {
 
     private URI createTwitchEmbedLink(URI uri) {
         final var uriBuilder = UriComponentsBuilder.fromUriString("https://player.twitch.tv/")
-                .queryParam("parent", config.domain())
+                .queryParam("parent", config.base().getHost())
                 .queryParam("autoplay", "false");
 
         final var inputUri = UriComponentsBuilder.fromUri(uri).build();
@@ -642,8 +640,7 @@ class GenerateSiteCommand {
             if (res.endsWith("/index.html")) {
                 res = res.replace("/index.html", "/");
             }
-            final var uriBuilder = UriComponentsBuilder.newInstance()
-                    .scheme("https").host(config.domain())
+            final var uriBuilder = UriComponentsBuilder.fromUri(config.base())
                     .pathSegment(res.split("/"));
             if (res.endsWith("/")) {
                 uriBuilder.path("/");
@@ -651,15 +648,14 @@ class GenerateSiteCommand {
             final var uri = uriBuilder.build().toUri();
             sitemapEntries.add(new SitemapEntry(uri, getLastModified(htmlFile)));
         }
-        sitemapEntries.add(new SitemapEntry(UriComponentsBuilder.newInstance().scheme("https").host(config.domain()).build().toUri(),
+        sitemapEntries.add(new SitemapEntry(config.base(),
                 getLastModified(new File(outputDir, "index.html"))));
 
         logger.debug("Generating sitemap: {}", sitemapEntries);
         Collections.sort(sitemapEntries);
         renderToFile(new SitemapModel(sitemapEntries), new File(outputDir, "sitemap.xml"));
 
-        final var sitemapUri = UriComponentsBuilder.newInstance()
-                .scheme("https").host(config.domain()).path("sitemap.xml").build().toUri();
+        final var sitemapUri = UriComponentsBuilder.fromUri(config.base()).path("sitemap.xml").build().toUri();
         logger.debug("Generating robots.txt: sitemap={}", sitemapUri);
         renderToFile(new RobotsModel(sitemapUri), new File(outputDir, "robots.txt"));
     }

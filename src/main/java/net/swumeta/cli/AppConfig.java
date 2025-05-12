@@ -25,7 +25,7 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "swu")
 public record AppConfig(
-        String domain,
+        URI base,
         File database,
         File output,
         File cache,

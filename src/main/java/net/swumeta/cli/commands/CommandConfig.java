@@ -20,8 +20,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.shell.command.CommandRegistration;
 
-import java.io.File;
-
 @Configuration(proxyBeanMethods = false)
 class CommandConfig {
     @Bean
@@ -40,10 +38,8 @@ class CommandConfig {
         return CommandRegistration.builder()
                 .command("serve")
                 .description("Serve files over HTTP")
-                .withOption().longNames("directory").shortNames('d').description("Base directory").type(File.class).defaultValue("public").required(false).and()
                 .withTarget().consumer(ctx -> {
-                    final var dir = (File) ctx.getOptionValue("directory");
-                    cmd.run(dir);
+                    cmd.run();
                 })
                 .and().build();
     }

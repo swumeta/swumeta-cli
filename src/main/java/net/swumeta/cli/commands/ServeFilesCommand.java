@@ -19,6 +19,7 @@ package net.swumeta.cli.commands;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import net.swumeta.cli.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,8 +57,14 @@ ServeFilesCommand {
         MIME_TYPES.put("svg", "image/svg+xml");
     }
 
+    private final AppConfig config;
 
-    void run(File dir) {
+    ServeFilesCommand(AppConfig config) {
+        this.config = config;
+    }
+
+
+    void run() {
         final int port = 8080;
         logger.info("Listening on port: {}", port);
 
@@ -65,7 +72,7 @@ ServeFilesCommand {
             final var server = HttpServer.create(new InetSocketAddress(port), 0);
 
             // Add a handler to serve static files
-            server.createContext("/", new FileHandler(dir));
+            server.createContext("/", new FileHandler(config.output()));
 
             // Use Virtual Threads (Java 21 feature)
             server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
