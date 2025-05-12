@@ -205,7 +205,7 @@ tr:hover .btn-copy {
     margin-bottom: 0;
 }
 
-.winrates-container {
+.winrates-matrix {
     max-width: 100%;
     max-height: 800px;
     overflow: auto;
@@ -215,30 +215,30 @@ tr:hover .btn-copy {
     text-align: center;
 }
 
-.winrates-container-ready {
+.winrates-matrix-ready {
     border: 1px solid #444;
     border-radius: 8px;
 }
 
-.winrates-container table {
+.winrates-matrix table {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
 }
 
-.winrates-container img {
+.winrates-matrix img {
     border-radius: 8px;
 }
 
-.winrates-container thead th {
+.winrates-matrix thead th {
     position: sticky;
     top: 0;
     background-color: var(--sw-dark);
     z-index: 2;
 }
 
-.winrates-container tbody td:first-child {
+.winrates-matrix tbody td:first-child {
     position: sticky;
     left: 0;
     background-color: var(--sw-dark);
@@ -247,7 +247,7 @@ tr:hover .btn-copy {
     white-space: nowrap;
 }
 
-.winrates-container thead th:first-child {
+.winrates-matrix thead th:first-child {
     position: sticky;
     left: 0;
     top: 0;
@@ -255,53 +255,53 @@ tr:hover .btn-copy {
     background-color: var(--sw-dark);
 }
 
-.winrates-container th, .winrates-container td {
+.winrates-matrix th, .winrates-matrix td {
     padding: 8px;
     text-align: center;
 }
 
-.winrates-container tbody td {
+.winrates-matrix tbody td {
     position: relative;
     height: 40px;
 }
 
-.winrates-container tbody td .entry {
+.winrates-matrix tbody td .entry {
     border-radius: 6px;
     height: 100%;
     display: grid;
     place-items: center;
 }
 
-.winrates-container tbody td .loss {
+.winrates-matrix tbody td .loss {
     background: #b03a2e;
 }
 
-.winrates-container tbody td .even {
+.winrates-matrix tbody td .even {
     background: #A86523;
 }
 
-.winrates-container tbody td .win {
+.winrates-matrix tbody td .win {
     background: #626F47;
 }
 
-.winrates-container tbody td .na {
+.winrates-matrix tbody td .na {
     background: #222;
     height: 100%;
     color: #666;
 }
 
-.winrates-container tbody td .mirror {
+.winrates-matrix tbody td .mirror {
     background: var(--sw-dark);
     color: #888;
     height: 100%;
 }
 
-.winrates-container tbody td .winrate {
+.winrates-matrix tbody td .winrate {
     font-size: 100%;
     font-weight: bold;
 }
 
-.winrates-container tbody td .matches {
+.winrates-matrix tbody td .matches {
     font-size: 80%;
 }
 

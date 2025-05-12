@@ -6,7 +6,7 @@ function initWinratesMatrix(elem) {
         const table = $("<table></table>");
         table.addClass("table-responsive");
         elem.append(table);
-        elem.addClass("winrates-container-ready");
+        elem.addClass("winrates-matrix-ready");
 
         const thead = $("<thead></thead>");
         table.append(thead);
@@ -215,7 +215,7 @@ function initWinratesChart(elem) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    $(".winrates-container").each(function() {
+    $(".winrates-matrix").each(function() {
         initWinratesMatrix($(this));
     });
     $(".winrates-chart").each(function() {
