@@ -119,6 +119,9 @@ public class MetagameService {
 
     private static boolean hasDecks(Event e) {
         for (final var deck : e.decks()) {
+            if (deck.rank() < 9 && (deck.pending() || deck.url() == null)) {
+                return false;
+            }
             if (deck.url() != null) {
                 return true;
             }
