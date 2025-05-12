@@ -238,6 +238,35 @@ class GenerateSiteCommand {
         renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
         renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
 
+        final var top8Decks = Lists.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.url() != null && e.rank() < 9)
+                        .map(Event.DeckEntry::url));
+        final var top8Winners = Lists.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.url() != null && e.rank() < 2)
+                        .map(Event.DeckEntry::url));
+        final var top8Leaders = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatLeader));
+        final var top8LeadersWinners = Bags.immutable.fromStream(top8Winners.stream().map(deckService::load).map(deckService::formatLeader));
+        final var top8Bases = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatBase));
+        final var top8Archetypes = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatName));
+        final var top8ArchetypesWinners = Bags.immutable.fromStream(top8Winners.stream().map(deckService::load).map(deckService::formatName));
+        final var top8LeadersCosts = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(Deck::leader).map(cardDatabaseService::findById).map(c -> "Cost " + c.cost()));
+        final var top8Dir = new File(metaDir, "top8");
+        if (!top8Dir.exists()) {
+            top8Dir.mkdirs();
+        }
+        renderToFile(new MetaTop8Model(new HtmlMeta("Metagame - Top 8", """
+                Statistics about Top 8 decks of the Star Wars Unlimited metagame
+                """, UriComponentsBuilder.fromUri(baseUri).path("/meta/top8/").build().toUri()),
+                metaHeader), new File(top8Dir, "index.html"));
+        renderToFile(new KeyValueModel(toSeries(top8Leaders)), new File(top8Dir, "top8-leaders.json"));
+        renderToFile(new KeyValueModel(toSeries(top8LeadersWinners)), new File(top8Dir, "top8-leaders-winners.json"));
+        renderToFile(new KeyValueModel(toSeries(top8Bases)), new File(top8Dir, "top8-bases.json"));
+        renderToFile(new KeyValueModel(toSeries(top8Archetypes)), new File(top8Dir, "top8-archetypes.json"));
+        renderToFile(new KeyValueModel(toSeries(top8ArchetypesWinners)), new File(top8Dir, "top8-archetypes-winners.json"));
+        renderToFile(new KeyValueModel(toSeries(top8LeadersCosts)), new File(top8Dir, "top8-leaders-costs.json"));
+
         logger.info("Processing redirects");
         for (final var redirect : redirectService.getRedirects()) {
             final var resFile = new File(outputDir, redirect.resource().endsWith("/") ? (redirect.resource() + "index.html") : redirect.resource());
@@ -275,6 +304,13 @@ class GenerateSiteCommand {
             keyValues.add(new KeyValue("%s (%s)".formatted(card.name().replace("\"", " "), card.set()), archetypes.size()));
         });
         return keyValues.toImmutableSortedList();
+    }
+
+    private ImmutableList<KeyValue> toSeries(Bag<String> bag) {
+        return bag.toMapOfItemToCount()
+                .keyValuesView()
+                .collect(pair -> new KeyValue(pair.getOne(), pair.getTwo()))
+                .toSortedList((kv1, kv2) -> Integer.compare(kv2.value(), kv1.value())).reverseThis().toImmutableList();
     }
 
     private ImmutableList<KeyValue> computeSurvivorRates(ImmutableList<KeyValue> leaders, ImmutableList<KeyValue> survivorBracket) {
@@ -400,6 +436,11 @@ class GenerateSiteCommand {
     @JStache(path = "/templates/meta-winrates.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
     record MetaWinratesModel(HtmlMeta meta, MetaHeader header) implements TemplateSupport {
+    }
+
+    @JStache(path = "/templates/meta-top8.mustache")
+    @JStacheConfig(formatter = CustomFormatter.class)
+    record MetaTop8Model(HtmlMeta meta, MetaHeader header) implements TemplateSupport {
     }
 
     record MetaHeader(

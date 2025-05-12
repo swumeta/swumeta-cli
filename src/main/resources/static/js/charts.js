@@ -120,7 +120,7 @@ function createHorizontalBarChart(elem, dataUrl, options = {}) {
         if(chartOptions.dynamicHeight) {
             let h = (processedData.length * 45) + 10;
             if(processedData.length > 32) {
-                h = (processedData.length * 30);
+                h = (processedData.length * 40);
             }
             if(h < 100) {
                 h = 140;

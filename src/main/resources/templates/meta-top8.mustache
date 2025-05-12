@@ -1,0 +1,38 @@
+{{>templates/header.mustache}}
+
+<section class="container">
+  <h1 class="section-title text-center mb-1">Metagame &bull; Top 8</h1>
+  {{>templates/meta-header.mustache}}
+
+  <div class="row mb-1 sm-m-4">
+    <div class="col-lg-6">
+      <div class="bar-chart w-100" data-url="top8-archetypes-winners.json" data-title="Winner Archetypes"></div>
+    </div>
+    <div class="col-lg-6">
+      <div class="bar-chart w-100" data-url="top8-leaders-winners.json" data-title="Winner Leaders"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="bar-chart w-100" data-url="top8-archetypes.json" data-title="Top 8 Archetypes"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="bar-chart w-100" data-url="top8-leaders.json" data-title="Top 8 Leaders"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="bar-chart w-100" data-url="top8-bases.json" data-title="Top 8 Bases"></div>
+    </div>
+    <div class="col-lg-6">
+      <div class="bar-chart w-100" data-url="top8-leaders-costs.json" data-title="Cost of Top 8 Leaders"></div>
+    </div>
+  </div>
+</section>
+
+{{>templates/footer.mustache}}
