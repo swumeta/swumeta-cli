@@ -415,6 +415,11 @@ class GenerateSiteCommand {
             final var nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
             return nf.format(_matchCount);
         }
+
+        String eventCount() {
+            final var nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
+            return nf.format(metagame.events().size());
+        }
     }
 
     interface TemplateSupport {
