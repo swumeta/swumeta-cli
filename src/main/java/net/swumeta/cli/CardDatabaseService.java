@@ -30,11 +30,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.imageio.ImageIO;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +72,58 @@ public class CardDatabaseService {
     public String formatName(Card.Id id) {
         final var card = findById(id);
         return "%s (%s)".formatted(card.name(), card.set());
+    }
+
+    public URI toIcon(Card.Id id) {
+        final var imagesDir = new File(config.output(), "images");
+        final var iconsDir = new File(imagesDir, "icons");
+        if (!iconsDir.exists()) {
+            iconsDir.mkdirs();
+        }
+        final var iconFile = new File(iconsDir, id.toString() + ".png");
+        if (!iconFile.exists()) {
+            final var card = findById(id);
+            if (card.art() == null) {
+                throw new AppException("Card art is not available: " + id);
+            }
+
+            final BufferedImage art;
+            try {
+                logger.debug("Loading art for card {}: {}", id, card.art());
+                art = ImageIO.read(card.art().toURL());
+            } catch (IOException e) {
+                throw new AppException("Failed to load card art: " + id, e);
+            }
+
+            final var icon = new BufferedImage(128, 128, BufferedImage.TYPE_INT_ARGB);
+            final var g = icon.createGraphics();
+            try {
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                        RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g.setRenderingHint(RenderingHints.KEY_RENDERING,
+                        RenderingHints.VALUE_RENDER_QUALITY);
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
+                        RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+                g.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING,
+                        RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+                g.setRenderingHint(RenderingHints.KEY_DITHERING,
+                        RenderingHints.VALUE_DITHER_ENABLE);
+                g.drawImage(art, 0, 0, icon.getWidth(), icon.getHeight(),
+                        70, 40, icon.getWidth(), icon.getHeight(), null);
+            } finally {
+                g.dispose();
+            }
+
+            try {
+                logger.debug("Saving icon art for card {} to file: {}", id, iconFile);
+                ImageIO.write(icon, "PNG", iconFile);
+            } catch (IOException e) {
+                throw new AppException("Failed to write card icon " + id + " to file: " + iconFile, e);
+            }
+        }
+        return UriComponentsBuilder.fromUri(config.base()).pathSegment("images", "icons", iconFile.getName()).build().toUri();
     }
 
     private Card loadById(Card.Id id) {

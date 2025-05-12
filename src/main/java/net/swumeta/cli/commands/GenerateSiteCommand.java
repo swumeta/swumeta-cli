@@ -186,7 +186,7 @@ class GenerateSiteCommand {
             renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
             renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
             eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event),
-                    countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
+                    getWinnerIcon(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
@@ -376,12 +376,18 @@ class GenerateSiteCommand {
     }
 
     record EventPage(
-            Event event, boolean newLabel, boolean metaRelevant, String countryFlag, String page
+            Event event, boolean newLabel, boolean metaRelevant, Icon winner, String countryFlag, String page
     ) implements Comparable<EventPage> {
         @Override
         public int compareTo(EventPage o) {
             return event.compareTo(o.event);
         }
+    }
+
+    record Icon(
+            URI url,
+            String alt
+    ) {
     }
 
     @JStache(path = "/templates/event.mustache")
@@ -624,6 +630,22 @@ class GenerateSiteCommand {
             return new Link(createYoutubeEmbedLink(link.url()), link.title());
         }
         return null;
+    }
+
+    private Icon getWinnerIcon(Event event) {
+        final var opt = event.decks().stream()
+                .filter(e -> e.rank() == 1 && !e.pending() && e.url() != null)
+                .map(Event.DeckEntry::url)
+                .findFirst();
+        if (opt.isEmpty()) {
+            return null;
+        }
+        final var deckUri = opt.get();
+        final var deck = deckService.load(deckUri);
+        if (deck.leader() == null) {
+            return null;
+        }
+        return new Icon(cardDatabaseService.toIcon(deck.leader()), deckService.formatLeader(deck));
     }
 
     private void generateSitemap(File outputDir, Set<File> excludedFiles) {
