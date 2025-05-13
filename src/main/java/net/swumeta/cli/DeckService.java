@@ -142,10 +142,27 @@ public class DeckService {
             return deck;
         }
 
+        if ("testfile".equals(uri.getScheme())) {
+            final var testUri = UriComponentsBuilder.fromUri(uri).scheme("file").build().toUri();
+            logger.debug("Loading test deck from file: {}", testUri);
+            try (final var in = testUri.toURL().openStream()) {
+                return yamlObjectMapper.readerFor(Deck.class).readValue(in);
+            } catch (IOException e) {
+                throw new AppException("Failed to read test deck from file: " + uri, e);
+            }
+        }
+
         try {
-            deck = loadMeleeDeck(uri);
+            final var host = uri.getHost();
+            if (host != null) {
+                if (host.contains("melee")) {
+                    deck = loadMeleeDeck(uri);
+                } else if (host.contains("swudb")) {
+                    deck = loadSwudbDeck(uri);
+                }
+            }
         } catch (AppException e) {
-            logger.debug("Unable to load deck from melee.gg: {}", uri, e);
+            logger.debug("Unable to load deck: {}", uri, e);
         }
         if (deck == null) {
             logger.warn("Failed to load deck from melee.gg: {}", uri);
@@ -308,15 +325,6 @@ public class DeckService {
     }
 
     private Deck loadMeleeDeck(URI uri) {
-        if ("testfile".equals(uri.getScheme())) {
-            final var testUri = UriComponentsBuilder.fromUri(uri).scheme("file").build().toUri();
-            logger.debug("Loading test deck from file: {}", testUri);
-            try (final var in = testUri.toURL().openStream()) {
-                return yamlObjectMapper.readerFor(Deck.class).readValue(in);
-            } catch (IOException e) {
-                throw new AppException("Failed to read test deck from file: " + uri, e);
-            }
-        }
         logger.info("Loading deck from melee.gg: {}", uri);
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
@@ -420,6 +428,25 @@ public class DeckService {
                 sideboard.toImmutableBag(),
                 matchRecord,
                 matches
+        );
+    }
+
+    private Deck loadSwudbDeck(URI uri) {
+        logger.info("Loading deck from swudb.com: {}", uri);
+        final var deckId = UriComponentsBuilder.fromUri(uri).build().getPathSegments().getLast();
+        final var deckUri = UriComponentsBuilder.fromUri(uri).replacePath("/api/").pathSegment("deck", deckId).build().toUri();
+        final var swudbDeck = client.get().uri(deckUri).accept(MediaType.APPLICATION_JSON).retrieve().body(ImportSwudb.class);
+        final var mainCards = Bags.mutable.<Card.Id>ofInitialCapacity(50);
+        final var sideboardCards = Bags.mutable.<Card.Id>ofInitialCapacity(10);
+
+        for (final var entry : swudbDeck.shuffledDeck) {
+            final var cardId = entry.card.toCardId();
+            mainCards.addOccurrences(cardId, entry.count);
+            sideboardCards.addOccurrences(cardId, entry.sideboardCount);
+        }
+
+        return new Deck(uri, swudbDeck.authorName, Format.PREMIER, swudbDeck.leader.toCardId(), swudbDeck.base.toCardId(),
+                mainCards.toImmutableBag(), sideboardCards.toImmutableBag(), "0-0-0", List.of()
         );
     }
 
@@ -596,6 +623,30 @@ public class DeckService {
 
     private record JsonPlayerDeck(
             @JsonAlias("DecklistId") String decklistId
+    ) {
+    }
+
+    private record ImportSwudb(
+            String authorName,
+            ImportSwudbCard leader,
+            ImportSwudbCard base,
+            List<ImportSwudEntry> shuffledDeck
+    ) {
+    }
+
+    private record ImportSwudbCard(
+            String defaultExpansionAbbreviation,
+            String defaultCardNumber
+    ) {
+        Card.Id toCardId() {
+            return Card.Id.valueOf("%s-%s".formatted(defaultExpansionAbbreviation, defaultCardNumber));
+        }
+    }
+
+    private record ImportSwudEntry(
+            int count,
+            int sideboardCount,
+            ImportSwudbCard card
     ) {
     }
 }
