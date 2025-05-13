@@ -220,6 +220,14 @@ tr:hover .btn-copy {
     background-color: var(--sw-dark) !important;
 }
 
+.winrates-matrix .modal-header {
+    padding: 8px 12px;
+}
+
+.winrates-matrix .modal-title {
+    font-size: 100% !important;
+}
+
 .winrates-matrix-fullscreen {
     overflow: unset !important;
     width: 100% !important;
