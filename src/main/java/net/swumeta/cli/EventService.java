@@ -82,6 +82,10 @@ public class EventService {
 
     public Event sync(Event event) {
         Assert.notNull(event, "Event must not be null");
+        if (event.locked()) {
+            logger.info("Skipping event since it's locked: {}", event);
+            return event;
+        }
         if (event.melee() == null) {
             logger.warn("Event '{}' has no Melee.gg link", event);
             return event;
@@ -158,7 +162,7 @@ public class EventService {
 
         final var newPlayers = deckUris.isEmpty() ? event.players() : deckUris.size();
         final var newEvent = new Event(
-                event.name(), event.type(), newPlayers, event.date(), event.location(), event.hidden(), event.format(),
+                event.name(), false, event.type(), newPlayers, event.date(), event.location(), event.hidden(), event.format(),
                 event.melee(), event.contributors(), event.links(), deckUris
         );
 

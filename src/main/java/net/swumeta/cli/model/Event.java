@@ -26,6 +26,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Event(
         @JsonProperty(required = true) String name,
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT) boolean locked,
         @JsonProperty(required = true) Type type,
         @JsonInclude(JsonInclude.Include.NON_DEFAULT) int players,
         @JsonProperty(required = true) LocalDate date,

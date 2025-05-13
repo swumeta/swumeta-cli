@@ -47,7 +47,7 @@ public class TestHelper {
         for (int i = 1; i <= decks.size(); ++i) {
             deckEntries.add(new Event.DeckEntry(i, false, decks.get(i - 1).source()));
         }
-        return new Event(name, Event.Type.PQ, 64, date, new Location("France", "Paris"), false, Format.PREMIER,
+        return new Event(name, false, Event.Type.PQ, 64, date, new Location("France", "Paris"), false, Format.PREMIER,
                 URI.create("http://melee.gg/foo"), List.of("Me"), List.of(), deckEntries);
     }
 
