@@ -89,7 +89,7 @@ function initWinratesMatrix(elem) {
             const dlgMatrix = $("<div></div>");
             dlgMatrix.addClass("winrates-matrix");
             dlgMatrix.addClass("winrates-matrix-fullscreen");
-            dlgMatrix.attr("data-url", "winrates-matrix.json");
+            dlgMatrix.attr("data-url", dataUrl);
             dlgMatrix.attr("data-embedded", "true");
             initWinratesMatrix(dlgMatrix);
             dlgBody.append(dlgMatrix);
