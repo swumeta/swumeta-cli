@@ -45,7 +45,7 @@ function initWinratesMatrix(elem) {
                 const drawCount = opItem.drawCount;
                 const td = $("<td></td>");
                 const entry = $("<div></div>");
-                const record = winCount + "-" + lossCount + "-" + drawCount;
+                const record = winCount + "-" + drawCount + "-" + lossCount;
                 entry.addClass("entry");
                 td.append(entry);
                 if(opponent == leaderName) {
@@ -179,7 +179,7 @@ function initWinratesChart(elem) {
                   const lossCount = params.value[4];
                   const drawCount = params.value[5];
                   const name = params.data.name;
-                  return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Record: ${winCount}-${lossCount}-${drawCount}`;
+                  return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Record: ${winCount}-${drawCount}-${lossCount}`;
               }
           },
           xAxis: {
