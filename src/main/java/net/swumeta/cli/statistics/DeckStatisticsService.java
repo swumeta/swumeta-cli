@@ -41,7 +41,7 @@ import java.util.stream.StreamSupport;
 @Service
 public class DeckStatisticsService {
     private static final ImmutableSet<Deck.Match.Result> VALID_MATCH_RESULTS = Sets.immutable.of(
-            Deck.Match.Result.WIN, Deck.Match.Result.LOSS, Deck.Match.Result.BYE, Deck.Match.Result.DRAW
+            Deck.Match.Result.WIN, Deck.Match.Result.LOSS, Deck.Match.Result.DRAW
     );
     private final Logger logger = LoggerFactory.getLogger(DeckStatisticsService.class);
     private final DeckService deckService;
@@ -152,19 +152,22 @@ public class DeckStatisticsService {
             ImmutableList<LeaderMatchupOpponent> opponents
     ) {
         public double winRate() {
-            int matchCount = 0;
-            int winCount = 0;
-            for (final var op : opponents) {
-                matchCount += op.results.size();
-                winCount += op.results.occurrencesOf(Deck.Match.Result.WIN);
-            }
-            return matchCount == 0 ? 0d : winCount / (double) matchCount;
+            final int matchCount = matchCount();
+            return matchCount == 0 ? 0d : matchCount(Deck.Match.Result.WIN) / (double) matchCount;
         }
 
         public int matchCount() {
             int matchCount = 0;
             for (final var op : opponents) {
-                matchCount += op.results.size();
+                matchCount += op.results.count(VALID_MATCH_RESULTS::contains);
+            }
+            return matchCount;
+        }
+
+        public int matchCount(Deck.Match.Result kind) {
+            int matchCount = 0;
+            for (final var op : opponents) {
+                matchCount += op.results.occurrencesOf(kind);
             }
             return matchCount;
         }
@@ -175,7 +178,16 @@ public class DeckStatisticsService {
             ImmutableBag<Deck.Match.Result> results
     ) {
         public double winRate() {
-            return results.isEmpty() ? 0d : results.occurrencesOf(Deck.Match.Result.WIN) / (double) results.size();
+            final int matchCount = matchCount();
+            return matchCount == 0 ? 0d : matchCount(Deck.Match.Result.WIN) / (double) matchCount;
+        }
+
+        public int matchCount() {
+            return results.count(VALID_MATCH_RESULTS::contains);
+        }
+
+        public int matchCount(Deck.Match.Result kind) {
+            return results.occurrencesOf(kind);
         }
     }
 

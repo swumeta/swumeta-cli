@@ -40,13 +40,22 @@ function initWinratesMatrix(elem) {
                 const opponent = opItem.name;
                 const wr = opItem.winrate;
                 const matches = opItem.matches;
+                const winCount = opItem.winCount;
+                const lossCount = opItem.lossCount;
+                const drawCount = opItem.drawCount;
                 const td = $("<td></td>");
                 const entry = $("<div></div>");
+                const record = winCount + "-" + lossCount + "-" + drawCount;
                 entry.addClass("entry");
                 td.append(entry);
                 if(opponent == leaderName) {
-                    entry.addClass("mirror");
-                    entry.html("Mirror");
+                    if(matches == 0) {
+                        entry.addClass("na");
+                        entry.html("N/A");
+                    } else {
+                        entry.addClass("mirror");
+                        entry.html("Mirror<div class='matches'>" + record + "</div>");
+                    }
                 } else if(wr !== undefined && matches !== undefined) {
                     if(matches == 0) {
                         entry.addClass("na");
@@ -59,8 +68,7 @@ function initWinratesMatrix(elem) {
                         } else {
                             entry.addClass("loss");
                         }
-                        const matchesStr = matches <= 1 ? "match" : "matches";
-                        entry.html("<div class='winrate'>" + wr + "%</div><div class='matches'>" + matches + " " + matchesStr + "</div>");
+                        entry.html("<div class='winrate'>" + wr + "%</div><div class='matches'>" + record + "</div>");
                     }
                 } else {
                     entry.addClass("na");
@@ -141,8 +149,11 @@ function initWinratesChart(elem) {
 
         const chartData = filteredData.map(item => ({
             name: item.name,
-            value: [item.win, item.meta, item.matches],
+            value: [item.win, item.meta, item.matches, item.winCount, item.lossCount, item.drawCount],
             matches: item.matches,
+            winCount: item.winCount,
+            lossCount: item.lossCount,
+            drawCount: item.drawCount,
             itemStyle: {
                 color: getColorByMatches(item.matches)
             }
@@ -164,8 +175,11 @@ function initWinratesChart(elem) {
                   const win = params.value[0];
                   const meta = params.value[1];
                   const matches = params.value[2];
+                  const winCount = params.value[3];
+                  const lossCount = params.value[4];
+                  const drawCount = params.value[5];
                   const name = params.data.name;
-                  return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Matches: ${matches}`;
+                  return `<strong>${name}</strong><br/>Meta share: ${meta}%<br/>Win rate: ${win}%<br/>Record: ${winCount}-${lossCount}-${drawCount}`;
               }
           },
           xAxis: {

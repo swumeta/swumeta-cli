@@ -731,7 +731,10 @@ class GenerateSiteCommand {
             String leader,
             int winRate,
             String metaShare,
-            int matches
+            int matches,
+            int winCount,
+            int lossCount,
+            int drawCount
     ) implements Comparable<WinrateDataEntry> {
         @Override
         public int compareTo(WinrateDataEntry o) {
@@ -764,7 +767,10 @@ class GenerateSiteCommand {
     record WinrateMatrixOpponent(
             String name,
             int winRate,
-            int matches
+            int matches,
+            int winCount,
+            int lossCount,
+            int drawCount
     ) {
     }
 
@@ -779,7 +785,10 @@ class GenerateSiteCommand {
                 Lists.immutable.fromStream(matchup.opponents().stream().map(op -> new WinrateMatrixOpponent(
                         cardDatabaseService.formatName(op.opponent()),
                         (int) Math.round(100d * op.winRate()),
-                        op.results().size()
+                        op.matchCount(),
+                        op.matchCount(Deck.Match.Result.WIN),
+                        op.matchCount(Deck.Match.Result.LOSS),
+                        op.matchCount(Deck.Match.Result.DRAW)
                 )))
         ))));
     }
@@ -790,7 +799,8 @@ class GenerateSiteCommand {
         return new WinrateDataModel(Lists.immutable.fromStream(leaderMatchups.stream().map(matchup ->
                 new WinrateDataEntry(cardDatabaseService.formatName(matchup.leader()),
                         (int) Math.round(100d * matchup.winRate()), nf.format(100d * matchup.metaShare()),
-                        matchup.matchCount())).sorted())
+                        matchup.matchCount(), matchup.matchCount(Deck.Match.Result.WIN), matchup.matchCount(Deck.Match.Result.LOSS),
+                        matchup.matchCount(Deck.Match.Result.DRAW))).sorted())
         );
     }
 
