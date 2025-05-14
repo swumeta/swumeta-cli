@@ -259,7 +259,7 @@ function createPieChart(elem, dataUrl, options = {}) {
                         show: true,
                         fontSize: 16,
                         formatter: function(params) {
-                            return '{name|' + params.name + '}\n{percent|' + params.percent + '%}';
+                            return '{name|' + params.name + '}\n{percent|' + Math.round(params.percent) + '%}';
                         },
                         rich: {
                             name: {
