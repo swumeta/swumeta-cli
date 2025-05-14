@@ -169,6 +169,29 @@ class GenerateSiteCommand {
             renderToFile(toMinrateMatrixModel(leaderMatchups), new File(eventDir, "winrates-matrix.json"));
             renderToFile(toWinRateDataModel(leaderMatchups), new File(eventDir, "winrates-chart.json"));
 
+            int winLossCount = 0;
+            int drawCount = 0;
+            for (final var entry : event.decks()) {
+                if (entry.url() == null) {
+                    continue;
+                }
+                try {
+                    final var deck = deckService.load(entry.url());
+                    for (final var m : deck.matches()) {
+                        if (Deck.Match.Result.WIN.equals(m.result()) || Deck.Match.Result.LOSS.equals(m.result())) {
+                            winLossCount += 1;
+                        } else if (Deck.Match.Result.DRAW.equals(m.result())) {
+                            drawCount += 1;
+                        }
+                    }
+                } catch (AppException ignore) {
+                }
+            }
+            renderToFile(new KeyValueModel(Lists.immutable.of(
+                    new KeyValue("Wins or Losses", winLossCount),
+                    new KeyValue("Draws", drawCount)
+            )), new File(eventDir, "match-results.json"));
+
             final var decks = Lists.immutable.fromStream(event.decks().stream()
                     .filter(entry -> entry.url() != null)
                     .map(this::toDeckWithRank)

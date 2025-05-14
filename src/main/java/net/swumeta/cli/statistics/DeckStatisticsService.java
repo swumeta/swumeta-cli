@@ -113,7 +113,7 @@ public class DeckStatisticsService {
                     allResults = Bags.mutable.<Deck.Match.Result>ofInitialCapacity(32);
                     matchups.put(key, allResults);
                 }
-                if (match.result() != null && VALID_MATCH_RESULTS.contains(match.result())) {
+                if (match.result() != null) {
                     allResults.add(match.result());
                 }
             }

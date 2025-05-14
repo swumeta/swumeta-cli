@@ -5,11 +5,14 @@
 
   {{#hasDecks}}
     <div class="row">
-      <div class="col-lg-6">
+      <div class="col-lg-5">
         <div class="bar-chart w-100" data-url="usage-leaders.json" data-title="Leaders"></div>
       </div>
-      <div class="col-lg-6">
+      <div class="col-lg-4">
         <div class="bar-chart w-100" data-url="usage-bases.json" data-title="Bases"></div>
+      </div>
+      <div class="col-3 d-none d-lg-block">
+        <div class="pie-chart w-100" data-url="match-results.json" data-title="Match Results"></div>
       </div>
     </div>
     <div class="row mb-4">
