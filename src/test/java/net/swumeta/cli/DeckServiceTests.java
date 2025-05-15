@@ -206,6 +206,7 @@ class DeckServiceTests {
         assertThat(deck.base()).isEqualTo(Card.Id.valueOf("JTL-021"));
         assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(3);
         assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(1);
+        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("SOR-225"))).isEqualTo(2);
         assertThat(deck.sideboard().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(2);
 
         final var deck2 = svc.load(meleeUri);

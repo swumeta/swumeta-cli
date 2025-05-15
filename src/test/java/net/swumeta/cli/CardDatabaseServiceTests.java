@@ -94,4 +94,10 @@ class CardDatabaseServiceTests {
     void findByIdNull() {
         assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> svc.findById(null));
     }
+
+    @Test
+    void testFindByIdSor225() {
+        final var card = svc.findById(Card.Id.valueOf("SOR-225"));
+        assertThat(card.id()).isEqualTo(Card.Id.valueOf("SOR-225"));
+    }
 }

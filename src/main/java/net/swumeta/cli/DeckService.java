@@ -371,7 +371,7 @@ public class DeckService {
                 inSectionDeck = false;
                 inSectionSideboard = true;
             } else if (line.contains("|")) {
-                final var parts = line.split("\\s*[\\|\\/]\\s*");
+                final var parts = line.split("\\s*[|]\\s*");
                 if (parts.length != 2 && parts.length != 3) {
                     throw new RuntimeException("Invalid line: " + line);
                 }

@@ -1,0 +1,12 @@
+---
+set: "SOR"
+number: 225
+type: "unit"
+rarity: "common"
+arena: "space"
+aspects:
+- "villainy"
+cost: 1
+name: "TIE/ln Fighter"
+art: "https://cdn.starwarsunlimited.com/card_SWH_01_Card_225_TI_Eln_Fighter_379343b95d.png"
+thumbnail: "https://cdn.starwarsunlimited.com/thumbnail_SWH_01_225_TIE_ln_Fighter_Thumbnail_676208f57c.png"
