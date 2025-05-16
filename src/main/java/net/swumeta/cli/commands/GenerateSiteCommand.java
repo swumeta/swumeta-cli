@@ -209,7 +209,7 @@ class GenerateSiteCommand {
             renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
             renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
             eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event),
-                    getWinnerIcon(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
+                    getEventWinner(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
         logger.info("Processing event index page");
@@ -399,12 +399,18 @@ class GenerateSiteCommand {
     }
 
     record EventPage(
-            Event event, boolean newLabel, boolean metaRelevant, Icon winner, String countryFlag, String page
+            Event event, boolean newLabel, boolean metaRelevant, EventWinner winner, String countryFlag, String page
     ) implements Comparable<EventPage> {
         @Override
         public int compareTo(EventPage o) {
             return event.compareTo(o.event);
         }
+    }
+
+    record EventWinner(
+            Icon leader,
+            Icon base
+    ) {
     }
 
     record Icon(
@@ -655,7 +661,7 @@ class GenerateSiteCommand {
         return null;
     }
 
-    private Icon getWinnerIcon(Event event) {
+    private EventWinner getEventWinner(Event event) {
         final var opt = event.decks().stream()
                 .filter(e -> e.rank() == 1 && !e.pending() && e.url() != null)
                 .map(Event.DeckEntry::url)
@@ -665,10 +671,12 @@ class GenerateSiteCommand {
         }
         final var deckUri = opt.get();
         final var deck = deckService.load(deckUri);
-        if (deck.leader() == null) {
+        if (deck.leader() == null || deck.base() == null) {
             return null;
         }
-        return new Icon(cardDatabaseService.toIcon(deck.leader()), deckService.formatLeader(deck));
+        final var leader = new Icon(cardDatabaseService.findById(deck.leader()).thumbnail(), deckService.formatLeader(deck));
+        final var base = new Icon(cardDatabaseService.findById(deck.base()).thumbnail(), deckService.formatBase(deck));
+        return new EventWinner(leader, base);
     }
 
     private void generateSitemap(File outputDir, Set<File> excludedFiles) {

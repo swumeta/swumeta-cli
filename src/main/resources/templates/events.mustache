@@ -29,10 +29,10 @@
       <tr>
         <th scope="col">Date</th>
         <th scope="col"></th>
-        <th scope="col" class="d-none d-sm-table-cell">Win.</th>
         <th scope="col">Tournament</th>
-        <th scope="col" class="d-none d-md-table-cell">Type</th>
+        <th scope="col" class="d-none d-md-table-cell">Winner</th>
         <th scope="col" class="text-center"><span class="d-none d-md-block">Country</span></th>
+        <th scope="col" class="d-none d-lg-table-cell">Type</th>
         <th scope="col" class="text-end"><span class="d-none d-md-block">Players</span></th>
       </tr>
       <tbody class="list">
@@ -41,21 +41,22 @@
           <td class="align-middle fit">
             <span class="align-middle text-secondary" style="font-size: 80%">{{event.date}}</span></td>
           <td class="align-middle fit">{{#metaRelevant}}<i class="bi bi-star-fill" style="color: var(--sw-yellow)"></i>{{/metaRelevant}}</td>
-          <td class="align-middle fit text-center d-none d-sm-table-cell">
-            {{#winner}}
-              <span class="align-middle"><img class="shadow-lg rounded rounded-2" src="{{winner.url}}" alt="{{winner.alt}}" width="24" height="24"/></span>
-            {{/winner}}
-          </td>
-          <td class="align-middle event-name">
+          <td class="align-middle event-name fit">
             <span class="align-middle">
               <a href="{{page}}">{{event.name}}</a>{{#newLabel}}<img class="ms-2 d-none d-md-inline" src="/images/new-label.png" width="38" height="20"/>{{/newLabel}}
             </span>
           </td>
-          <td class="align-middle fit d-none d-md-table-cell event-type">
-            <span class="align-middle">{{event.type}}</span>
+          <td class="align-middle d-none d-md-table-cell">
+            {{#winner}}
+              <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="90" height="30" class="align-middle rounded rounded-1 d-inline-block me-2"/>
+              <img src="{{winner.base.url}}" alt="{{winner.base.alt}}" width="90" height="30" class="align-middle rounded rounded-1 d-none d-lg-inline-block"/>
+            {{/winner}}
           </td>
           <td class="align-middle text-center fit">
             <i class="fi fi-{{countryFlag}}"></i>
+          </td>
+          <td class="align-middle fit d-none d-lg-table-cell event-type">
+            <span class="badge text-bg-secondary align-middle">{{event.type}}</span>
           </td>
           <td class="align-middle text-end fit">
             <span class="align-middle">{{event.players}}</span>
