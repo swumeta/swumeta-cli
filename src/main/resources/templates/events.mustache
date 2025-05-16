@@ -46,8 +46,9 @@
               <a href="{{page}}">{{event.name}}</a>{{#newLabel}}<img class="ms-2 d-none d-md-inline" src="/images/new-label.png" width="38" height="20"/>{{/newLabel}}
             </span>
           </td>
-          <td class="align-middle d-none d-md-table-cell">
+          <td class="align-middle d-none d-md-table-cell event-winner">
             {{#winner}}
+              <span class="d-none">{{winner.leader.alt}}</span>
               <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="90" height="30" class="align-middle rounded rounded-1 d-inline-block"/>
               <img src="{{winner.base.url}}" alt="{{winner.base.alt}}" width="90" height="30" class="align-middle rounded rounded-1 d-none d-lg-inline-block ms-2"/>
             {{/winner}}
@@ -72,7 +73,7 @@
 <script type="text/javascript">
   document.addEventListener('DOMContentLoaded', function() {
     const options = {
-      valueNames: [ 'event-name', 'event-type' ]
+      valueNames: [ 'event-name', 'event-winner', 'event-type' ]
     };
     const eventsList = new List('events-container', options);
   });
