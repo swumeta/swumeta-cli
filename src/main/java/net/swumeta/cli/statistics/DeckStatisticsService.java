@@ -66,7 +66,6 @@ public class DeckStatisticsService {
                             }
                         })
                         .filter(Objects::nonNull)
-                        .filter(Deck::isValid)
                         .map(deckService::getArchetype)
         );
     }

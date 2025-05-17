@@ -149,7 +149,7 @@ public class EventService {
                     deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
                 }
                 logger.trace("Adding deck URI at rank {}: {}", player.Rank, deckUri);
-                deckUris.add(new Event.DeckEntry(player.Rank, false, deckUri));
+                deckUris.add(new Event.DeckEntry(player.Rank, false, deckUri, null, null, null));
 
                 if (deckUris.size() >= resp.recordsTotal) {
                     break;

@@ -61,12 +61,22 @@ public record Card(
     }
 
     public enum Aspect {
-        @JsonProperty("villainy") VILLAINY,
-        @JsonProperty("heroism") HEROISM,
-        @JsonProperty("vigilance") VIGILANCE,
-        @JsonProperty("command") COMMAND,
-        @JsonProperty("aggression") AGGRESSION,
-        @JsonProperty("cunning") CUNNING,
+        @JsonProperty("villainy") VILLAINY(null),
+        @JsonProperty("heroism") HEROISM(null),
+        @JsonProperty("vigilance") VIGILANCE(Card.Id.valueOf("SOR-020")),
+        @JsonProperty("command") COMMAND(Card.Id.valueOf("SOR-023")),
+        @JsonProperty("aggression") AGGRESSION(Card.Id.valueOf("SOR-026")),
+        @JsonProperty("cunning") CUNNING(Card.Id.valueOf("SOR-029"));
+
+        private Card.Id genericBase;
+
+        Aspect(final Card.Id genericBase) {
+            this.genericBase = genericBase;
+        }
+
+        public Id toGenericBase() {
+            return genericBase;
+        }
     }
 
     @Override
@@ -94,7 +104,6 @@ public record Card(
             this.number = number;
         }
 
-        @JsonCreator
         Id(String value) {
             final int i = value.indexOf('-');
             final var setStr = value.substring(0, i);
@@ -112,6 +121,7 @@ public record Card(
             return number;
         }
 
+        @JsonCreator
         public static Card.Id valueOf(String value) {
             Assert.notNull(value, "Value must not be null");
             return CACHE.get(value);

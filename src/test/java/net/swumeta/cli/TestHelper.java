@@ -45,7 +45,7 @@ public class TestHelper {
     public Event createEvent(String name, LocalDate date, List<Deck> decks) {
         final var deckEntries = new ArrayList<Event.DeckEntry>(decks.size());
         for (int i = 1; i <= decks.size(); ++i) {
-            deckEntries.add(new Event.DeckEntry(i, false, decks.get(i - 1).source()));
+            deckEntries.add(new Event.DeckEntry(i, false, decks.get(i - 1).source(), null, null, null));
         }
         return new Event(name, false, Event.Type.PQ, 64, date, new Location("France", "Paris"), false, Format.PREMIER,
                 URI.create("http://melee.gg/foo"), List.of("Me"), List.of(), deckEntries);

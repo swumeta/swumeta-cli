@@ -28,8 +28,10 @@ import net.swumeta.cli.statistics.CardStatisticsService;
 import net.swumeta.cli.statistics.DeckStatisticsService;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.bag.Bag;
+import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.Procedure2;
 import org.eclipse.collections.api.factory.Bags;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
@@ -57,6 +59,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Component
 class GenerateSiteCommand {
@@ -140,12 +143,11 @@ class GenerateSiteCommand {
                     ? Lists.immutable.fromStream(event.links().stream().map(this::createVideoEmbedLink).filter(Objects::nonNull))
                     : Lists.immutable.<Link>empty();
 
-            final var singleEvent = Collections.singleton(event);
             final var deckUris = Lists.immutable.fromStream(event.decks().stream()
                     .filter(d -> d.url() != null).map(Event.DeckEntry::url));
-            final var deckBag = deckStatisticsService.getMostPlayedDecks(deckUris);
-            final var deckBagTop64 = deckStatisticsService.getMostPlayedDecks(deckUris.take(64));
-            final var deckBagTop8 = deckStatisticsService.getMostPlayedDecks(deckUris.take(8));
+            final var deckBag = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris), 0);
+            final var deckBagTop64 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(64)), 64);
+            final var deckBagTop8 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(8)), 8);
 
             final var leaderSeries = toLeaderSerie(deckBag);
             final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
@@ -193,13 +195,12 @@ class GenerateSiteCommand {
             )), new File(eventDir, "match-results.json"));
 
             final var decks = Lists.immutable.fromStream(event.decks().stream()
-                    .filter(entry -> entry.url() != null)
                     .map(this::toDeckWithRank)
                     .filter(Objects::nonNull)
                     .sorted()
             );
-            final var leaderBag = nMostCards(Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatLeader(d.deck()))), 4);
-            final var baseBag = nMostCards(Bags.immutable.fromStream(decks.stream().map(d -> deckService.formatBase(d.deck()))), 4);
+            final var leaderBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(DeckArchetype::leader).map(deckService::formatLeader)), 4);
+            final var baseBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(deckService::lookupBase).map(deckService::formatBase)), 4);
             renderToFile(new EventModel(new HtmlMeta(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
                             UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
@@ -260,20 +261,68 @@ class GenerateSiteCommand {
         renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
         renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
 
-        final var top8Decks = Lists.immutable.fromStream(
+        final var top8Leaders = Bags.immutable.fromStream(
                 metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.url() != null && e.rank() < 9)
-                        .map(Event.DeckEntry::url));
-        final var top8Winners = Lists.immutable.fromStream(
+                        .filter(e -> e.rank() < 9)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                return deckService.load(e.url()).leader();
+                            }
+                            return e.leader();
+                        }).filter(Objects::nonNull).map(deckService::formatLeader));
+        final var top8LeadersWinners = Bags.immutable.fromStream(
                 metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.url() != null && e.rank() < 2)
-                        .map(Event.DeckEntry::url));
-        final var top8Leaders = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatLeader));
-        final var top8LeadersWinners = Bags.immutable.fromStream(top8Winners.stream().map(deckService::load).map(deckService::formatLeader));
-        final var top8Bases = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatBase));
-        final var top8Archetypes = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(deckService::formatName));
-        final var top8ArchetypesWinners = Bags.immutable.fromStream(top8Winners.stream().map(deckService::load).map(deckService::formatName));
-        final var top8LeadersCosts = Bags.immutable.fromStream(top8Decks.stream().map(deckService::load).map(Deck::leader).map(cardDatabaseService::findById).map(c -> "Cost " + c.cost()));
+                        .filter(e -> e.rank() == 1)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                return deckService.load(e.url()).leader();
+                            }
+                            return e.leader();
+                        }).filter(Objects::nonNull).map(deckService::formatLeader));
+        final var top8Bases = Bags.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.rank() < 9)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                return deckService.load(e.url()).base();
+                            }
+                            return e.base();
+                        }).filter(Objects::nonNull).map(deckService::formatBase));
+        final var top8Archetypes = Bags.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.rank() < 9)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                final var deck = deckService.load(e.url());
+                                return deckService.getArchetype(deck);
+                            }
+                            if (e.leader() != null && e.base() != null) {
+                                return DeckArchetype.valueOf(e.leader(), e.base());
+                            }
+                            return null;
+                        }).filter(Objects::nonNull).map(deckService::formatArchetype));
+        final var top8ArchetypesWinners = Bags.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.rank() == 1)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                final var deck = deckService.load(e.url());
+                                return deckService.getArchetype(deck);
+                            }
+                            if (e.leader() != null && e.base() != null) {
+                                return DeckArchetype.valueOf(e.leader(), e.base());
+                            }
+                            return null;
+                        }).filter(Objects::nonNull).map(deckService::formatArchetype));
+        final var top8LeadersCosts = Bags.immutable.fromStream(
+                metagame.events().stream().flatMap(e -> e.decks().stream())
+                        .filter(e -> e.rank() < 9)
+                        .map(e -> {
+                            if (e.url() != null) {
+                                return deckService.load(e.url()).leader();
+                            }
+                            return e.leader();
+                        }).filter(Objects::nonNull).map(cardDatabaseService::findById).map(c -> "Cost " + c.cost()));
         final var top8Dir = new File(metaDir, "top8");
         if (!top8Dir.exists()) {
             top8Dir.mkdirs();
@@ -300,23 +349,55 @@ class GenerateSiteCommand {
         generateSitemap(outputDir, Set.of());
     }
 
+    private ImmutableBag<DeckArchetype> addMissingArchetypes(Event event, Bag<DeckArchetype> existing, int limit) {
+        final var moreArchetypes = Bags.mutable.withAll(existing);
+        for (final var e : event.decks()) {
+            if (limit != 0 && e.rank() > limit) {
+                continue;
+            }
+            if (e.url() == null && e.leader() != null && e.base() != null) {
+                final var archetype = DeckArchetype.valueOf(e.leader(), e.base());
+                moreArchetypes.add(archetype);
+            }
+        }
+        return moreArchetypes.toImmutable();
+    }
+
     private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
+        if (e.url() == null && e.leader() != null && e.base() != null && e.player() != null) {
+            final var archetype = DeckArchetype.valueOf(e.leader(), e.base());
+            final var name = deckService.formatArchetype(archetype);
+            final var leaderCard = cardDatabaseService.findById(e.leader());
+            final var baseCard = cardDatabaseService.findById(e.base());
+            final var aspects = Sets.mutable.<Card.Aspect>fromStream(
+                    Stream.concat(leaderCard.aspects().stream(), baseCard.aspects().stream())).toSortedList();
+            return new DeckWithRank(e.rank(), e.pending(), null, e.player(), name, leaderCard, baseCard, aspects, formatMatchRecord(null), null);
+        }
+        if (e.url() == null) {
+            return null;
+        }
+
         final Deck deck;
         try {
             deck = deckService.load(e.url());
         } catch (AppException ignore) {
             return null;
         }
-        if (!deck.isValid()) {
-            return null;
-        }
         return new DeckWithRank(
-                e.rank(), e.pending(), deck, deckService.formatName(deck),
+                e.rank(), e.pending(), deck, deck.player(), deckService.formatName(deck),
                 cardDatabaseService.findById(deck.leader()),
                 cardDatabaseService.findById(deck.base()),
                 getAspects(deck),
+                formatMatchRecord(deck.matchRecord()),
                 deckService.toSwudbJson(deck)
         );
+    }
+
+    private static String formatMatchRecord(String s) {
+        if (s == null || "0-0-0".equals(s)) {
+            return "N/A";
+        }
+        return s;
     }
 
     private ImmutableList<KeyValue> toLeaderSerie(Bag<DeckArchetype> bag) {
@@ -450,8 +531,8 @@ class GenerateSiteCommand {
     record KeyValueModel(ImmutableList<KeyValue> series) implements TemplateSupport {
     }
 
-    record DeckWithRank(int rank, boolean pending, Deck deck, String name, Card leader, Card base,
-                        List<Card.Aspect> aspects,
+    record DeckWithRank(int rank, boolean pending, Deck deck, String player, String name, Card leader, Card base,
+                        Iterable<Card.Aspect> aspects, String matchRecord,
                         String swudbFormat) implements Comparable<DeckWithRank> {
         @Override
         public int compareTo(DeckWithRank o) {
@@ -663,19 +744,43 @@ class GenerateSiteCommand {
 
     private EventWinner getEventWinner(Event event) {
         final var opt = event.decks().stream()
-                .filter(e -> e.rank() == 1 && !e.pending() && e.url() != null)
-                .map(Event.DeckEntry::url)
+                .filter(e -> e.rank() == 1 && !e.pending())
                 .findFirst();
         if (opt.isEmpty()) {
             return null;
         }
-        final var deckUri = opt.get();
-        final var deck = deckService.load(deckUri);
-        if (deck.leader() == null || deck.base() == null) {
+
+        final var e = opt.get();
+        Card.Id leaderId = e.leader();
+        Card.Id baseId = e.base();
+        String leaderName = null;
+        String baseName = null;
+
+        if (leaderId != null) {
+            leaderName = deckService.formatLeader(leaderId);
+        }
+        if (baseId != null) {
+            baseName = deckService.formatBase(baseId);
+        }
+
+        if (leaderId == null || baseId == null) {
+            if (e.url() == null) {
+                return null;
+            }
+            final var deck = deckService.load(e.url());
+            if (deck.leader() == null || deck.base() == null) {
+                return null;
+            }
+            leaderId = deck.leader();
+            baseId = deck.base();
+            leaderName = deckService.formatLeader(deck);
+            baseName = deckService.formatBase(deck);
+        }
+        if (leaderName == null || baseName == null) {
             return null;
         }
-        final var leader = new Icon(cardDatabaseService.findById(deck.leader()).thumbnail(), deckService.formatLeader(deck));
-        final var base = new Icon(cardDatabaseService.findById(deck.base()).thumbnail(), deckService.formatBase(deck));
+        final var leader = new Icon(cardDatabaseService.findById(leaderId).thumbnail(), leaderName);
+        final var base = new Icon(cardDatabaseService.findById(baseId).thumbnail(), baseName);
         return new EventWinner(leader, base);
     }
 

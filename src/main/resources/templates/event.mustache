@@ -61,16 +61,21 @@
                   <img src="{{base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
                 </td>
                 <td class="align-middle deck-list">
-                  <span class="align-middle"><a href="{{deck.source}}" target="_blank">{{name}}</a></span>
+                  <span class="align-middle">
+                    {{#deck.source}}<a href="{{deck.source}}" target="_blank">{{name}}</a>{{/deck.source}}
+                    {{^deck.source}}{{name}}{{/deck.source}}
+                  </span>
                 </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
-                  <button class="btn-copy align-middle ms-2 btn btn-success btn-sm"
-                          onclick="copyDeck('swudb-deck-{{deck.id}}');">
-                    <i class="bi bi-copy me-1"></i>.json
-                  </button>
+                  {{#swudbFormat}}
+                    <button class="btn-copy align-middle ms-2 btn btn-success btn-sm"
+                            onclick="copyDeck('swudb-deck-{{deck.id}}');">
+                      <i class="bi bi-copy me-1"></i>.json
+                    </button>
+                  {{/swudbFormat}}
                 </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
-                  <span class="align-middle">{{deck.matchRecord}}</span>
+                  <span class="align-middle">{{matchRecord}}</span>
                 </td>
                 <td class="align-middle text-center d-none d-md-table-cell fit">
                   {{#aspects}}
@@ -78,7 +83,7 @@
                   {{/aspects}}
                 </td>
                 <td class="align-middle text-end fit deck-player">
-                  <span class="align-middle">{{deck.player}}</span>
+                  <span class="align-middle">{{player}}</span>
                 </td>
               </tr>
             {{/decks}}
@@ -113,9 +118,11 @@
 </section>
 
 {{#decks}}
-  <pre class="d-none" id="swudb-deck-{{deck.id}}">
-    {{{swudbFormat}}}
-  </pre>
+  {{#swudbFormat}}
+    <pre class="d-none" id="swudb-deck-{{deck.id}}">
+      {{{swudbFormat}}}
+    </pre>
+  {{/swudbFormat}}
 {{/decks}}
 
 <div class="toast-container position-fixed bottom-0 end-0 p-3">

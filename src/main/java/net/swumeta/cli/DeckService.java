@@ -59,12 +59,6 @@ public class DeckService {
     private static final int CURRENT_VERSION = 2;
     private static final Pattern SCORE_PATTERN = Pattern.compile("(\\d+)-(\\d+)-(\\d+)");
     private static final Pattern SCORE_PATTERN2 = Pattern.compile("(\\d+)-(\\d+)");
-    private static final Map<Card.Aspect, Card.Id> DEFAULT_BASES = Map.of(
-            Card.Aspect.VIGILANCE, Card.Id.valueOf("SOR-020"),
-            Card.Aspect.COMMAND, Card.Id.valueOf("SOR-023"),
-            Card.Aspect.AGGRESSION, Card.Id.valueOf("SOR-026"),
-            Card.Aspect.CUNNING, Card.Id.valueOf("SOR-029")
-    );
     private static final Map<Card.Id, String> CARD_NAME_ALIASES = Map.of(
             Card.Id.valueOf("SOR-022"), "ECL"
     );
@@ -227,7 +221,7 @@ public class DeckService {
     }
 
     public Card.Id lookupBase(DeckArchetype archetype) {
-        return archetype.base() == null ? DEFAULT_BASES.get(archetype.aspect()) : archetype.base();
+        return archetype.base() == null ? archetype.aspect().toGenericBase() : archetype.base();
     }
 
     public String formatName(Deck deck) {
@@ -237,8 +231,13 @@ public class DeckService {
 
     public String formatLeader(Deck deck) {
         Assert.notNull(deck, "Deck must not be null");
-        final var leader = cardDatabaseService.findById(deck.leader());
-        return new StringBuffer(32).append(leader.name()).append(" (").append(leader.set()).append(")").toString();
+        return formatLeader(deck.leader());
+    }
+
+    public String formatLeader(Card.Id leader) {
+        Assert.notNull(leader, "Leader must not be null");
+        final var leaderCard = cardDatabaseService.findById(leader);
+        return new StringBuffer(32).append(leaderCard.name()).append(" (").append(leader.set()).append(")").toString();
     }
 
     public String formatBase(Deck deck) {
@@ -246,7 +245,7 @@ public class DeckService {
         return formatBase(deck.base());
     }
 
-    private String formatBase(Card.Id base) {
+    public String formatBase(Card.Id base) {
         Assert.notNull(base, "Base must not be null");
         final var alias = CARD_NAME_ALIASES.get(base);
         if (alias != null) {
