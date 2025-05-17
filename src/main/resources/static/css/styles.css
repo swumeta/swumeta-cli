@@ -138,6 +138,7 @@ footer {
 
 .sw-table td {
     height: 3.5em !important;
+    vertical-align: middle;
 }
 
 .table td.fit,
