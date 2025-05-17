@@ -136,6 +136,10 @@ footer {
     border-bottom: 2px solid var(--sw-yellow);
 }
 
+.sw-table td {
+    height: 3.5em !important;
+}
+
 .table td.fit,
 .table th.fit {
    white-space: nowrap;
