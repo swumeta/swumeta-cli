@@ -16,6 +16,8 @@
 
 package net.swumeta.cli;
 
+import net.swumeta.cli.model.Deck;
+import net.swumeta.cli.model.DeckArchetype;
 import net.swumeta.cli.model.Event;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -38,14 +41,17 @@ public class MetagameService {
     );
     private final Logger logger = LoggerFactory.getLogger(MetagameService.class);
     private final EventService eventService;
+    private final DeckService deckService;
     private final AppConfig config;
 
-    public MetagameService(EventService eventService, AppConfig config) {
+    public MetagameService(EventService eventService, DeckService deckService, AppConfig config) {
         this.eventService = eventService;
+        this.deckService = deckService;
         this.config = config;
     }
 
-    public record Metagame(LocalDate date, ImmutableList<Event> events, ImmutableList<URI> decks) {
+    public record Metagame(LocalDate date, ImmutableList<Event> events, ImmutableList<URI> decks,
+                           ImmutableList<DeckArchetype> archetypes) {
     }
 
     public Metagame getMetagame() {
@@ -57,21 +63,34 @@ public class MetagameService {
             throw new AppException("No events found");
         }
 
-        final var deckUris = Lists.mutable.<URI>ofInitialCapacity(64);
-        for (final var event : events) {
-            if (event.players() < 1) {
-                continue;
-            }
-            final int topDecksSize = (int) Math.max(1, Math.round(event.players() * 0.1d));
-            var cardCount = 0;
-            for (final var entry : event.decks()) {
-                if (/* cardCount > topDecksSize ||*/ entry.url() == null) {
-                    continue;
-                }
-                deckUris.add(entry.url());
-                ++cardCount;
-            }
-        }
+        final var deckUris = Lists.immutable.<URI>fromStream(
+                events.stream()
+                        .filter(e -> e.players() > 0)
+                        .flatMap(e -> e.decks().stream())
+                        .filter(e -> e.url() != null && !e.pending())
+                        .map(Event.DeckEntry::url)
+        );
+
+        final var archetypes = Lists.immutable.fromStream(
+                events.stream().filter(e -> e.players() > 0)
+                        .flatMap(e -> e.decks().stream())
+                        .map(e -> {
+                            if (e.url() != null) {
+                                Deck deck = null;
+                                try {
+                                    deck = deckService.load(e.url());
+                                } catch (AppException ignore) {
+                                }
+                                if (deck != null) {
+                                    return deckService.getArchetype(deck);
+                                }
+                            }
+                            if (e.leader() != null && e.base() != null) {
+                                return DeckArchetype.valueOf(e.leader(), e.base());
+                            }
+                            return null;
+                        }).filter(Objects::nonNull)
+        );
 
         logger.debug("Number of events part of the metagame: {}", events.size());
         logger.debug("Number of decks part of the metagame: {}", deckUris.size());
@@ -90,7 +109,7 @@ public class MetagameService {
             }
         }
 
-        return new Metagame(lastDate, events, deckUris.toImmutable());
+        return new Metagame(lastDate, events, deckUris, archetypes);
     }
 
     private static class EventFilter implements Predicate<Event> {
