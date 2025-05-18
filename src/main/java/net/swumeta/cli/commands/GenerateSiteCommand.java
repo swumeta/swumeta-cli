@@ -31,7 +31,6 @@ import org.eclipse.collections.api.bag.Bag;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.Procedure2;
 import org.eclipse.collections.api.factory.Bags;
-import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
@@ -266,7 +265,11 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() < 9)
                         .map(e -> {
                             if (e.url() != null) {
-                                return deckService.load(e.url()).leader();
+                                try {
+                                    return deckService.load(e.url()).leader();
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             return e.leader();
                         }).filter(Objects::nonNull).map(deckService::formatLeader));
@@ -275,7 +278,11 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() == 1)
                         .map(e -> {
                             if (e.url() != null) {
-                                return deckService.load(e.url()).leader();
+                                try {
+                                    return deckService.load(e.url()).leader();
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             return e.leader();
                         }).filter(Objects::nonNull).map(deckService::formatLeader));
@@ -284,7 +291,11 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() < 9)
                         .map(e -> {
                             if (e.url() != null) {
-                                return deckService.load(e.url()).base();
+                                try {
+                                    return deckService.load(e.url()).base();
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             return e.base();
                         }).filter(Objects::nonNull).map(deckService::formatBase));
@@ -293,8 +304,12 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() < 9)
                         .map(e -> {
                             if (e.url() != null) {
-                                final var deck = deckService.load(e.url());
-                                return deckService.getArchetype(deck);
+                                try {
+                                    final var deck = deckService.load(e.url());
+                                    return deckService.getArchetype(deck);
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             if (e.leader() != null && e.base() != null) {
                                 return DeckArchetype.valueOf(e.leader(), e.base());
@@ -306,8 +321,12 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() == 1)
                         .map(e -> {
                             if (e.url() != null) {
-                                final var deck = deckService.load(e.url());
-                                return deckService.getArchetype(deck);
+                                try {
+                                    final var deck = deckService.load(e.url());
+                                    return deckService.getArchetype(deck);
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             if (e.leader() != null && e.base() != null) {
                                 return DeckArchetype.valueOf(e.leader(), e.base());
@@ -319,7 +338,11 @@ class GenerateSiteCommand {
                         .filter(e -> e.rank() < 9)
                         .map(e -> {
                             if (e.url() != null) {
-                                return deckService.load(e.url()).leader();
+                                try {
+                                    return deckService.load(e.url()).leader();
+                                } catch (AppException ignore) {
+                                    return null;
+                                }
                             }
                             return e.leader();
                         }).filter(Objects::nonNull).map(cardDatabaseService::findById).map(c -> "Cost " + c.cost()));
@@ -767,8 +790,12 @@ class GenerateSiteCommand {
             if (e.url() == null) {
                 return null;
             }
-            final var deck = deckService.load(e.url());
-            if (deck.leader() == null || deck.base() == null) {
+            Deck deck = null;
+            try {
+                deck = deckService.load(e.url());
+            } catch (AppException ignore) {
+            }
+            if (deck == null || deck.leader() == null || deck.base() == null) {
                 return null;
             }
             leaderId = deck.leader();
