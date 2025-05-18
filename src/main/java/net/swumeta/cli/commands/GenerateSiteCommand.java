@@ -979,7 +979,7 @@ class GenerateSiteCommand {
 
     private boolean hasDecks(Event e) {
         for (final var deck : e.decks()) {
-            if (deck.url() != null) {
+            if (deck.url() != null || (deck.leader() != null && deck.base() != null)) {
                 return true;
             }
         }
