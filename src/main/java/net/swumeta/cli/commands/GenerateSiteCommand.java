@@ -387,14 +387,15 @@ class GenerateSiteCommand {
     }
 
     private DeckWithRank toDeckWithRank(Event.DeckEntry e) {
-        if (e.url() == null && e.leader() != null && e.base() != null && e.player() != null) {
+        if (e.url() == null && e.leader() != null && e.base() != null) {
             final var archetype = DeckArchetype.valueOf(e.leader(), e.base());
             final var name = deckService.formatArchetype(archetype);
             final var leaderCard = cardDatabaseService.findById(e.leader());
             final var baseCard = cardDatabaseService.findById(e.base());
             final var aspects = Lists.mutable.<Card.Aspect>fromStream(
                     Stream.concat(leaderCard.aspects().stream(), baseCard.aspects().stream())).toSortedList();
-            return new DeckWithRank(e.rank(), e.pending(), null, e.player(), name, leaderCard, baseCard, aspects, formatMatchRecord(null), null);
+            final var player = e.player() != null ? e.player() : "N/A";
+            return new DeckWithRank(e.rank(), e.pending(), null, player, name, leaderCard, baseCard, aspects, formatMatchRecord(null), null);
         }
         if (e.url() == null) {
             return null;
