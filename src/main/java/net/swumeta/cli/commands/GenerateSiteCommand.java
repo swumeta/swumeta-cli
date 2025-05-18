@@ -406,8 +406,9 @@ class GenerateSiteCommand {
         } catch (AppException ignore) {
             return null;
         }
+        final var player = e.player() != null ? e.player() : deck.player();
         return new DeckWithRank(
-                e.rank(), e.pending(), deck, deck.player(), deckService.formatName(deck),
+                e.rank(), e.pending(), deck, player, deckService.formatName(deck),
                 cardDatabaseService.findById(deck.leader()),
                 cardDatabaseService.findById(deck.base()),
                 getAspects(deck),
