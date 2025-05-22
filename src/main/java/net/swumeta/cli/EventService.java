@@ -39,6 +39,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 @Service
 public class EventService {
@@ -105,13 +106,25 @@ public class EventService {
             return event;
         }
 
+        int players = 0;
+        final var tournamentHeadlineRegElem = meleeDoc.getElementById("tournament-headline-registration");
+        if (!tournamentHeadlineRegElem.text().isEmpty()) {
+            final var pattern = Pattern.compile("(\\d+)\\s+of\\s+\\d+\\s+Enrolled\\s+Players");
+            final var matcher = pattern.matcher(tournamentHeadlineRegElem.text());
+            if (matcher.find()) {
+                players = Integer.parseInt(matcher.group(1));
+            }
+        }
+
         final var lastRoundElem = roundStandingsElems.last();
         final var roundId = Integer.parseInt(lastRoundElem.attr("data-id"));
         logger.trace("Found round id: {}", roundId);
 
         final var deckUris = new ArrayList<Event.DeckEntry>(32);
 
-        while (true) {
+        final int pageSize = 25;
+        int rank = 1;
+        for (int page = 0; ; page += 1) {
             final var body = new LinkedMultiValueMap<String, String>();
             body.add("columns[0][data]", "Rank");
             body.add("columns[0][name]", "Rank");
@@ -127,8 +140,8 @@ public class EventService {
             body.add("columns[1][search][regex]", "false");
             body.add("order[0][column]", "0");
             body.add("order[0][dir]", "asc");
-            body.add("start", String.valueOf(deckUris.size()));
-            body.add("length", "25");
+            body.add("start", String.valueOf(page * pageSize));
+            body.add("length", String.valueOf(pageSize));
             body.add("search[value]", "");
             body.add("search[regex]", "false");
             body.add("roundId", String.valueOf(roundId));
@@ -140,7 +153,15 @@ public class EventService {
                     .body(body)
                     .retrieve().body(JsonRoot.class);
 
+            if (resp.recordsTotal == 0 || resp.data.isEmpty()) {
+                break;
+            }
+
             for (final var player : resp.data) {
+                if ("0-0-0".equals(player.MatchRecord)) {
+                    logger.warn("Skipping decklist at rank {} for round {} since match record is 0-0-0", player.Rank, roundId);
+                    continue;
+                }
                 URI deckUri = null;
                 if (player.Decklists.isEmpty()) {
                     logger.warn("Missing decklist at rank {} for round {}", player.Rank, roundId);
@@ -149,20 +170,12 @@ public class EventService {
                     deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
                 }
                 logger.trace("Adding deck URI at rank {}: {}", player.Rank, deckUri);
-                deckUris.add(new Event.DeckEntry(player.Rank, false, deckUri, null, null, null));
-
-                if (deckUris.size() >= resp.recordsTotal) {
-                    break;
-                }
-            }
-            if (deckUris.size() >= resp.recordsTotal) {
-                break;
+                deckUris.add(new Event.DeckEntry(rank++, false, deckUri, null, null, null));
             }
         }
 
-        final var newPlayers = deckUris.isEmpty() ? event.players() : deckUris.size();
         final var newEvent = new Event(
-                event.name(), false, event.type(), newPlayers, event.date(), event.location(), event.hidden(), event.format(),
+                event.name(), false, event.type(), players == 0 ? deckUris.size() : players, event.date(), event.location(), event.hidden(), event.format(),
                 event.melee(), event.contributors(), event.links(), deckUris
         );
 
@@ -225,7 +238,8 @@ public class EventService {
 
     private record JsonPlayer(
             int Rank,
-            List<JsonPlayerDeck> Decklists
+            List<JsonPlayerDeck> Decklists,
+            String MatchRecord
     ) {
     }
 
