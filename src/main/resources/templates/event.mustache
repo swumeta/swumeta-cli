@@ -40,7 +40,6 @@
             <tr>
               <th scope="col" class="text-end">#</th>
               <th scope="col">Decklist</th>
-              <th scope="col" class="d-none d-md-table-cell">&nbsp;</th>
               <th scope="col" class="d-none d-lg-table-cell">&nbsp;</th>
               <th scope="col" class="text-center d-none d-md-table-cell">Record</th>
               <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
@@ -50,41 +49,44 @@
             <tbody class="list">
             {{#decks}}
               <tr class="d-none">
-                <td class="align-middle text-end fit">
-                  <span class="align-middle text-secondary" style="font-size: 80%">
+                <td class="text-end fit">
+                  <span class="text-secondary" style="font-size: 80%">
                     {{#pending}}<strong>N/A</strong>{{/pending}}
                     {{^pending}}{{rank}}{{/pending}}
                   </span></td>
-                <td class="align-middle d-none d-md-table-cell fit">
-                  <img src="{{leader.thumbnail}}" width="120" height="40"
-                       class="rounded rounded-1 d-inline-block me-2"/>
-                  <img src="{{base.thumbnail}}" width="120" height="40" class="rounded rounded-1 d-inline-block"/>
+                <td class="deck-list">
+                  <div class="vstack gap-2">
+                    <div class="hstack gap-2">
+                      <img src="{{leader.thumbnail}}" width="120" height="40"
+                           class="rounded rounded-1 d-none d-lg-inline-block"/>
+                      <img src="{{base.thumbnail}}" width="120" height="40"
+                           class="rounded rounded-1 d-none d-lg-inline-block"/>
+                      {{#deck.source}}<a href="{{deck.source}}" target="_blank">{{name}}</a>{{/deck.source}}
+                      {{^deck.source}}{{name}}{{/deck.source}}
+                    </div>
+                    <div class="hstack gap-2 mb-1 d-lg-none">
+                      <img src="{{leader.thumbnail}}" width="120" height="40"
+                           class="rounded rounded-1 d-inline-block"/>
+                      <img src="{{base.thumbnail}}" width="120" height="40"
+                           class="rounded rounded-1 d-inline-block"/>
+                    </div>
+                  </div>
                 </td>
-                <td class="align-middle deck-list">
-                  <span class="align-middle">
-                    {{#deck.source}}<a href="{{deck.source}}" target="_blank">{{name}}</a>{{/deck.source}}
-                    {{^deck.source}}{{name}}{{/deck.source}}
-                  </span>
-                </td>
-                <td class="align-middle text-center d-none d-lg-table-cell fit">
+                <td class="text-center d-none d-lg-table-cell fit">
                   {{#swudbFormat}}
-                    <button class="btn-copy align-middle ms-2 btn btn-success btn-sm"
+                    <button class="btn-copy ms-2 btn btn-success btn-sm"
                             onclick="copyDeck('swudb-deck-{{deck.id}}');">
                       <i class="bi bi-copy me-1"></i>.json
                     </button>
                   {{/swudbFormat}}
                 </td>
-                <td class="align-middle text-center d-none d-md-table-cell fit">
-                  <span class="align-middle">{{matchRecord}}</span>
-                </td>
-                <td class="align-middle text-center d-none d-md-table-cell fit">
+                <td class="text-center d-none d-md-table-cell fit">{{matchRecord}}</td>
+                <td class="text-center d-none d-md-table-cell fit">
                   {{#aspects}}
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}
                 </td>
-                <td class="align-middle text-end fit deck-player">
-                  <span class="align-middle">{{player}}</span>
-                </td>
+                <td class="text-end fit deck-player">{{player}}</td>
               </tr>
             {{/decks}}
             </tbody>
