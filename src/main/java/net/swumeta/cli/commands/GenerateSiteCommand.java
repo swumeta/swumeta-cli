@@ -127,7 +127,7 @@ class GenerateSiteCommand {
         final var now = LocalDate.now();
         for (final var event : eventService.list()) {
             logger.info("Processing event: {}", event);
-            if (event.hidden() || event.melee() == null || event.players() == 0 || event.date().isAfter(now)) {
+            if (event.hidden() || event.melee() == null || event.players() == 0 || event.date().minusDays(1).isAfter(now)) {
                 logger.debug("Skipping hidden event: {}", event);
                 continue;
             }
