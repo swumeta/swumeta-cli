@@ -38,31 +38,30 @@
           <table id="decks" class="table table-hover sw-table">
             <thead>
             <tr>
-              <th scope="col" class="text-end">#</th>
-              <th scope="col">Decklist</th>
-              <th scope="col" class="d-none d-lg-table-cell">&nbsp;</th>
-              <th scope="col" class="text-center d-none d-md-table-cell">Record</th>
-              <th scope="col" class="text-center d-none d-md-table-cell">Aspects</th>
-              <th scope="col" class="text-end">Player</th>
+              <th scope="col" class="col-rank text-end">#</th>
+              <th scope="col" class="col-decklist">Decklist</th>
+              <th scope="col" class="col-actions d-none d-lg-table-cell">&nbsp;</th>
+              <th scope="col" class="col-record text-center d-none d-md-table-cell">Record</th>
+              <th scope="col" class="col-aspects text-center d-none d-md-table-cell">Aspects</th>
+              <th scope="col" class="col-player text-end">Player</th>
             </tr>
             </thead>
             <tbody class="list">
             {{#decks}}
               <tr class="d-none">
-                <td class="text-end fit">
-                  <span class="text-secondary" style="font-size: 80%">
+                <td class="col-rank text-end text-secondary">
                     {{#pending}}<strong>N/A</strong>{{/pending}}
                     {{^pending}}{{rank}}{{/pending}}
-                  </span></td>
-                <td class="deck-list">
+                </td>
+                <td class="col-decklist deck-list">
                   <div class="vstack gap-2">
                     <div class="hstack gap-2">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
                            class="rounded rounded-1 d-none d-lg-inline-block"/>
                       <img src="{{base.thumbnail}}" width="120" height="40"
                            class="rounded rounded-1 d-none d-lg-inline-block"/>
-                      {{#deck.source}}<a href="{{deck.source}}" target="_blank">{{name}}</a>{{/deck.source}}
-                      {{^deck.source}}{{name}}{{/deck.source}}
+                      {{#deck.source}}<a href="{{deck.source}}" target="_blank"><div class="text-truncate">{{name}}</div></a>{{/deck.source}}
+                      {{^deck.source}}<div class="text-truncate">{{name}}</div>{{/deck.source}}
                     </div>
                     <div class="hstack gap-2 mb-1 d-lg-none">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
@@ -72,7 +71,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="text-center d-none d-lg-table-cell fit">
+                <td class="col-actions text-end d-none d-lg-table-cell">
                   {{#swudbFormat}}
                     <button class="btn-copy ms-2 btn btn-success btn-sm"
                             onclick="copyDeck('swudb-deck-{{deck.id}}');">
@@ -80,13 +79,13 @@
                     </button>
                   {{/swudbFormat}}
                 </td>
-                <td class="text-center d-none d-md-table-cell fit">{{matchRecord}}</td>
-                <td class="text-center d-none d-md-table-cell fit">
+                <td class="col-record text-center d-none d-md-table-cell">{{matchRecord}}</td>
+                <td class="col-aspects text-center d-none d-md-table-cell">
                   {{#aspects}}
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}
                 </td>
-                <td class="text-end fit deck-player">{{player}}</td>
+                <td class="col-player text-end fit deck-player"><div class="text-truncate">{{player}}</div></td>
               </tr>
             {{/decks}}
             </tbody>

@@ -345,3 +345,29 @@ tr:hover .btn-copy {
 .bar-chart {
     min-height: 100px;
 }
+
+#tournaments-container td.col-date {
+    font-size: 80%;
+}
+
+#tournaments-container td.col-meta {
+    color: var(--sw-yellow);
+}
+
+#decks-container {
+    overflow: hidden;
+}
+
+#decks-container td.col-rank {
+    font-size: 80%;
+}
+
+#decks-container .col-actions {
+    width: 6em;
+}
+
+@media (max-width: 768px) {
+    #decks-container td.col-player div {
+        max-width: 85%;
+    }
+}

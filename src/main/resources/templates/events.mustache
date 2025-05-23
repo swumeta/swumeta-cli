@@ -16,7 +16,7 @@
       are included in the metagame calculation due to their significance.</p>
   </div>
 
-  <div id="events-container">
+  <div id="tournaments-container">
     <div class="search-container">
       <input type="text" class="form-control search-input search" placeholder="Search..."
              spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off">
@@ -26,23 +26,21 @@
     <table class="table table-hover sw-table">
       <thead>
       <tr>
-        <th scope="col" class="d-none d-md-table-cell">Date</th>
-        <th scope="col" class="d-none d-lg-table-cell"></th>
-        <th scope="col">Tournament</th>
-        <th scope="col" class="d-none d-lg-table-cell">Winner</th>
-        <th scope="col" class="text-center d-none d-lg-table-cell"><span class="d-none d-xl-inline-block">Country</span>
+        <th scope="col" class="col-date d-none d-md-table-cell">Date</th>
+        <th scope="col" class="col-meta d-none d-lg-table-cell"></th>
+        <th scope="col" class="col-tournament">Tournament</th>
+        <th scope="col" class="col-winner d-none d-lg-table-cell">Winner</th>
+        <th scope="col" class="col-country text-center d-none d-lg-table-cell"><span class="d-none d-xl-inline-block">Country</span>
         </th>
-        <th scope="col" class="d-none d-sm-table-cell"><span class="d-none d-xl-inline-block">Type</span></th>
-        <th scope="col" class="text-end">Players</th>
+        <th scope="col" class="col-type text-center d-none d-sm-table-cell">Type</th>
+        <th scope="col" class="col-player text-end">Players</th>
       </tr>
       <tbody class="list">
       {{#events}}
         <tr>
-          <td class="fit d-none d-md-table-cell">
-            <span class="text-secondary" style="font-size: 80%">{{event.date}}</span></td>
-          <td class="fit d-none d-lg-table-cell">{{#metaRelevant}}
-            <i class="bi bi-star-fill" style="color: var(--sw-yellow)"></i>{{/metaRelevant}}</td>
-          <td class="fit event-name">
+          <td class="col-date text-secondary d-none d-md-table-cell">{{event.date}}</td>
+          <td class="col-meta d-none d-lg-table-cell">{{#metaRelevant}}<i class="bi bi-star-fill"></i>{{/metaRelevant}}</td>
+          <td class="col-tournament event-name">
             <div class="vstack gap-2">
               <div class="hstack gap-2">
                 <i class="fi fi-{{countryFlag}} d-lg-none"></i>
@@ -59,7 +57,7 @@
               </div>
             </div>
           </td>
-          <td class="d-none d-lg-table-cell event-winner">
+          <td class="col-winner d-none d-lg-table-cell event-winner">
             {{#winner}}
               <span class="d-none">{{winner.leader.alt}}</span>
               <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="120"
@@ -68,15 +66,11 @@
                    class="img-fluid rounded rounded-1 d-none d-md-inline-block ms-2"/>
             {{/winner}}
           </td>
-          <td class="text-center fit d-none d-lg-table-cell">
-            <i class="fi fi-{{countryFlag}}"></i>
-          </td>
-          <td class="fit d-none d-sm-table-cell event-type">
+          <td class="col-country text-center d-none d-lg-table-cell"><i class="fi fi-{{countryFlag}}"></i></td>
+          <td class="col-type d-none d-sm-table-cell event-type">
             <span class="badge text-bg-secondary">{{event.type}}</span>
           </td>
-          <td class="text-end fit">
-            <span>{{event.players}}</span>
-          </td>
+          <td class="col-players text-end">{{event.players}}</td>
         </tr>
       {{/events}}
       </tbody>
@@ -90,7 +84,7 @@
     const options = {
       valueNames: [ 'event-name', 'event-winner', 'event-type' ]
     };
-    const eventsList = new List('events-container', options);
+    const eventsList = new List('tournaments-container', options);
   });
 </script>
 
