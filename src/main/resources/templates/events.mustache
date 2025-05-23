@@ -49,12 +49,14 @@
                   <img class="d-none d-md-inline" src="/images/new-label.png" width="38" height="20"/>
                 {{/newLabel}}
               </div>
+              {{#winner}}
               <div class="hstack gap-2 d-lg-none mb-1">
                 <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="120"
                      class="img-fluid rounded rounded-1 d-inline-block"/>
                 <img src="{{winner.base.url}}" alt="{{winner.base.alt}}" width="120"
                      class="img-fluid rounded rounded-1 d-inline-block"/>
               </div>
+              {{/winner}}
             </div>
           </td>
           <td class="col-winner d-none d-lg-table-cell event-winner">
@@ -67,7 +69,7 @@
             {{/winner}}
           </td>
           <td class="col-country text-center d-none d-lg-table-cell"><i class="fi fi-{{countryFlag}}"></i></td>
-          <td class="col-type d-none d-sm-table-cell event-type">
+          <td class="col-type text-center d-none d-sm-table-cell event-type">
             <span class="badge text-bg-secondary">{{event.type}}</span>
           </td>
           <td class="col-players text-end">{{event.players}}</td>

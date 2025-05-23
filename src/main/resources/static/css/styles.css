@@ -354,7 +354,7 @@ tr:hover .btn-copy {
     color: var(--sw-yellow);
 }
 
-#decks-container {
+#tournaments-container #decks-container {
     overflow: hidden;
 }
 
