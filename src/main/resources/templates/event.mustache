@@ -41,9 +41,9 @@
               <th scope="col" class="col-rank text-end">#</th>
               <th scope="col" class="col-decklist">Decklist</th>
               <th scope="col" class="col-actions d-none d-lg-table-cell">&nbsp;</th>
-              <th scope="col" class="col-record text-center d-none d-md-table-cell">Record</th>
+              <th scope="col" class="col-record text-center">Record</th>
               <th scope="col" class="col-aspects text-center d-none d-md-table-cell">Aspects</th>
-              <th scope="col" class="col-player text-end">Player</th>
+              <th scope="col" class="col-player text-end d-none d-md-table-cell">Player</th>
             </tr>
             </thead>
             <tbody class="list">
@@ -55,17 +55,17 @@
                 </td>
                 <td class="col-decklist deck-list">
                   <div class="vstack gap-2">
-                    <div class="hstack gap-2">
+                    <div class="hstack">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
-                           class="rounded rounded-1 d-none d-lg-inline-block"/>
+                           class="rounded rounded-1 d-none d-lg-inline-block me-1"/>
                       <img src="{{base.thumbnail}}" width="120" height="40"
-                           class="rounded rounded-1 d-none d-lg-inline-block"/>
+                           class="rounded rounded-1 d-none d-lg-inline-block me-2"/>
                       {{#deck.source}}<a href="{{deck.source}}" target="_blank"><div class="text-truncate">{{name}}</div></a>{{/deck.source}}
                       {{^deck.source}}<div class="text-truncate">{{name}}</div>{{/deck.source}}
                     </div>
-                    <div class="hstack gap-2 mb-1 d-lg-none">
+                    <div class="hstack mb-1 d-lg-none">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
-                           class="rounded rounded-1 d-inline-block"/>
+                           class="rounded rounded-1 d-inline-block me-1"/>
                       <img src="{{base.thumbnail}}" width="120" height="40"
                            class="rounded rounded-1 d-inline-block"/>
                     </div>
@@ -79,13 +79,13 @@
                     </button>
                   {{/swudbFormat}}
                 </td>
-                <td class="col-record text-center d-none d-md-table-cell">{{matchRecord}}</td>
+                <td class="col-record text-center">{{matchRecord}}</td>
                 <td class="col-aspects text-center d-none d-md-table-cell">
                   {{#aspects}}
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}
                 </td>
-                <td class="col-player text-end fit deck-player"><div class="text-truncate">{{player}}</div></td>
+                <td class="col-player text-end fit deck-player d-none d-md-table-cell"><div class="text-truncate">{{player}}</div></td>
               </tr>
             {{/decks}}
             </tbody>

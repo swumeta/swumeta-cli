@@ -365,9 +365,3 @@ tr:hover .btn-copy {
 #decks-container .col-actions {
     width: 6em;
 }
-
-@media (max-width: 768px) {
-    #decks-container td.col-player div {
-        max-width: 85%;
-    }
-}
