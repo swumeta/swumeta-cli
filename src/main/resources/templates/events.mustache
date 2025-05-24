@@ -68,7 +68,11 @@
                    class="img-fluid rounded rounded-1 d-none d-md-inline-block ms-1"/>
             {{/winner}}
           </td>
-          <td class="col-country text-center d-none d-lg-table-cell"><i class="fi fi-{{countryFlag}}"></i></td>
+          <td class="col-country text-center d-none d-lg-table-cell event-location">
+            <i class="fi fi-{{countryFlag}}"></i>
+            <span class="d-none">{{event.location.city}}</span>
+            <span class="d-none">{{event.location.country}}</span>
+          </td>
           <td class="col-type text-center d-none d-sm-table-cell event-type">
           <span class="badge {{#event.type}}{{#cssClass}}{{.}}{{/cssClass}}{{/event.type}}">{{event.type}}</span>
           </td>
@@ -84,7 +88,7 @@
 <script type="text/javascript">
   document.addEventListener('DOMContentLoaded', function() {
     const options = {
-      valueNames: [ 'event-name', 'event-winner', 'event-type' ]
+      valueNames: [ 'event-name', 'event-winner', 'event-type', 'event-location' ]
     };
     const eventsList = new List('tournaments-container', options);
   });
