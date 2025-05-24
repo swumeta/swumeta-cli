@@ -5,7 +5,7 @@
 </h1>
 
 <div class="row">
-  <dl class="col event-metadata">
+  <dl class="d-lg-none col event-metadata">
     <div>
       <dt class="text-secondary">Location:</dt>
       <dd class="fw-bold">{{event.location}}</dd>
@@ -21,9 +21,39 @@
     {{#event.melee}}
       <div>
         <dt class="text-secondary">Source:</dt>
-        <dd><a class="icon-link source" href="{{event.melee}}" target="_blank"><i
-          class="bi bi-card-list source mx-1"></i>Melee.gg</a></dd>
+        <dd><i class="bi bi-box-arrow-up-right me-1"></i>
+          <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a></dd>
       </div>
     {{/event.melee}}
   </dl>
+  <div class="d-none d-lg-block col event-metadata">
+    <div class="hstack gap-3 mb-4 p-3 rounded rounded-2 bg-dark">
+      <div class="hstack">
+        <i class="bi bi-geo-alt-fill me-2"></i>
+        {{event.location}}
+      </div>
+      |
+      <div class="hstack">
+        <i class="bi bi-calendar-event-fill me-2"></i>
+        {{event.date}}
+      </div>
+      |
+      <div class="hstack">
+        <i class="bi bi-trophy-fill me-2"></i>
+        {{event.type}}
+      </div>
+      |
+      <div class="hstack">
+        <i class="bi bi-people-fill me-2"></i>
+        {{event.players}} players
+      </div>
+      {{#event.melee}}
+        |
+        <div class="hstack">
+          <i class="bi bi-box-arrow-up-right me-2"></i>
+          <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
+        </div>
+      {{/event.melee}}
+    </div>
+  </div>
 </div>
