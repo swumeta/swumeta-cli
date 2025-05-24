@@ -17,10 +17,7 @@
 package net.swumeta.cli.commands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jstach.jstache.JStache;
-import io.jstach.jstache.JStacheConfig;
-import io.jstach.jstache.JStacheFormatter;
-import io.jstach.jstache.JStacheFormatterTypes;
+import io.jstach.jstache.*;
 import io.jstach.jstachio.JStachio;
 import net.swumeta.cli.*;
 import net.swumeta.cli.model.*;
@@ -611,6 +608,18 @@ class GenerateSiteCommand {
 
         default ZonedDateTime now() {
             return ZonedDateTime.now();
+        }
+
+        @JStacheLambda
+        default String cssClass(Event.Type type) {
+            return switch (type) {
+                case PQ -> "text-bg-warning";
+                case SQ -> "text-bg-light";
+                case RQ -> "text-bg-success";
+                case GS -> "text-bg-danger";
+                case MINOR -> "text-bg-dark";
+                case MAJOR -> "text-bg-secondary";
+            };
         }
     }
 

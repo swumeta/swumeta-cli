@@ -70,7 +70,7 @@
           </td>
           <td class="col-country text-center d-none d-lg-table-cell"><i class="fi fi-{{countryFlag}}"></i></td>
           <td class="col-type text-center d-none d-sm-table-cell event-type">
-            <span class="badge text-bg-secondary">{{event.type}}</span>
+          <span class="badge {{#event.type}}{{#cssClass}}{{.}}{{/cssClass}}{{/event.type}}">{{event.type}}</span>
           </td>
           <td class="col-players text-end">{{event.players}}</td>
         </tr>
