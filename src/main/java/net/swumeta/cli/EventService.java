@@ -98,6 +98,7 @@ public class EventService {
         final var deckUris = new ArrayList<Event.DeckEntry>(32);
 
         int players = 0;
+        boolean eventDone = false;
         final var tournamentHeadlineRegElem = meleeDoc.getElementById("tournament-headline-registration");
         if (!tournamentHeadlineRegElem.text().isEmpty()) {
             final var pattern = Pattern.compile("(\\d+)\\s+of\\s+\\d+\\s+Enrolled\\s+Players");
@@ -105,14 +106,16 @@ public class EventService {
             if (matcher.find()) {
                 players = Integer.parseInt(matcher.group(1));
             }
+            eventDone = tournamentHeadlineRegElem.text().contains("Ended");
         }
 
         final var standingsElem = meleeDoc.getElementById("standings-round-selector-container");
-        if (standingsElem != null) {
+        if (eventDone && standingsElem != null) {
             final var roundStandingsElems = standingsElem.getElementsByAttributeValue("data-is-completed", "True");
             if (roundStandingsElems != null && !roundStandingsElems.isEmpty()) {
                 final var lastRoundElem = roundStandingsElems.last();
-                final var roundId = Integer.parseInt(lastRoundElem.attr("data-id"));
+                var roundId = Integer.parseInt(lastRoundElem.attr("data-id"));
+                int depth = 1;
                 logger.trace("Found round id: {}", roundId);
 
                 final int pageSize = 25;
@@ -147,7 +150,17 @@ public class EventService {
                             .retrieve().body(JsonRoot.class);
 
                     if (resp.recordsTotal == 0 || resp.data.isEmpty()) {
-                        break;
+                        if (depth > 3 || page != 0) {
+                            break;
+                        }
+                        depth += 1;
+                        final int previousIndex = roundStandingsElems.size() - depth;
+                        if (previousIndex < 0) {
+                            break;
+                        }
+                        final var previousElem = roundStandingsElems.get(previousIndex);
+                        roundId = Integer.parseInt(previousElem.attr("data-id"));
+                        logger.warn("Using previous round id: {}", roundId);
                     }
 
                     for (final var player : resp.data) {
