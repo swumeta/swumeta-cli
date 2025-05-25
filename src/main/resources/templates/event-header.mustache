@@ -32,24 +32,23 @@
         <i class="bi bi-geo-alt-fill me-2"></i>
         {{event.location}}
       </div>
-      |
+      <div class="vr"></div>
       <div class="hstack">
         <i class="bi bi-calendar-event-fill me-2"></i>
         {{event.date}}
       </div>
-      |
+      <div class="vr"></div>
       <div class="hstack">
         <i class="bi bi-trophy-fill me-2"></i>
         {{event.type}}
       </div>
-      |
+      <div class="vr"></div>
       <div class="hstack">
         <i class="bi bi-people-fill me-2"></i>
         {{event.players}} players
       </div>
       {{#event.melee}}
-        |
-        <div class="hstack">
+        <div class="hstack ms-auto">
           <i class="bi bi-box-arrow-up-right me-2"></i>
           <a class="source" href="{{event.melee}}" target="_blank">Melee.gg</a>
         </div>
