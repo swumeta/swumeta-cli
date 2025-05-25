@@ -120,63 +120,70 @@ public class EventService {
 
                 final int pageSize = 25;
                 int rank = 1;
-                for (int page = 0; ; page += 1) {
-                    final var body = new LinkedMultiValueMap<String, String>();
-                    body.add("columns[0][data]", "Rank");
-                    body.add("columns[0][name]", "Rank");
-                    body.add("columns[0][searchable]", "true");
-                    body.add("columns[0][orderable]", "true");
-                    body.add("columns[0][search][value]", "");
-                    body.add("columns[0][search][regex]", "false");
-                    body.add("columns[1][data]", "Decklists");
-                    body.add("columns[1][name]", "Decklists");
-                    body.add("columns[1][searchable]", "false");
-                    body.add("columns[1][orderable]", "false");
-                    body.add("columns[1][search][value]", "");
-                    body.add("columns[1][search][regex]", "false");
-                    body.add("order[0][column]", "0");
-                    body.add("order[0][dir]", "asc");
-                    body.add("start", String.valueOf(page * pageSize));
-                    body.add("length", String.valueOf(pageSize));
-                    body.add("search[value]", "");
-                    body.add("search[regex]", "false");
-                    body.add("roundId", String.valueOf(roundId));
+                var fetchDone = false;
+                while (!fetchDone) {
+                    for (int page = 0; ; page += 1) {
+                        final var body = new LinkedMultiValueMap<String, String>();
+                        body.add("columns[0][data]", "Rank");
+                        body.add("columns[0][name]", "Rank");
+                        body.add("columns[0][searchable]", "true");
+                        body.add("columns[0][orderable]", "true");
+                        body.add("columns[0][search][value]", "");
+                        body.add("columns[0][search][regex]", "false");
+                        body.add("columns[1][data]", "Decklists");
+                        body.add("columns[1][name]", "Decklists");
+                        body.add("columns[1][searchable]", "false");
+                        body.add("columns[1][orderable]", "false");
+                        body.add("columns[1][search][value]", "");
+                        body.add("columns[1][search][regex]", "false");
+                        body.add("order[0][column]", "0");
+                        body.add("order[0][dir]", "asc");
+                        body.add("start", String.valueOf(page * pageSize));
+                        body.add("length", String.valueOf(pageSize));
+                        body.add("search[value]", "");
+                        body.add("search[regex]", "false");
+                        body.add("roundId", String.valueOf(roundId));
 
-                    final var resp = client.post()
-                            .uri("https://melee.gg/Standing/GetRoundStandings")
-                            .accept(MediaType.APPLICATION_JSON)
-                            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                            .body(body)
-                            .retrieve().body(JsonRoot.class);
+                        final var resp = client.post()
+                                .uri("https://melee.gg/Standing/GetRoundStandings")
+                                .accept(MediaType.APPLICATION_JSON)
+                                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                .body(body)
+                                .retrieve().body(JsonRoot.class);
 
-                    if (resp.recordsTotal == 0 || resp.data.isEmpty()) {
-                        if (depth > 3 || page != 0) {
+                        if (resp.recordsTotal == 0 || resp.data.isEmpty()) {
+                            if (depth > 3 || page != 0) {
+                                fetchDone = true;
+                                break;
+                            }
+                            depth += 1;
+                            final int previousIndex = roundStandingsElems.size() - depth;
+                            if (previousIndex < 0) {
+                                fetchDone = true;
+                                break;
+                            }
+                            final var previousElem = roundStandingsElems.get(previousIndex);
+                            roundId = Integer.parseInt(previousElem.attr("data-id"));
+                            logger.warn("Using previous round id: {}", roundId);
+                            deckUris.clear();
                             break;
                         }
-                        depth += 1;
-                        final int previousIndex = roundStandingsElems.size() - depth;
-                        if (previousIndex < 0) {
-                            break;
-                        }
-                        final var previousElem = roundStandingsElems.get(previousIndex);
-                        roundId = Integer.parseInt(previousElem.attr("data-id"));
-                        logger.warn("Using previous round id: {}", roundId);
-                    }
 
-                    for (final var player : resp.data) {
-                        if ("0-0-0".equals(player.MatchRecord)) {
-                            logger.warn("Skipping decklist at rank {} for round {} since match record is 0-0-0", player.Rank, roundId);
-                            continue;
+                        for (final var player : resp.data) {
+                            if ("0-0-0".equals(player.MatchRecord)) {
+                                logger.warn("Skipping decklist at rank {} for round {} since match record is 0-0-0", player.Rank, roundId);
+                                continue;
+                            }
+                            URI deckUri = null;
+                            if (player.Decklists.isEmpty()) {
+                                logger.warn("Missing decklist at rank {} for round {}", player.Rank, roundId);
+                            } else {
+                                final var deckId = player.Decklists.get(0).DecklistId;
+                                deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
+                            }
+                            logger.trace("Adding deck URI at rank {}: {}", player.Rank, deckUri);
+                            deckUris.add(new Event.DeckEntry(rank++, false, deckUri, null, null, null));
                         }
-                        URI deckUri = null;
-                        if (player.Decklists.isEmpty()) {
-                            logger.warn("Missing decklist at rank {} for round {}", player.Rank, roundId);
-                        } else {
-                            final var deckId = player.Decklists.get(0).DecklistId;
-                            deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
-                        }
-                        logger.trace("Adding deck URI at rank {}: {}", player.Rank, deckUri);
-                        deckUris.add(new Event.DeckEntry(rank++, false, deckUri, null, null, null));
                     }
                 }
             }
