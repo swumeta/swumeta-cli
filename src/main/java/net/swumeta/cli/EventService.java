@@ -98,7 +98,6 @@ public class EventService {
         final var deckUris = new ArrayList<Event.DeckEntry>(32);
 
         int players = 0;
-        boolean eventDone = false;
         final var tournamentHeadlineRegElem = meleeDoc.getElementById("tournament-headline-registration");
         if (!tournamentHeadlineRegElem.text().isEmpty()) {
             final var pattern = Pattern.compile("(\\d+)\\s+of\\s+\\d+\\s+Enrolled\\s+Players");
@@ -106,11 +105,10 @@ public class EventService {
             if (matcher.find()) {
                 players = Integer.parseInt(matcher.group(1));
             }
-            eventDone = tournamentHeadlineRegElem.text().contains("Ended");
         }
 
         final var standingsElem = meleeDoc.getElementById("standings-round-selector-container");
-        if (eventDone && standingsElem != null) {
+        if (standingsElem != null) {
             final var roundStandingsElems = standingsElem.getElementsByAttributeValue("data-is-completed", "True");
             if (roundStandingsElems != null && !roundStandingsElems.isEmpty()) {
                 final var lastRoundElem = roundStandingsElems.last();
