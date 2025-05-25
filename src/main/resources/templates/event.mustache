@@ -55,13 +55,13 @@
                 </td>
                 <td class="col-decklist deck-list">
                   <div class="vstack gap-2">
-                    <div class="hstack">
+                    <div class="hstack text-truncate">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
                            class="rounded rounded-1 d-none d-lg-inline-block me-1"/>
                       <img src="{{base.thumbnail}}" width="120" height="40"
                            class="rounded rounded-1 d-none d-lg-inline-block me-2"/>
-                      {{#deck.source}}<a href="{{deck.source}}" target="_blank"><div class="text-truncate">{{name}}</div></a>{{/deck.source}}
-                      {{^deck.source}}<div class="text-truncate">{{name}}</div>{{/deck.source}}
+                      {{#deck.source}}<a href="{{deck.source}}" target="_blank">{{name}}</a>{{/deck.source}}
+                      {{^deck.source}}{{name}}{{/deck.source}}
                     </div>
                     <div class="hstack mb-1 d-lg-none">
                       <img src="{{leader.thumbnail}}" width="120" height="40"
