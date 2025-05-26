@@ -49,7 +49,7 @@
             <div class="vstack gap-2">
               <div class="hstack gap-2">
                 <i class="fi fi-{{countryFlag}} d-lg-none"></i>
-                <a href="{{page}}">{{event.name}}</a>
+                <a href="{{page}}"><div class="text-truncate">{{event.name}}</div></a>
                 {{#newLabel}}
                   <img class="d-inline-block" src="/images/new-label.png" width="38" height="20"/>
                 {{/newLabel}}
@@ -70,7 +70,7 @@
               <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="120"
                    class="img-fluid rounded rounded-1 d-inline-block"/>
               <img src="{{winner.base.url}}" alt="{{winner.base.alt}}" width="120"
-                   class="img-fluid rounded rounded-1 d-none d-md-inline-block ms-1"/>
+                   class="img-fluid rounded rounded-1 d-none d-xl-inline-block ms-1"/>
             {{/winner}}
           </td>
           <td class="col-country text-center d-none d-lg-table-cell event-location">
