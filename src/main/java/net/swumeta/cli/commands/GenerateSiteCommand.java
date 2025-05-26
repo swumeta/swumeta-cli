@@ -152,11 +152,12 @@ class GenerateSiteCommand {
             final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
 
             final var statsFileName = "statistics.html";
+            final var dataComplete = eventService.isEventComplete(event);
             renderToFile(new EventStatsModel(new HtmlMeta(
                             "Statistics from " + event.name(),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
                             UriComponentsBuilder.fromUri(config.base()).path(eventDirName).path("/").path(statsFileName).build().toUri()),
-                            event, countryFlag),
+                            event, countryFlag, dataComplete),
                     new File(eventDir, statsFileName));
             renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
             renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
@@ -202,12 +203,12 @@ class GenerateSiteCommand {
             renderToFile(new EventModel(new HtmlMeta(event.name(),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
                             UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
-                            event, countryFlag, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
+                            event, countryFlag, dataComplete, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
                             decks, !decks.isEmpty(), videoLinks),
                     new File(eventDir, "index.html"));
             renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
             renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
-            eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event),
+            eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event), dataComplete,
                     getEventWinner(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
         }
 
@@ -504,7 +505,8 @@ class GenerateSiteCommand {
     }
 
     record EventPage(
-            Event event, boolean newLabel, boolean metaRelevant, EventWinner winner, String countryFlag, String page
+            Event event, boolean newLabel, boolean metaRelevant, boolean dataComplete, EventWinner winner,
+            String countryFlag, String page
     ) implements Comparable<EventPage> {
         @Override
         public int compareTo(EventPage o) {
@@ -526,7 +528,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventModel(HtmlMeta meta, Event event, String countryFlag,
+    record EventModel(HtmlMeta meta, Event event, String countryFlag, boolean dataComplete,
                       String statsPage,
                       ImmutableList<DeckWithRank> decks, boolean hasDecks,
                       ImmutableList<Link> videoLinks) implements TemplateSupport {
@@ -569,7 +571,7 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag) implements TemplateSupport {
+    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag, boolean dataComplete) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/meta-winrates.mustache")

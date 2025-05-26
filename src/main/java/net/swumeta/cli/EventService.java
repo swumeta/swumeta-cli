@@ -81,6 +81,44 @@ public class EventService {
         return Lists.immutable.ofAll(eventFiles);
     }
 
+    public boolean isEventComplete(Event e) {
+        if (e.players() == 0) {
+            return false;
+        }
+        boolean top8Complete = true;
+        int deckWithContentCount = 0;
+        for (final var entry : e.decks()) {
+            if (top8Complete && entry.rank() < 8) {
+                if (entry.pending() || entry.url() == null) {
+                    top8Complete = false;
+                } else {
+                    try {
+                        final var deck = deckService.load(entry.url());
+                        if (!deck.isValid()) {
+                            top8Complete = false;
+                        }
+                        deckWithContentCount += 1;
+                    } catch (AppException ex) {
+                        top8Complete = false;
+                    }
+                }
+            }
+            if (entry.leader() != null && entry.base() != null) {
+                deckWithContentCount += 1;
+            } else if (entry.url() != null) {
+                try {
+                    final var deck = deckService.load(entry.url());
+                    if (deck.isValid()) {
+                        deckWithContentCount += 1;
+                    }
+                } catch (AppException ignore) {
+                }
+            }
+        }
+        final var enoughData = deckWithContentCount / (float) e.players() >= 0.8f;
+        return enoughData && top8Complete;
+    }
+
     public Event sync(Event event) {
         Assert.notNull(event, "Event must not be null");
         if (event.locked()) {

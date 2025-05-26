@@ -3,7 +3,7 @@
 <section class="container">
   {{>templates/event-header.mustache}}
 
-  {{#hasDecks}}
+  {{#dataComplete}}
     <div class="row">
       <div class="col-lg-5">
         <div class="bar-chart w-100" data-url="usage-leaders.json" data-title="Leaders"></div>
@@ -19,7 +19,17 @@
       <div class="col text-end"><a href="{{statsPage}}" class="sw-link" style="font-size: 90%">
         <i class="bi bi-bar-chart-fill me-2"></i>more statistics...</a></div>
     </div>
-  {{/hasDecks}}
+  {{/dataComplete}}
+  {{^dataComplete}}
+    <div class="row">
+      <div class="text-center m-3">
+        <p class="text-secondary">
+          <i class="bi bi-exclamation-diamond-fill me-1"></i>
+          Tournament statistics are not available due to missing data.
+        </p>
+      </div>
+    </div>
+  {{/dataComplete}}
 
   <div class="row">
     <div class="col-12">

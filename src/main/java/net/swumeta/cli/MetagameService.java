@@ -58,7 +58,9 @@ public class MetagameService {
         logger.debug("Listing events for the metagame");
         final Predicate<Event> eventFilter = config.metagameMonths() < 1 ? null : new EventFilter(config.metagameMonths(), config.metagameLimit());
 
-        final var events = eventService.list(eventFilter);
+        final var events = Lists.immutable.fromStream(
+                eventService.list(eventFilter).stream().filter(eventService::isEventComplete)
+        );
         if (events.isEmpty()) {
             throw new AppException("No events found");
         }

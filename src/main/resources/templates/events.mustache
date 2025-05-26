@@ -14,6 +14,8 @@
       Your contributions help keep this resource valuable for the entire Star Wars Unlimited community.</p>
     <p class="d-none d-lg-block">Tournaments marked with a star (<i class="bi bi-star-fill"></i>)
       are included in the metagame calculation due to their significance.</p>
+    <p class="d-none d-lg-block">Tournaments marked with a warning symbol (<i class="bi bi-exclamation-diamond-fill"></i>)
+      do not contain sufficient data (for instance: decklists are missing).</p>
   </div>
 
   <div id="tournaments-container">
@@ -39,7 +41,10 @@
       {{#events}}
         <tr>
           <td class="col-date text-secondary d-none d-md-table-cell">{{event.date}}</td>
-          <td class="col-meta d-none d-lg-table-cell">{{#metaRelevant}}<i class="bi bi-star-fill"></i>{{/metaRelevant}}</td>
+          <td class="col-meta d-none d-lg-table-cell">
+            {{#metaRelevant}}<i class="bi bi-star-fill"></i>{{/metaRelevant}}
+            {{^dataComplete}}<i class="bi bi-exclamation-diamond-fill text-secondary"></i>{{/dataComplete}}
+          </td>
           <td class="col-tournament event-name">
             <div class="vstack gap-2">
               <div class="hstack gap-2">
