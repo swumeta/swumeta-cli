@@ -169,11 +169,11 @@ tr:hover .btn-copy {
     left: 0;
     right: 0;
     z-index: 1050;
-    display: block;
+    display: none;
 }
 
-.cookie-banner.hidden {
-    display: none;
+.cookie-banner.show {
+    display: block;
 }
 
 .event-metadata dt {

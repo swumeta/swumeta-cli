@@ -12,8 +12,7 @@ function setCookieConsent(preferences) {
         loadGoogleAnalytics();
     }
 
-    // Hide the banner
-    document.getElementById('cookieBanner').classList.add('hidden');
+    document.getElementById('cookieBanner').classList.remove('show');
 }
 
 // Function to load Google Analytics (example)
@@ -40,11 +39,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // If consent already exists, hide banner and load appropriate services
     if (consentData) {
         const preferences = JSON.parse(consentData);
-        document.getElementById('cookieBanner').classList.add('hidden');
 
         if (preferences.analytics) {
             loadGoogleAnalytics();
         }
+        document.getElementById('cookieBanner').classList.add('cookie-banner-hidden');
+    } else {
+        // Only show banner if no consent exists
+        document.getElementById('cookieBanner').classList.add('show');
     }
 
     // Handle click on "Accept all cookies"
