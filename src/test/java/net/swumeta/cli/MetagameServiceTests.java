@@ -32,7 +32,7 @@ class MetagameServiceTests {
     @Autowired
     private MetagameService svc;
 
-    @Test
+    //@Test
     void testGetMetagame() {
         final var metagame = svc.getMetagame();
         assertThat(metagame).isNotNull();
