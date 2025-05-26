@@ -34,7 +34,6 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.File;
@@ -42,6 +41,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.time.Instant;
@@ -625,9 +626,20 @@ class GenerateSiteCommand {
 
     private void renderToFile(Object model, File output) {
         logger.info("Generating file: {}", output.getName());
-        final var content = jStachio.execute(model);
-        try (final var out = new FileWriter(output, StandardCharsets.UTF_8)) {
-            FileCopyUtils.copy(content, out);
+        try {
+            final var tempFile = File.createTempFile("swumeta-", ".tmp");
+            tempFile.deleteOnExit();
+            try (final var out = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+                jStachio.execute(model, out);
+            }
+            final var p1 = tempFile.toPath();
+            final var p2 = output.toPath();
+            if (Files.mismatch(p1, p2) != -1) {
+                Files.copy(p1, p2,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.COPY_ATTRIBUTES);
+            }
+            tempFile.delete();
         } catch (IOException e) {
             throw new RuntimeException("Failed to render file: " + output, e);
         }
