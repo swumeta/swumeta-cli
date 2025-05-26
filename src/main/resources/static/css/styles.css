@@ -365,3 +365,9 @@ tr:hover .btn-copy {
 #decks-container .col-actions {
     width: 6em;
 }
+
+@media (max-width: 768px) {
+    #tournaments-container .col-tournament {
+        max-width: 25vh;
+    }
+}

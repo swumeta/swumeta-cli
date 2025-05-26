@@ -32,8 +32,7 @@
         <th scope="col" class="col-meta d-none d-lg-table-cell"></th>
         <th scope="col" class="col-tournament">Tournament</th>
         <th scope="col" class="col-winner d-none d-lg-table-cell">Winner</th>
-        <th scope="col" class="col-country text-center d-none d-lg-table-cell"><span class="d-none d-xl-inline-block">Country</span>
-        </th>
+        <th scope="col" class="col-country text-center d-none d-lg-table-cell"><span class="d-none d-xl-inline-block">Country</span></th>
         <th scope="col" class="col-type text-center d-none d-sm-table-cell">Type</th>
         <th scope="col" class="col-player text-end">Players</th>
       </tr>
@@ -48,20 +47,19 @@
           <td class="col-tournament event-name">
             <div class="vstack gap-2">
               <div class="hstack gap-2">
-                <i class="fi fi-{{countryFlag}} d-lg-none"></i>
-                <a href="{{page}}"><div class="text-truncate">{{event.name}}</div></a>
+                <div class="text-truncate"><a href="{{page}}">{{event.name}}</a></div>
                 {{#newLabel}}
                   <img class="d-inline-block" src="/images/new-label.png" width="38" height="20"/>
                 {{/newLabel}}
               </div>
-              {{#winner}}
               <div class="hstack d-lg-none mb-1">
+                {{#winner}}
                 <img src="{{winner.leader.url}}" alt="{{winner.leader.alt}}" width="120"
                      class="img-fluid rounded rounded-1 d-inline-block me-1"/>
                 <img src="{{winner.base.url}}" alt="{{winner.base.alt}}" width="120"
                      class="img-fluid rounded rounded-1 d-inline-block"/>
+                {{/winner}}
               </div>
-              {{/winner}}
             </div>
           </td>
           <td class="col-winner d-none d-lg-table-cell event-winner">
