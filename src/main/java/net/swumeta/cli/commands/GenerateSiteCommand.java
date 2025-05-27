@@ -154,7 +154,7 @@ class GenerateSiteCommand {
             final var statsFileName = "statistics.html";
             final var dataComplete = eventService.isEventComplete(event);
             renderToFile(new EventStatsModel(new HtmlMeta(
-                            "Statistics from " + event.name(),
+                            "Statistics from %s (%s)".formatted(event.name(), formatDate(event)),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
                             UriComponentsBuilder.fromUri(config.base()).path(eventDirName).path("/").path(statsFileName).build().toUri()),
                             event, countryFlag, dataComplete),
@@ -527,7 +527,7 @@ class GenerateSiteCommand {
     }
 
     @JStache(path = "/templates/event.mustache")
-    @JStacheConfig(formatter = CustomFormatter.class)
+    @JStacheConfig(formatter = CustomFormatter.clasEs)
     record EventModel(HtmlMeta meta, Event event, String countryFlag, boolean dataComplete,
                       String statsPage,
                       ImmutableList<DeckWithRank> decks, boolean hasDecks,
@@ -571,7 +571,8 @@ class GenerateSiteCommand {
 
     @JStache(path = "/templates/event-stats.mustache")
     @JStacheConfig(formatter = CustomFormatter.class)
-    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag, boolean dataComplete) implements TemplateSupport {
+    record EventStatsModel(HtmlMeta meta, Event event, String countryFlag,
+                           boolean dataComplete) implements TemplateSupport {
     }
 
     @JStache(path = "/templates/meta-winrates.mustache")
