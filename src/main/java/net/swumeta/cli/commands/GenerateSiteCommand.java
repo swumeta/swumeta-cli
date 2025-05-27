@@ -200,7 +200,7 @@ class GenerateSiteCommand {
             );
             final var leaderBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(DeckArchetype::leader).map(deckService::formatLeader)), 4);
             final var baseBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(deckService::lookupBase).map(deckService::formatBase)), 4);
-            renderToFile(new EventModel(new HtmlMeta(event.name(),
+            renderToFile(new EventModel(new HtmlMeta("%s (%s)".formatted(event.name(), formatDate(event)),
                             "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
                             UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
                             event, countryFlag, dataComplete, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
