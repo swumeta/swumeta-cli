@@ -50,9 +50,9 @@
             <tr>
               <th scope="col" class="col-rank text-end">#</th>
               <th scope="col" class="col-decklist">Decklist</th>
-              <th scope="col" class="col-actions d-none d-lg-table-cell">&nbsp;</th>
+              <th scope="col" class="col-actions d-none d-xl-table-cell">&nbsp;</th>
               <th scope="col" class="col-record text-center">Record</th>
-              <th scope="col" class="col-aspects text-center d-none d-md-table-cell">Aspects</th>
+              <th scope="col" class="col-aspects text-center d-none d-xl-table-cell">Aspects</th>
               <th scope="col" class="col-player text-end d-none d-md-table-cell">Player</th>
             </tr>
             </thead>
@@ -81,7 +81,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="col-actions text-end d-none d-lg-table-cell">
+                <td class="col-actions text-end d-none d-xl-table-cell">
                   {{#swudbFormat}}
                     <button class="btn-copy ms-2 btn btn-success btn-sm"
                             onclick="copyDeck('swudb-deck-{{deck.id}}');">
@@ -90,7 +90,7 @@
                   {{/swudbFormat}}
                 </td>
                 <td class="col-record text-center">{{matchRecord}}</td>
-                <td class="col-aspects text-center d-none d-md-table-cell">
+                <td class="col-aspects text-center d-none d-xl-table-cell">
                   {{#aspects}}
                     <img src="/images/{{.}}" width="32" height="32"/>
                   {{/aspects}}

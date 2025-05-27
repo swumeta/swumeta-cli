@@ -354,12 +354,12 @@ tr:hover .btn-copy {
     color: var(--sw-yellow);
 }
 
-#tournaments-container #decks-container {
-    overflow: hidden;
-}
-
 #decks-container td.col-rank {
     font-size: 80%;
+}
+
+#decks-container .col-player {
+    max-width: 12em;
 }
 
 #decks-container .col-actions {
