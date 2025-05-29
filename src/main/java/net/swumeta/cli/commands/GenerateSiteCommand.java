@@ -527,7 +527,7 @@ class GenerateSiteCommand {
     }
 
     @JStache(path = "/templates/event.mustache")
-    @JStacheConfig(formatter = CustomFormatter.clasEs)
+    @JStacheConfig(formatter = CustomFormatter.class)
     record EventModel(HtmlMeta meta, Event event, String countryFlag, boolean dataComplete,
                       String statsPage,
                       ImmutableList<DeckWithRank> decks, boolean hasDecks,
