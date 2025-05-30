@@ -637,7 +637,7 @@ class GenerateSiteCommand {
             }
             final var p1 = tempFile.toPath();
             final var p2 = output.toPath();
-            if (Files.mismatch(p1, p2) != -1) {
+            if (!output.exists() || Files.mismatch(p1, p2) != -1) {
                 Files.copy(p1, p2,
                         StandardCopyOption.REPLACE_EXISTING,
                         StandardCopyOption.COPY_ATTRIBUTES);
