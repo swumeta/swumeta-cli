@@ -20,5 +20,6 @@ public enum Set {
     SOR,
     SHD,
     TWI,
-    JTL
+    JTL,
+    LOF
 }
