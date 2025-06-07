@@ -20,6 +20,9 @@ import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -35,10 +38,12 @@ public class CardDownloaderService {
     private final Logger logger = LoggerFactory.getLogger(CardDownloaderService.class);
     private final AppConfig config;
     private final RestClient client;
+    private final RetryTemplate retryTemplate;
 
-    CardDownloaderService(AppConfig config, RestClient client) {
+    CardDownloaderService(AppConfig config, RestClient client, RetryTemplate retryTemplate) {
         this.config = config;
         this.client = client;
+        this.retryTemplate = retryTemplate;
     }
 
     public interface Handler {
@@ -50,7 +55,7 @@ public class CardDownloaderService {
             for (int page = 1; ; page += 1) {
                 final String uri = uriTemplate.toASCIIString().replace("_PAGE_", String.valueOf(page));
                 logger.debug("Downloading cards from URI: {}", uri);
-                final var resp = client.get().uri(uri).retrieve().body(JsonRoot.class);
+                final var resp = downloadCards(uri);
                 for (final JsonCard card : resp.data) {
                     final var set = toSet(card.attributes.expansion.data.id);
                     if (set.isEmpty()) {
@@ -88,6 +93,17 @@ public class CardDownloaderService {
                 }
             }
         }
+    }
+
+    private JsonRoot downloadCards(String uri) {
+        return retryTemplate.execute(ctx -> {
+            return client.get()
+                    .uri(uri)
+                    .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve().body(JsonRoot.class);
+        });
     }
 
     private static String trimToNull(String s) {

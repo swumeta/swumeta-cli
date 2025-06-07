@@ -19,7 +19,10 @@ package net.swumeta.cli;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Configuration(proxyBeanMethods = false)
 class RestConfig {
@@ -29,6 +32,16 @@ class RestConfig {
                 // Need to set the user agent as curl otherwise melee.gg will forbid requests.
                 .defaultHeader(HttpHeaders.USER_AGENT, "curl/8.5.0")
                 .defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "en")
+                .build();
+    }
+
+    @Bean
+    public RetryTemplate retryTemplate() {
+        return RetryTemplate.builder()
+                .maxAttempts(3)
+                .exponentialBackoff(1000, 2, 10000)
+                .retryOn(RestClientException.class)
+                .retryOn(HttpServerErrorException.class)
                 .build();
     }
 }
