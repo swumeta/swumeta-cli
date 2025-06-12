@@ -261,6 +261,7 @@ public class EventService {
 
     private Event load(File file) {
         try {
+            logger.debug("Loading event from file: {}", file.getAbsolutePath());
             return objectMapper.readerFor(Event.class).readValue(file);
         } catch (IOException e) {
             throw new AppException("Failed to load event from file: " + file, e);
