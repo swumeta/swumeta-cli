@@ -42,6 +42,9 @@ public record Location(
         if ("USA".equals(country)) {
             return "us";
         }
+        if ("Hong Kong".equals(country)) {
+            return "hk";
+        }
         String flag = COUNTRY_FLAG_CACHE.get(country);
         if (flag != null) {
             return flag;
