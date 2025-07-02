@@ -26,6 +26,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Optional;
 
 @Service
 public class CardDownloaderService {
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36";
     private final Logger logger = LoggerFactory.getLogger(CardDownloaderService.class);
     private final AppConfig config;
     private final RestClient client;
@@ -51,55 +53,73 @@ public class CardDownloaderService {
     }
 
     public void downloadCards(Handler handler) {
-        for (final URI uriTemplate : config.cards()) {
-            for (int page = 1; ; page += 1) {
-                final String uri = uriTemplate.toASCIIString().replace("_PAGE_", String.valueOf(page));
-                logger.debug("Downloading cards from URI: {}", uri);
-                final var resp = downloadCards(uri);
-                for (final JsonCard card : resp.data) {
-                    final var set = toSet(card.attributes.expansion.data.id);
-                    if (set.isEmpty()) {
-                        logger.trace("Unsupported set: {}", card.attributes.expansion.data.id);
-                        continue;
-                    }
-                    final var type = toCardType(card.attributes.type.data.id);
-                    if (type.isEmpty()) {
-                        logger.trace("Unsupported card type: {}", card.attributes.type.data.id);
-                        continue;
-                    }
-                    final var rarity = toRarity(card.attributes.rarity.data.id);
-                    if (rarity.isEmpty()) {
-                        logger.trace("Unsupported rarity: {}", card.attributes.rarity.data.id);
-                        continue;
-                    }
-                    final var arena = toArena(card);
-                    final var c = new Card(
-                            set.get(),
-                            card.attributes.cardNumber,
-                            type.get(),
-                            rarity.get(),
-                            arena.orElseGet(() -> null),
-                            toAspects(card),
-                            card.attributes.cost,
-                            card.attributes.title,
-                            trimToNull(card.attributes.subtitle),
-                            getArtUri(card.attributes.artFront, "card"),
-                            getArtUri(card.attributes.artThumbnail.data != null ? card.attributes.artThumbnail : card.attributes.artFront, "thumbnail")
-                    );
-                    handler.onCardDownloaded(c);
+        final int pageCount = getPageCount();
+        for (int page = 1; page <= pageCount; page++) {
+            final var uri = UriComponentsBuilder.fromUriString("https://admin.starwarsunlimited.com/api/cards")
+                    .queryParam("pagination[page]", page).build().toUri();
+            logger.debug("Downloading cards from URI: {}", uri);
+            final var resp = downloadCards(uri);
+            for (final JsonCard card : resp.data) {
+                if (card.attributes.variantOf != null && card.attributes.variantOf.data != null) {
+                    continue;
                 }
-                if (resp.meta.pagination.page >= resp.meta.pagination.pageCount) {
-                    break;
+                final var set = toSet(card.attributes.expansion.data.id);
+                if (set.isEmpty()) {
+                    logger.debug("Unsupported set: {}", card.attributes.expansion.data.id);
+                    continue;
                 }
+                final var type = toCardType(card.attributes.type.data.id);
+                if (type.isEmpty()) {
+                    logger.trace("Unsupported card type: {}", card.attributes.type.data.id);
+                    continue;
+                }
+                final var rarity = toRarity(card.attributes.rarity.data.id);
+                if (rarity.isEmpty()) {
+                    logger.trace("Unsupported rarity: {}", card.attributes.rarity.data.id);
+                    continue;
+                }
+                final var arena = toArena(card);
+                final var c = new Card(
+                        set.get(),
+                        card.attributes.cardNumber,
+                        type.get(),
+                        rarity.get(),
+                        arena.orElseGet(() -> null),
+                        toAspects(card),
+                        card.attributes.cost,
+                        card.attributes.title,
+                        trimToNull(card.attributes.subtitle),
+                        getArtUri(card.attributes.artFront, "card"),
+                        getArtUri(card.attributes.artThumbnail.data != null ? card.attributes.artThumbnail : card.attributes.artFront, "thumbnail")
+                );
+                handler.onCardDownloaded(c);
+            }
+            if (resp.meta.pagination.page >= resp.meta.pagination.pageCount) {
+                break;
             }
         }
     }
 
-    private JsonRoot downloadCards(String uri) {
+    private int getPageCount() {
+        logger.debug("Getting cards page count");
+        return retryTemplate.execute(ctx -> {
+            final var uri = UriComponentsBuilder.fromUriString("https://admin.starwarsunlimited.com/api/cards")
+                    .queryParam("pagination[page]", 1).build().toUri();
+            final var resp = client.get().uri(uri)
+                    .header(HttpHeaders.USER_AGENT, USER_AGENT)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                    .accept(MediaType.APPLICATION_JSON).retrieve().body(JsonRootWithMeta.class);
+            final int pageCount = resp.meta.pagination.pageCount;
+            logger.debug("Read cards page count: {}", pageCount);
+            return pageCount;
+        });
+    }
+
+    private JsonRoot downloadCards(URI uri) {
         return retryTemplate.execute(ctx -> {
             return client.get()
                     .uri(uri)
-                    .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+                    .header(HttpHeaders.USER_AGENT, USER_AGENT)
                     .header(HttpHeaders.CACHE_CONTROL, "no-cache")
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve().body(JsonRoot.class);
@@ -117,6 +137,7 @@ public class CardDownloaderService {
             case 8, 10 -> Optional.of(Set.SHD);
             case 18, 20 -> Optional.of(Set.TWI);
             case 23, 27 -> Optional.of(Set.JTL);
+            case 53 -> Optional.of(Set.LOF);
             default -> Optional.empty();
         };
     }
@@ -166,7 +187,7 @@ public class CardDownloaderService {
             case 22 -> Card.Aspect.HEROISM;
             case 27 -> Card.Aspect.VILLAINY;
             default -> null;
-        })).filter(Objects::nonNull).toList();
+        })).filter(Objects::nonNull).sorted().toList();
     }
 
     private static URI getArtUri(JsonArt art, String artType) {
@@ -212,6 +233,7 @@ public class CardDownloaderService {
             JsonRarity rarity,
             JsonArenas arenas,
             JsonAspects aspects,
+            JsonVariantOf variantOf,
             JsonExpansion expansion,
             JsonArt artFront,
             JsonArt artThumbnail
@@ -285,6 +307,21 @@ public class CardDownloaderService {
 
     private record JsonAspectData(
             int id
+    ) {
+    }
+
+    private record JsonVariantOf(
+            JsonVariantOfData data
+    ) {
+    }
+
+    private record JsonVariantOfData(
+            int id
+    ) {
+    }
+
+    private record JsonRootWithMeta(
+            JsonMeta meta
     ) {
     }
 }

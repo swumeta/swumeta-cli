@@ -21,7 +21,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.io.File;
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.List;
 
 @ConfigurationProperties(prefix = "swu")
 public record AppConfig(
@@ -30,7 +29,6 @@ public record AppConfig(
         File output,
         File cache,
         int metagameMonths,
-        LocalDate metagameLimit,
-        List<URI> cards
+        LocalDate metagameLimit
 ) {
 }
