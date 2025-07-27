@@ -24,10 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import net.swumeta.cli.model.Card;
-import net.swumeta.cli.model.Deck;
-import net.swumeta.cli.model.DeckArchetype;
-import net.swumeta.cli.model.Format;
+import net.swumeta.cli.model.*;
 import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.factory.Bags;
@@ -204,7 +201,7 @@ public class DeckService {
     private DeckArchetype createArchetype(URI uri) {
         final var deck = load(uri);
         final var baseCard = cardDatabaseService.findById(deck.base());
-        return !baseCard.rarity().equals(Card.Rarity.COMMON) || baseCard.aspects().isEmpty()
+        return !baseCard.rarity().equals(Card.Rarity.COMMON) || baseCard.aspects().isEmpty() || (baseCard.set().equals(Set.LOF) && baseCard.rarity().equals(Card.Rarity.COMMON))
                 ? DeckArchetype.valueOf(deck.leader(), deck.base())
                 : DeckArchetype.valueOf(deck.leader(), baseCard.aspects().get(0));
     }
@@ -252,19 +249,22 @@ public class DeckService {
             return alias;
         }
         final var baseCard = cardDatabaseService.findById(base);
+        String baseName = baseCard.name();
         if (baseCard.rarity().equals(Card.Rarity.COMMON)) {
-            if (baseCard.aspects().isEmpty()) {
-                return baseCard.name();
+            if (!baseCard.aspects().isEmpty()) {
+                baseName = switch (baseCard.aspects().get(0)) {
+                    case VIGILANCE -> "Blue";
+                    case COMMAND -> "Green";
+                    case AGGRESSION -> "Red";
+                    case CUNNING -> "Yellow";
+                    default -> baseCard.name();
+                };
+                if (baseCard.set().equals(Set.LOF)) {
+                    baseName = "%s Force".formatted(baseName);
+                }
             }
-            return switch (baseCard.aspects().get(0)) {
-                case VIGILANCE -> "Blue";
-                case COMMAND -> "Green";
-                case AGGRESSION -> "Red";
-                case CUNNING -> "Yellow";
-                default -> baseCard.name();
-            };
         }
-        return baseCard.name();
+        return baseName;
     }
 
     public String toSwudbJson(Deck deck) {

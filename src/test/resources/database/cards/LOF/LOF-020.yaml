@@ -1,0 +1,10 @@
+---
+set: "LOF"
+number: 20
+type: "base"
+rarity: "common"
+aspects:
+- "vigilance"
+name: "Nightsister Lair"
+art: "https://cdn.starwarsunlimited.com//card_05010020_EN_Nightsister_Lair_Base_8a875307ec.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_05010020_EN_Nightsister_Lair_Base_Thumbnail_1e0bdaf806.png"

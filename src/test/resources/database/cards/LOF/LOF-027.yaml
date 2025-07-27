@@ -1,0 +1,10 @@
+---
+set: "LOF"
+number: 27
+type: "base"
+rarity: "common"
+aspects:
+- "aggression"
+name: "Strangled Cliffs"
+art: "https://cdn.starwarsunlimited.com//card_05010027_EN_Strangled_Cliffs_Base_1144b7993b.png"
+thumbnail: "https://cdn.starwarsunlimited.com//thumbnail_05010027_EN_Strangled_Cliffs_Base_Thumbnail_ffe465e4e0.png"

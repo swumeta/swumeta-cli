@@ -72,6 +72,8 @@ class DeckServiceTests {
     void testFormatBase() {
         assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-026")))).isEqualTo("Red");
         assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("JTL-021")))).isEqualTo("Colossus");
+        assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("LOF-020")))).isEqualTo("Blue Force");
+        assertThat(svc.formatBase(helper.createDeck(Card.Id.valueOf("JTL-009"), Card.Id.valueOf("LOF-027")))).isEqualTo("Red Force");
     }
 
     @Test
