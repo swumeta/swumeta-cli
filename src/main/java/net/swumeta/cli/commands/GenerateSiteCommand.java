@@ -156,7 +156,7 @@ class GenerateSiteCommand {
             renderToFile(new EventStatsModel(new HtmlMeta(
                             "Statistics from %s (%s)".formatted(event.name(), formatDate(event)),
                             "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
-                            UriComponentsBuilder.fromUri(config.base()).path(eventDirName).path("/").path(statsFileName).build().toUri()),
+                            UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName)).build().toUri()),
                             event, countryFlag, dataComplete),
                     new File(eventDir, statsFileName));
             renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
