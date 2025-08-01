@@ -1016,6 +1016,8 @@ class GenerateSiteCommand {
         final var normalized = Normalizer.normalize(lowercase, Normalizer.Form.NFD);
         return normalized.replaceAll("[^\\p{ASCII}]", "")
                 .replace("$", "")
+                .replace("(", "")
+                .replace(")", "")
                 .replace(" / ", "-")
                 .replace(" ", "-");
     }
