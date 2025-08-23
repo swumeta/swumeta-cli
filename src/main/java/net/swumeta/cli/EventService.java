@@ -16,6 +16,7 @@
 
 package net.swumeta.cli;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -210,12 +211,10 @@ public class EventService {
                                 logger.warn("Skipping decklist at rank {} for round {} since match record is 0-0-0", player.Rank, roundId);
                                 continue;
                             }
-                            URI deckUri = null;
-                            if (player.Decklists.isEmpty()) {
+                            final var playerId = player.team.players.get(0).id;
+                            final var deckUri = getPlayerDeckUri(playerId);
+                            if (deckUri == null) {
                                 logger.warn("Missing decklist at rank {} for round {}", player.Rank, roundId);
-                            } else {
-                                final var deckId = player.Decklists.get(0).DecklistId;
-                                deckUri = UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
                             }
                             logger.trace("Adding deck URI at rank {}: {}", player.Rank, deckUri);
                             deckUris.add(new Event.DeckEntry(rank++, false, deckUri, null, null, null));
@@ -259,6 +258,17 @@ public class EventService {
         return newEvent;
     }
 
+    private URI getPlayerDeckUri(String playerId) {
+        final var playerDetailsUri = UriComponentsBuilder.fromUriString("https://melee.gg/Player/GetPlayerDetails")
+                .queryParam("id", playerId).build().toUri();
+        final var playerDetails = client.get().uri(playerDetailsUri).retrieve().body(JsonPlayerDetails.class);
+        if (playerDetails.decklists == null || playerDetails.decklists.isEmpty()) {
+            return null;
+        }
+        final var deckId = playerDetails.decklists.get(0).id;
+        return UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(deckId).build().toUri();
+    }
+
     private Event load(File file) {
         try {
             logger.debug("Loading event from file: {}", file.getAbsolutePath());
@@ -291,12 +301,36 @@ public class EventService {
     private record JsonPlayer(
             int Rank,
             List<JsonPlayerDeck> Decklists,
-            String MatchRecord
+            String MatchRecord,
+            @JsonAlias("Team")
+            JsonTeamPlayers team
     ) {
     }
 
     private record JsonPlayerDeck(
             String DecklistId
+    ) {
+    }
+
+    private record JsonTeamPlayers(
+            @JsonAlias("Players")
+            List<JsonTeamPlayersItem> players
+    ) {
+    }
+
+    private record JsonTeamPlayersItem(
+            @JsonAlias("ID")
+            String id
+    ) {
+    }
+
+    private record JsonPlayerDetails(
+            List<JsonPlayerDetailsDecklist> decklists
+    ) {
+    }
+
+    private record JsonPlayerDetailsDecklist(
+            String id
     ) {
     }
 }
