@@ -415,7 +415,12 @@ public class DeckService {
         final var matches = meleeDeckDetails.matches.stream().map(m -> toDeckMatch(tournamentId, m)).toList();
 
         final var player = meleeDeckDetails.team.user;
-        var matchRecord = findMeleeDeckMatchRecord(findRoundId(tournamentId), player);
+        String matchRecord = null;
+        try {
+            matchRecord = findMeleeDeckMatchRecord(findRoundId(tournamentId), player);
+        } catch (AppException ignore) {
+            matchRecord = null;
+        }
         if (matchRecord == null) {
             matchRecord = meleeDeckDetails.team.matchRecord;
         }
@@ -521,6 +526,9 @@ public class DeckService {
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
         final var standingsElem = meleeDoc.getElementById("standings-round-selector-container");
+        if (standingsElem == null) {
+            throw new AppException("Unable to find round id in tournament page: " + uri);
+        }
         final var roundStandingsElems = standingsElem.getElementsByAttributeValue("data-is-completed", "True");
         if (roundStandingsElems.isEmpty()) {
             throw new AppException("Unable to find round id in tournament page: " + uri);
