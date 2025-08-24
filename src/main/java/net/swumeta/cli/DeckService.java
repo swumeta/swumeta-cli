@@ -411,11 +411,14 @@ public class DeckService {
         }
         logger.trace("Melee.gg deck details: {}", meleeDeckDetails);
 
-        final var player = meleeDeckDetails.team.user;
-        final var matchRecord = meleeDeckDetails.team.matchRecord;
-
         final var tournamentId = Integer.parseInt(meleeDoc.getElementById("tournament-id-field").val());
         final var matches = meleeDeckDetails.matches.stream().map(m -> toDeckMatch(tournamentId, m)).toList();
+
+        final var player = meleeDeckDetails.team.user;
+        var matchRecord = findMeleeDeckMatchRecord(findRoundId(tournamentId), player);
+        if (matchRecord == null) {
+            matchRecord = meleeDeckDetails.team.matchRecord;
+        }
 
         return new Deck(
                 uri,
@@ -566,6 +569,40 @@ public class DeckService {
         return deckUrl;
     }
 
+    private String findMeleeDeckMatchRecord(int roundId, String username) {
+        final var body = new LinkedMultiValueMap<String, String>();
+        body.add("columns[0][data]", "Rank");
+        body.add("columns[0][name]", "Rank");
+        body.add("columns[0][searchable]", "true");
+        body.add("columns[0][orderable]", "true");
+        body.add("columns[0][search][value]", "");
+        body.add("columns[0][search][regex]", "false");
+        body.add("columns[1][data]", "Decklists");
+        body.add("columns[1][name]", "Decklists");
+        body.add("columns[1][searchable]", "false");
+        body.add("columns[1][orderable]", "false");
+        body.add("columns[1][search][value]", "");
+        body.add("columns[1][search][regex]", "false");
+        body.add("order[0][column]", "0");
+        body.add("order[0][dir]", "asc");
+        body.add("start", "0");
+        body.add("length", "1");
+        body.add("search[value]", username);
+        body.add("search[regex]", "false");
+        body.add("roundId", String.valueOf(roundId));
+
+        final var resp = client.post()
+                .uri("https://melee.gg/Standing/GetRoundStandings")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(body)
+                .retrieve().body(MeleeRoundStandings.class);
+        if (resp.data.isEmpty()) {
+            return null;
+        }
+        return resp.data.get(0).matchRecord;
+    }
+
     private static URI createMeleeDeckUri(String meleeDeckId) {
         Assert.notNull(meleeDeckId, "Melee deck id must not be null");
         return UriComponentsBuilder.fromUriString("https://melee.gg/Decklist/View/").path(meleeDeckId).build().toUri();
@@ -616,7 +653,8 @@ public class DeckService {
     }
 
     private record JsonPlayer(
-            @JsonAlias("Decklists") List<JsonPlayerDeck> decklists
+            @JsonAlias("Decklists") List<JsonPlayerDeck> decklists,
+            @JsonAlias("MatchRecord") String matchRecord
     ) {
     }
 
