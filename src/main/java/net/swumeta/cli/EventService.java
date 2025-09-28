@@ -138,7 +138,7 @@ public class EventService {
 
         int players = 0;
         final var tournamentHeadlineRegElem = meleeDoc.getElementById("tournament-headline-registration");
-        if (!tournamentHeadlineRegElem.text().isEmpty()) {
+        if (tournamentHeadlineRegElem != null && !tournamentHeadlineRegElem.text().isEmpty()) {
             final var pattern = Pattern.compile("(\\d+)\\s+of\\s+\\d+\\s+Enrolled\\s+Players");
             final var matcher = pattern.matcher(tournamentHeadlineRegElem.text());
             if (matcher.find()) {
