@@ -120,6 +120,9 @@
                 <configuration>
                     <image>
                         <name>ghcr.io/swumeta/swumeta-cli</name>
+                        <env>
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                        </env>
                     </image>
                 </configuration>
             </plugin>
