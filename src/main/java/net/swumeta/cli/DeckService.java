@@ -348,7 +348,7 @@ public class DeckService {
         boolean inSectionDeck = false;
         boolean inSectionSideboard = false;
 
-        for (final var line : lines) {
+        for (var line : lines) {
             if (line.equals("Leaders")) {
                 inSectionLeaders = true;
                 inSectionBase = false;
@@ -370,7 +370,8 @@ public class DeckService {
                 inSectionDeck = false;
                 inSectionSideboard = true;
             } else if (line.contains("|")) {
-                final var parts = line.split("\\s*[|]\\s*");
+                final var strippedLine = stripPipesAndSpaces(line);
+                final var parts = strippedLine.split("\\s*[|]\\s*");
                 if (parts.length != 2 && parts.length != 3) {
                     throw new RuntimeException("Invalid line: " + line);
                 }
@@ -437,6 +438,8 @@ public class DeckService {
                 matches
         );
     }
+
+
 
     private Deck loadSwudbDeck(URI uri) {
         logger.info("Loading deck from swudb.com: {}", uri);
@@ -618,6 +621,22 @@ public class DeckService {
 
     private static String md5(String name) {
         return DigestUtils.md5DigestAsHex(name.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String stripPipesAndSpaces(String s) {
+        if (s == null) {
+            return null;
+        }
+        String result = s.trim();
+        int start = 0;
+        int end = result.length();
+        while (start < end && result.charAt(start) == '|') {
+            start++;
+        }
+        while (end > start && result.charAt(end - 1) == '|') {
+            end--;
+        }
+        return result.substring(start, end).trim();
     }
 
     private record MeleeDeckWrapper(
