@@ -627,7 +627,7 @@ public class DeckService {
         if (s == null) {
             return null;
         }
-        String result = s.trim();
+        String result = s.replaceAll("\\|(\\s*\\|)+", "|").trim();
         int start = 0;
         int end = result.length();
         while (start < end && result.charAt(start) == '|') {
