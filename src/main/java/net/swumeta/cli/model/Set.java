@@ -24,5 +24,6 @@ public enum Set {
     LOF,
     SEC,
     IBH,
-    LAW
+    LAW,
+    ASH
 }
