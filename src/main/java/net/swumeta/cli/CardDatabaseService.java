@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -40,10 +41,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CardDatabaseService {
@@ -52,6 +55,7 @@ public class CardDatabaseService {
     private final ObjectMapper objectMapper;
     private final MutableMultimap<String, File> cardsByName = Multimaps.mutable.set.of();
     private final LoadingCache<Card.Id, Card> cardByIdCache;
+    private volatile String fingerprint;
 
     CardDatabaseService(AppConfig config) {
         this.config = config;
@@ -176,6 +180,23 @@ public class CardDatabaseService {
         }
     }
 
+    /**
+     * A fingerprint of the card database content: it changes as soon as cards are
+     * added or removed. Callers cache failures caused by a missing card against it,
+     * so that those get retried once a new set lands in the database.
+     */
+    public String fingerprint() {
+        var fp = fingerprint;
+        if (fp == null) {
+            final var cardFiles = new ArrayList<File>(256);
+            listFilesRecursively(getCardsDir(), cardFiles);
+            final var names = cardFiles.stream().map(File::getName).sorted().collect(Collectors.joining(","));
+            fp = DigestUtils.md5DigestAsHex(names.getBytes(StandardCharsets.UTF_8));
+            fingerprint = fp;
+        }
+        return fp;
+    }
+
     private void initIndex() {
         if (!cardsByName.isEmpty()) {
             return;
@@ -228,6 +249,7 @@ public class CardDatabaseService {
             throw new AppException("Failed to save card: " + card.id(), e);
         }
         cardsByName.put(card.name(), cardFile);
+        fingerprint = null;
     }
 
     private static String trimToNull(String s) {
@@ -241,6 +263,7 @@ public class CardDatabaseService {
 
     public void clear() {
         cardsByName.clear();
+        fingerprint = null;
         final var cardsDir = getCardsDir();
         if (cardsDir.exists()) {
             logger.debug("Clearing cards database");

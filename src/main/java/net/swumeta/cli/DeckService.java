@@ -38,6 +38,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.*;
@@ -45,15 +46,19 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 @Service
 public class DeckService {
     private static final int CURRENT_VERSION = 2;
+    private static final int FETCH_ATTEMPTS = 5;
+    private static final Duration FETCH_RETRY_DELAY = Duration.ofSeconds(2);
     private static final Pattern SCORE_PATTERN = Pattern.compile("(\\d+)-(\\d+)-(\\d+)");
     private static final Pattern SCORE_PATTERN2 = Pattern.compile("(\\d+)-(\\d+)");
     private static final Map<Card.Id, String> CARD_NAME_ALIASES = Map.of(
@@ -114,7 +119,11 @@ public class DeckService {
         }
         final var skipMarkerFile = new File(deckFile + ".skip");
         if (skipMarkerFile.exists()) {
-            throw new AppException("Skipping melee.gg deck: " + uri);
+            if (isSkipMarkerCurrent(skipMarkerFile)) {
+                throw new AppException("Skipping melee.gg deck: " + uri);
+            }
+            logger.debug("Discarding outdated skip marker: {}", skipMarkerFile);
+            skipMarkerFile.delete();
         }
 
         Deck deck = null;
@@ -147,22 +156,28 @@ public class DeckService {
             final var host = uri.getHost();
             if (host != null) {
                 if (host.contains("melee")) {
-                    deck = loadMeleeDeck(uri);
+                    deck = loadWithRetry(uri, this::loadMeleeDeck);
                 } else if (host.contains("swudb")) {
-                    deck = loadSwudbDeck(uri);
+                    deck = loadWithRetry(uri, this::loadSwudbDeck);
                 }
             }
+        } catch (UnknownCardException e) {
+            // The card database is lagging behind. The marker records the database
+            // fingerprint, so this deck is retried as soon as new cards land.
+            logger.warn("Unable to load deck {}: {}", uri, e.getMessage());
+            markAsSkipped(skipMarkerFile, uri);
+            throw e;
+        } catch (RestClientException e) {
+            // The remote site is unreachable or is rate limiting us: transient as well,
+            // so don't blacklist the deck either.
+            logger.warn("Unable to reach {} while loading deck: {}", uri.getHost(), uri);
+            throw new AppException("Failed to reach deck source: " + uri, e);
         } catch (AppException e) {
             logger.debug("Unable to load deck: {}", uri, e);
         }
         if (deck == null) {
             logger.warn("Failed to load deck from melee.gg: {}", uri);
-            deck = null;
-            try {
-                Files.writeString(skipMarkerFile.toPath(), uri.toASCIIString(),
-                        StandardCharsets.UTF_8, StandardOpenOption.CREATE);
-            } catch (IOException ignore) {
-            }
+            markAsSkipped(skipMarkerFile, uri);
             throw new AppException("Failed to load deck: " + uri);
         }
 
@@ -380,18 +395,17 @@ public class DeckService {
                 final var cardSubtitle = parts.length > 2 ? parts[2] : null;
                 final var cards = cardDatabaseService.findByName(cardTitle, cardSubtitle);
                 if (cards.isEmpty()) {
-                    logger.debug("Unable to find card: {}", line);
-                } else {
-                    final var card = cards.iterator().next();
-                    if (inSectionLeaders) {
-                        leader = card.id();
-                    } else if (inSectionBase) {
-                        base = card.id();
-                    } else if (inSectionDeck) {
-                        main.addOccurrences(card.id(), quantity);
-                    } else if (inSectionSideboard) {
-                        sideboard.addOccurrences(card.id(), quantity);
-                    }
+                    throw new UnknownCardException("Card not found in database: %s (deck: %s)".formatted(strippedLine, uri));
+                }
+                final var card = cards.iterator().next();
+                if (inSectionLeaders) {
+                    leader = card.id();
+                } else if (inSectionBase) {
+                    base = card.id();
+                } else if (inSectionDeck) {
+                    main.addOccurrences(card.id(), quantity);
+                } else if (inSectionSideboard) {
+                    sideboard.addOccurrences(card.id(), quantity);
                 }
             }
         }
@@ -621,6 +635,66 @@ public class DeckService {
 
     private static String md5(String name) {
         return DigestUtils.md5DigestAsHex(name.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Fetches a deck, retrying on network failures: sites such as melee.gg reset
+     * connections when too many decks are downloaded in a row, and losing a deck
+     * over that would leave a hole in the generated event page.
+     */
+    private Deck loadWithRetry(URI uri, Function<URI, Deck> loader) {
+        RestClientException lastError = null;
+        for (int attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+            try {
+                return loader.apply(uri);
+            } catch (RestClientException e) {
+                lastError = e;
+                if (attempt == FETCH_ATTEMPTS) {
+                    break;
+                }
+                final var delay = FETCH_RETRY_DELAY.multipliedBy(1L << (attempt - 1));
+                logger.debug("Failed to fetch deck {} (attempt {}/{}): retrying in {}",
+                        uri, attempt, FETCH_ATTEMPTS, delay, e);
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    private void markAsSkipped(File skipMarkerFile, URI uri) {
+        try {
+            Files.writeString(skipMarkerFile.toPath(), skipMarkerHeader() + uri.toASCIIString(),
+                    StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException ignore) {
+        }
+    }
+
+    private String skipMarkerHeader() {
+        return "version: %d%ncards: %s%n".formatted(CURRENT_VERSION, cardDatabaseService.fingerprint());
+    }
+
+    /**
+     * A skip marker is only honored while it matches both the current deck format
+     * version and the current card database. Markers written by an older version, or
+     * before a set was added to the database, are discarded so the deck is retried:
+     * that is what keeps a new set from being permanently blacklisted.
+     */
+    private boolean isSkipMarkerCurrent(File skipMarkerFile) {
+        try {
+            final var lines = Files.readAllLines(skipMarkerFile.toPath(), StandardCharsets.UTF_8);
+            if (lines.size() < 2) {
+                return false;
+            }
+            return skipMarkerHeader().equals("%s%n%s%n".formatted(lines.get(0), lines.get(1)));
+        } catch (IOException e) {
+            logger.debug("Unable to read skip marker: {}", skipMarkerFile, e);
+            return false;
+        }
     }
 
     private static String stripPipesAndSpaces(String s) {
