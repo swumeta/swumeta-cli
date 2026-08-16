@@ -43,9 +43,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,15 +53,18 @@ public class CardDatabaseService {
     private final Logger logger = LoggerFactory.getLogger(CardDatabaseService.class);
     private final AppConfig config;
     private final ObjectMapper objectMapper;
-    private final MutableMultimap<String, File> cardsByName = Multimaps.mutable.set.of();
+    private final Object indexLock = new Object();
     private final LoadingCache<Card.Id, Card> cardByIdCache;
+    private volatile MutableMultimap<String, File> cardsByName;
     private volatile String fingerprint;
 
     CardDatabaseService(AppConfig config) {
         this.config = config;
         this.objectMapper = new ObjectMapper(new YAMLFactory());
         this.objectMapper.findAndRegisterModules();
-        cardByIdCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::loadById);
+        // Plain (strong) keys on purpose: weakKeys() would switch Caffeine to identity
+        // comparison, which never matches card ids parsed from two different files.
+        cardByIdCache = Caffeine.newBuilder().build(this::loadById);
     }
 
     public Card findById(Card.Id id) {
@@ -143,18 +146,22 @@ public class CardDatabaseService {
         }
     }
 
+    /**
+     * Looks up cards by name, sorted by set and card number: callers pick the first match,
+     * so an unordered result would make the choice — and the decks built from it — depend on
+     * the JVM run.
+     */
     public Set<Card> findByName(String name, @Nullable String title) {
         Assert.notNull(name, "Argument name must not be null");
-        initIndex();
 
         title = trimToNull(title);
-        final var cardFiles = cardsByName.get(name);
+        final var cardFiles = index().get(name);
         if (cardFiles == null || cardFiles.isEmpty()) {
             logger.trace("Unknown card: name={}, title={}", name, title);
             return Set.of();
         }
 
-        final var cards = new HashSet<Card>(1);
+        final var cards = new TreeSet<Card>();
         for (final var cardFile : cardFiles) {
             if (!cardFile.exists()) {
                 logger.trace("Card file not found: {}", cardFile);
@@ -197,12 +204,27 @@ public class CardDatabaseService {
         return fp;
     }
 
-    private void initIndex() {
-        if (!cardsByName.isEmpty()) {
-            return;
+    /**
+     * The name index, built on first use. Site generation resolves cards from several threads,
+     * so the index is published as a whole once it is complete rather than filled in place.
+     */
+    private MutableMultimap<String, File> index() {
+        var index = cardsByName;
+        if (index == null) {
+            synchronized (indexLock) {
+                index = cardsByName;
+                if (index == null) {
+                    index = buildIndex();
+                    cardsByName = index;
+                }
+            }
         }
+        return index;
+    }
 
+    private MutableMultimap<String, File> buildIndex() {
         logger.debug("Initializing card database index");
+        final var index = Multimaps.mutable.set.<String, File>of();
         final var cardFiles = new ArrayList<File>(256);
         listFilesRecursively(getCardsDir(), cardFiles);
         for (final var cardFile : cardFiles) {
@@ -212,8 +234,9 @@ public class CardDatabaseService {
             } catch (IOException e) {
                 throw new AppException("Failed to read card from file: " + cardFile, e);
             }
-            cardsByName.put(card.name(), cardFile);
+            index.put(card.name(), cardFile);
         }
+        return index;
     }
 
     private static void listFilesRecursively(File directory, List<File> filesList) {
@@ -231,7 +254,6 @@ public class CardDatabaseService {
 
     public void save(Card card) {
         Assert.notNull(card, "Card must not be null");
-        initIndex();
 
         final var cardsDir = getCardsDir();
         if (!cardsDir.exists()) {
@@ -248,7 +270,9 @@ public class CardDatabaseService {
         } catch (IOException e) {
             throw new AppException("Failed to save card: " + card.id(), e);
         }
-        cardsByName.put(card.name(), cardFile);
+        synchronized (indexLock) {
+            index().put(card.name(), cardFile);
+        }
         fingerprint = null;
     }
 
@@ -262,7 +286,10 @@ public class CardDatabaseService {
     }
 
     public void clear() {
-        cardsByName.clear();
+        synchronized (indexLock) {
+            cardsByName = null;
+        }
+        cardByIdCache.invalidateAll();
         fingerprint = null;
         final var cardsDir = getCardsDir();
         if (cardsDir.exists()) {

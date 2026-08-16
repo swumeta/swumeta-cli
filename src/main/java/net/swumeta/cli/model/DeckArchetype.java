@@ -64,9 +64,14 @@ public final class DeckArchetype implements Comparable<DeckArchetype> {
         return Objects.equals(leader, that.leader) && aspect == that.aspect && Objects.equals(base, that.base);
     }
 
+    /**
+     * The aspect is hashed through its ordinal: {@link Enum#hashCode()} is an identity hash,
+     * which would make the iteration order of archetype bags — and therefore the generated
+     * statistics — differ between two identical builds.
+     */
     @Override
     public int hashCode() {
-        return Objects.hash(leader, aspect, base);
+        return Objects.hash(leader, aspect == null ? null : aspect.ordinal(), base);
     }
 
     @Override

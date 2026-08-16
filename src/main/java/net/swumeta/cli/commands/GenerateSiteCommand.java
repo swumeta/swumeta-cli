@@ -26,6 +26,7 @@ import net.swumeta.cli.statistics.DeckStatisticsService;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.bag.Bag;
 import org.eclipse.collections.api.bag.ImmutableBag;
+import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.block.procedure.Procedure2;
 import org.eclipse.collections.api.factory.Bags;
 import org.eclipse.collections.api.list.ImmutableList;
@@ -37,12 +38,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.time.Instant;
@@ -53,6 +52,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -117,100 +119,11 @@ class GenerateSiteCommand {
 
         final var metagame = metagameService.getMetagame();
 
-        final var eventPages = new ArrayList<EventPage>(16);
         final var tournamentsDir = new File(outputDir, "tournaments");
         if (!tournamentsDir.exists()) {
             tournamentsDir.mkdirs();
         }
-        final var now = LocalDate.now();
-        for (final var event : eventService.list()) {
-            logger.info("Processing event: {}", event);
-            if (event.hidden() || event.melee() == null || event.players() == 0 || event.date().minusDays(1).isAfter(now)) {
-                logger.debug("Skipping hidden event: {}", event);
-                continue;
-            }
-
-            final var eventName = toLowercaseAscii(event.name());
-            final var eventDirName = "%s/%02d/%02d/%s".formatted(event.date().getYear(), event.date().getMonthValue(), event.date().getDayOfMonth(), eventName);
-            final var eventDir = new File(tournamentsDir, eventDirName);
-            if (!eventDir.exists()) {
-                eventDir.mkdirs();
-            }
-            final var countryFlag = event.location().countryFlag();
-            final var videoLinks = event.links() != null
-                    ? Lists.immutable.fromStream(event.links().stream().map(this::createVideoEmbedLink).filter(Objects::nonNull))
-                    : Lists.immutable.<Link>empty();
-
-            final var deckUris = Lists.immutable.fromStream(event.decks().stream()
-                    .filter(d -> d.url() != null).map(Event.DeckEntry::url));
-            final var deckBag = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris), 0);
-            final var deckBagTop64 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(64)), 64);
-            final var deckBagTop8 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(8)), 8);
-
-            final var leaderSeries = toLeaderSerie(deckBag);
-            final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
-            final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
-
-            final var statsFileName = "statistics.html";
-            final var dataComplete = eventService.isEventComplete(event);
-            renderToFile(new EventStatsModel(new HtmlMeta(
-                            "Statistics from %s (%s)".formatted(event.name(), formatDate(event)),
-                            "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
-                            UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName)).build().toUri()),
-                            event, countryFlag, dataComplete),
-                    new File(eventDir, statsFileName));
-            renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
-            renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
-            renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
-            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-conversion.json"));
-            renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-conversion.json"));
-
-            final var leaderMatchups = deckStatisticsService.getLeaderMatchups(
-                    event.decks().stream().map(Event.DeckEntry::url).filter(Objects::nonNull).toList());
-            renderToFile(toMinrateMatrixModel(leaderMatchups), new File(eventDir, "winrates-matrix.json"));
-            renderToFile(toWinRateDataModel(leaderMatchups), new File(eventDir, "winrates-chart.json"));
-
-            int winLossCount = 0;
-            int drawCount = 0;
-            for (final var entry : event.decks()) {
-                if (entry.url() == null) {
-                    continue;
-                }
-                try {
-                    final var deck = deckService.load(entry.url());
-                    for (final var m : deck.matches()) {
-                        if (Deck.Match.Result.WIN.equals(m.result()) || Deck.Match.Result.LOSS.equals(m.result())) {
-                            winLossCount += 1;
-                        } else if (Deck.Match.Result.DRAW.equals(m.result())) {
-                            drawCount += 1;
-                        }
-                    }
-                } catch (AppException ignore) {
-                }
-            }
-            renderToFile(new KeyValueModel(Lists.immutable.of(
-                    new KeyValue("Wins or Losses", winLossCount),
-                    new KeyValue("Draws", drawCount)
-            )), new File(eventDir, "match-results.json"));
-
-            final var decks = Lists.immutable.fromStream(event.decks().stream()
-                    .map(this::toDeckWithRank)
-                    .filter(Objects::nonNull)
-                    .sorted()
-            );
-            final var leaderBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(DeckArchetype::leader).map(deckService::formatLeader)), 4);
-            final var baseBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(deckService::lookupBase).map(deckService::formatBase)), 4);
-            renderToFile(new EventModel(new HtmlMeta("%s (%s)".formatted(event.name(), formatDate(event)),
-                            "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
-                            UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
-                            event, countryFlag, dataComplete, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
-                            decks, !decks.isEmpty(), videoLinks),
-                    new File(eventDir, "index.html"));
-            renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
-            renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
-            eventPages.add(new EventPage(event, isEventNew(event), metagame.events().contains(event), dataComplete,
-                    getEventWinner(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)));
-        }
+        final var eventPages = processEvents(eventService.list(), tournamentsDir, metagame);
 
         logger.info("Processing event index page");
         Collections.sort(eventPages, Comparator.reverseOrder());
@@ -219,6 +132,138 @@ class GenerateSiteCommand {
                         UriComponentsBuilder.fromUri(config.base()).path("/tournaments/").build().toUri()), eventPages),
                 new File(outputDir, "/tournaments/index.html"));
 
+        generateMetagamePages(outputDir, metagame);
+
+        logger.info("Processing redirects");
+        for (final var redirect : redirectService.getRedirects()) {
+            final var resFile = new File(outputDir, redirect.resource().endsWith("/") ? (redirect.resource() + "index.html") : redirect.resource());
+            if (!resFile.getParentFile().exists()) {
+                resFile.getParentFile().mkdirs();
+            }
+            renderToFile(new RedirectModel(redirect.target()), resFile);
+        }
+        generateSitemap(outputDir, Set.of());
+    }
+
+    /**
+     * Renders every event page. Events are independent — each one writes to its own directory —
+     * so they are rendered concurrently, which is where most of the generation time goes.
+     */
+    private List<EventPage> processEvents(Iterable<Event> events, File tournamentsDir, MetagameService.Metagame metagame) {
+        final var now = LocalDate.now();
+        final var pages = new ArrayList<EventPage>(16);
+        try (final var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
+            final var tasks = new ArrayList<Future<EventPage>>(16);
+            for (final var event : events) {
+                tasks.add(executor.submit(() -> processEvent(event, tournamentsDir, now, metagame)));
+            }
+            for (final var task : tasks) {
+                final EventPage page;
+                try {
+                    page = task.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AppException("Interrupted while generating event pages", e);
+                } catch (ExecutionException e) {
+                    throw new AppException("Failed to generate event page", e.getCause());
+                }
+                if (page != null) {
+                    pages.add(page);
+                }
+            }
+        }
+        return pages;
+    }
+
+    private EventPage processEvent(Event event, File tournamentsDir, LocalDate now, MetagameService.Metagame metagame) {
+        logger.info("Processing event: {}", event);
+        if (event.hidden() || event.melee() == null || event.players() == 0 || event.date().minusDays(1).isAfter(now)) {
+            logger.debug("Skipping hidden event: {}", event);
+            return null;
+        }
+
+        final var eventName = toLowercaseAscii(event.name());
+        final var eventDirName = "%s/%02d/%02d/%s".formatted(event.date().getYear(), event.date().getMonthValue(), event.date().getDayOfMonth(), eventName);
+        // No mkdirs here: events are rendered concurrently and would race on their shared
+        // parent directories. Rendering a file creates its own directory anyway.
+        final var eventDir = new File(tournamentsDir, eventDirName);
+        final var countryFlag = event.location().countryFlag();
+        final var videoLinks = event.links() != null
+                ? Lists.immutable.fromStream(event.links().stream().map(this::createVideoEmbedLink).filter(Objects::nonNull))
+                : Lists.immutable.<Link>empty();
+
+        final var deckUris = Lists.immutable.fromStream(event.decks().stream()
+                .filter(d -> d.url() != null).map(Event.DeckEntry::url));
+        final var deckBag = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris), 0);
+        final var deckBagTop64 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(64)), 64);
+        final var deckBagTop8 = addMissingArchetypes(event, deckStatisticsService.getMostPlayedDecks(deckUris.take(8)), 8);
+
+        final var leaderSeries = toLeaderSerie(deckBag);
+        final var leaderSeriesTop64 = toLeaderSerie(deckBagTop64);
+        final var leaderSeriesTop8 = toLeaderSerie(deckBagTop8);
+
+        final var statsFileName = "statistics.html";
+        final var dataComplete = eventService.isEventComplete(event);
+        renderToFile(new EventStatsModel(new HtmlMeta(
+                        "Statistics from %s (%s)".formatted(event.name(), formatDate(event)),
+                        "Statistics from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event),
+                        UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName)).build().toUri()),
+                        event, countryFlag, dataComplete),
+                new File(eventDir, statsFileName));
+        renderToFile(new KeyValueModel(leaderSeries), new File(eventDir, "all-leaders.json"));
+        renderToFile(new KeyValueModel(leaderSeriesTop64), new File(eventDir, "top64-leaders.json"));
+        renderToFile(new KeyValueModel(leaderSeriesTop8), new File(eventDir, "top8-leaders.json"));
+        renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop64)), new File(eventDir, "top64-conversion.json"));
+        renderToFile(new KeyValueModel(computeSurvivorRates(leaderSeries, leaderSeriesTop8)), new File(eventDir, "top8-conversion.json"));
+
+        final var leaderMatchups = deckStatisticsService.getLeaderMatchups(
+                event.decks().stream().map(Event.DeckEntry::url).filter(Objects::nonNull).toList());
+        renderToFile(toMinrateMatrixModel(leaderMatchups), new File(eventDir, "winrates-matrix.json"));
+        renderToFile(toWinRateDataModel(leaderMatchups), new File(eventDir, "winrates-chart.json"));
+
+        int winLossCount = 0;
+        int drawCount = 0;
+        for (final var entry : event.decks()) {
+            if (entry.url() == null) {
+                continue;
+            }
+            try {
+                final var deck = deckService.load(entry.url());
+                for (final var m : deck.matches()) {
+                    if (Deck.Match.Result.WIN.equals(m.result()) || Deck.Match.Result.LOSS.equals(m.result())) {
+                        winLossCount += 1;
+                    } else if (Deck.Match.Result.DRAW.equals(m.result())) {
+                        drawCount += 1;
+                    }
+                }
+            } catch (AppException ignore) {
+            }
+        }
+        renderToFile(new KeyValueModel(Lists.immutable.of(
+                new KeyValue("Wins or Losses", winLossCount),
+                new KeyValue("Draws", drawCount)
+        )), new File(eventDir, "match-results.json"));
+
+        final var decks = Lists.immutable.fromStream(event.decks().stream()
+                .map(this::toDeckWithRank)
+                .filter(Objects::nonNull)
+                .sorted()
+        );
+        final var leaderBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(DeckArchetype::leader).map(deckService::formatLeader)), 4);
+        final var baseBag = nMostCards(Bags.immutable.fromStream(deckBag.stream().map(deckService::lookupBase).map(deckService::formatBase)), 4);
+        renderToFile(new EventModel(new HtmlMeta("%s (%s)".formatted(event.name(), formatDate(event)),
+                        "Results from the Star Wars Unlimited tournament " + event.name() + " taking place in " + event.location() + " on " + formatDate(event) + ", including standings, decklists, Melee.gg link and more",
+                        UriComponentsBuilder.fromUri(config.base()).path("/%s/%s/".formatted(tournamentsDir.getName(), eventDirName)).build().toUri()),
+                        event, countryFlag, dataComplete, "/%s/%s/%s".formatted(tournamentsDir.getName(), eventDirName, statsFileName),
+                        decks, !decks.isEmpty(), videoLinks),
+                new File(eventDir, "index.html"));
+        renderToFile(new KeyValueModel(leaderBag), new File(eventDir, "usage-leaders.json"));
+        renderToFile(new KeyValueModel(baseBag), new File(eventDir, "usage-bases.json"));
+        return new EventPage(event, isEventNew(event), metagame.events().contains(event), dataComplete,
+                getEventWinner(event), countryFlag, "/%s/%s/".formatted(tournamentsDir.getName(), eventDirName));
+    }
+
+    private void generateMetagamePages(File outputDir, MetagameService.Metagame metagame) {
         logger.info("Processing metagame page");
         final var cardBag = cardStatisticsService.getMostPlayedCards(metagame.decks());
         final var deckBag = cardStatisticsService.getMostPlayedCards(metagame.decks(), c -> c.type().equals(Card.Type.LEADER));
@@ -260,92 +305,7 @@ class GenerateSiteCommand {
         renderToFile(toMinrateMatrixModel(matchups), new File(winRatesDir, "winrates-matrix.json"));
         renderToFile(toWinRateDataModel(matchups), new File(winRatesDir, "winrates-chart.json"));
 
-        final var top8Leaders = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() < 9)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    return deckService.load(e.url()).leader();
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            return e.leader();
-                        }).filter(Objects::nonNull).map(deckService::formatLeader));
-        final var top8LeadersWinners = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() == 1)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    return deckService.load(e.url()).leader();
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            return e.leader();
-                        }).filter(Objects::nonNull).map(deckService::formatLeader));
-        final var top8Bases = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() < 9)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    return deckService.load(e.url()).base();
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            return e.base();
-                        }).filter(Objects::nonNull).map(deckService::formatBase));
-        final var top8Archetypes = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() < 9)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    final var deck = deckService.load(e.url());
-                                    return deckService.getArchetype(deck);
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            if (e.leader() != null && e.base() != null) {
-                                return DeckArchetype.valueOf(e.leader(), e.base());
-                            }
-                            return null;
-                        }).filter(Objects::nonNull).map(deckService::formatArchetype));
-        final var top8ArchetypesWinners = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() == 1)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    final var deck = deckService.load(e.url());
-                                    return deckService.getArchetype(deck);
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            if (e.leader() != null && e.base() != null) {
-                                return DeckArchetype.valueOf(e.leader(), e.base());
-                            }
-                            return null;
-                        }).filter(Objects::nonNull).map(deckService::formatArchetype));
-        final var top8LeadersCosts = Bags.immutable.fromStream(
-                metagame.events().stream().flatMap(e -> e.decks().stream())
-                        .filter(e -> e.rank() < 9)
-                        .map(e -> {
-                            if (e.url() != null) {
-                                try {
-                                    return deckService.load(e.url()).leader();
-                                } catch (AppException ignore) {
-                                    return null;
-                                }
-                            }
-                            return e.leader();
-                        }).filter(Objects::nonNull).map(cardDatabaseService::findById).map(c -> "Cost " + c.cost()));
+        final var top8 = collectTop8Statistics(metagame);
         final var top8Dir = new File(metaDir, "top8");
         if (!top8Dir.exists()) {
             top8Dir.mkdirs();
@@ -354,22 +314,71 @@ class GenerateSiteCommand {
                 Statistics about Top 8 decks of the Star Wars Unlimited metagame
                 """, UriComponentsBuilder.fromUri(config.base()).path("/meta/top8/").build().toUri()),
                 metaHeader), new File(top8Dir, "index.html"));
-        renderToFile(new KeyValueModel(toSeries(top8Leaders)), new File(top8Dir, "top8-leaders.json"));
-        renderToFile(new KeyValueModel(toSeries(top8LeadersWinners)), new File(top8Dir, "top8-leaders-winners.json"));
-        renderToFile(new KeyValueModel(toSeries(top8Bases)), new File(top8Dir, "top8-bases.json"));
-        renderToFile(new KeyValueModel(toSeries(top8Archetypes)), new File(top8Dir, "top8-archetypes.json"));
-        renderToFile(new KeyValueModel(toSeries(top8ArchetypesWinners)), new File(top8Dir, "top8-archetypes-winners.json"));
-        renderToFile(new KeyValueModel(toSeries(top8LeadersCosts)), new File(top8Dir, "top8-leaders-costs.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.leaders)), new File(top8Dir, "top8-leaders.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.leaderWinners)), new File(top8Dir, "top8-leaders-winners.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.bases)), new File(top8Dir, "top8-bases.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.archetypes)), new File(top8Dir, "top8-archetypes.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.archetypeWinners)), new File(top8Dir, "top8-archetypes-winners.json"));
+        renderToFile(new KeyValueModel(toSeries(top8.leaderCosts)), new File(top8Dir, "top8-leaders-costs.json"));
+    }
 
-        logger.info("Processing redirects");
-        for (final var redirect : redirectService.getRedirects()) {
-            final var resFile = new File(outputDir, redirect.resource().endsWith("/") ? (redirect.resource() + "index.html") : redirect.resource());
-            if (!resFile.getParentFile().exists()) {
-                resFile.getParentFile().mkdirs();
+    /**
+     * Every top 8 series in a single pass over the metagame decks: each of them used to walk
+     * the same decks again, and resolving a deck entry means loading its decklist.
+     */
+    private Top8Statistics collectTop8Statistics(MetagameService.Metagame metagame) {
+        final var top8 = new Top8Statistics();
+        for (final var event : metagame.events()) {
+            for (final var entry : event.decks()) {
+                if (entry.rank() > 8) {
+                    continue;
+                }
+                Deck deck = null;
+                if (entry.url() != null) {
+                    try {
+                        deck = deckService.load(entry.url());
+                    } catch (AppException ignore) {
+                        // A deck that cannot be loaded contributes to no series at all: the
+                        // leader and base declared on the entry describe the missing decklist,
+                        // not a known one.
+                        continue;
+                    }
+                }
+                final var leader = deck != null ? deck.leader() : entry.leader();
+                final var base = deck != null ? deck.base() : entry.base();
+                final var archetype = deck != null
+                        ? deckService.getArchetype(deck)
+                        : (leader != null && base != null ? DeckArchetype.valueOf(leader, base) : null);
+                final var winner = entry.rank() == 1;
+
+                if (leader != null) {
+                    top8.leaders.add(deckService.formatLeader(leader));
+                    top8.leaderCosts.add("Cost " + cardDatabaseService.findById(leader).cost());
+                    if (winner) {
+                        top8.leaderWinners.add(deckService.formatLeader(leader));
+                    }
+                }
+                if (base != null) {
+                    top8.bases.add(deckService.formatBase(base));
+                }
+                if (archetype != null) {
+                    top8.archetypes.add(deckService.formatArchetype(archetype));
+                    if (winner) {
+                        top8.archetypeWinners.add(deckService.formatArchetype(archetype));
+                    }
+                }
             }
-            renderToFile(new RedirectModel(redirect.target()), resFile);
         }
-        generateSitemap(outputDir, Set.of());
+        return top8;
+    }
+
+    private static final class Top8Statistics {
+        final MutableBag<String> leaders = Bags.mutable.empty();
+        final MutableBag<String> leaderWinners = Bags.mutable.empty();
+        final MutableBag<String> leaderCosts = Bags.mutable.empty();
+        final MutableBag<String> bases = Bags.mutable.empty();
+        final MutableBag<String> archetypes = Bags.mutable.empty();
+        final MutableBag<String> archetypeWinners = Bags.mutable.empty();
     }
 
     private ImmutableBag<DeckArchetype> addMissingArchetypes(Event event, Bag<DeckArchetype> existing, int limit) {
@@ -627,22 +636,21 @@ class GenerateSiteCommand {
         }
     }
 
+    /**
+     * Renders a template to a file, leaving the file untouched when the rendering did not
+     * change: unchanged files keep their timestamp, which is what the sitemap reports and what
+     * keeps the generated site out of the commit when nothing moved.
+     */
     private void renderToFile(Object model, File output) {
         logger.info("Generating file: {}", output.getName());
+        final var content = jStachio.execute(model).getBytes(StandardCharsets.UTF_8);
+        final var path = output.toPath();
         try {
-            final var tempFile = File.createTempFile("swumeta-", ".tmp");
-            tempFile.deleteOnExit();
-            try (final var out = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
-                jStachio.execute(model, out);
+            if (Files.exists(path) && Arrays.equals(content, Files.readAllBytes(path))) {
+                return;
             }
-            final var p1 = tempFile.toPath();
-            final var p2 = output.toPath();
-            if (!output.exists() || Files.mismatch(p1, p2) != -1) {
-                Files.copy(p1, p2,
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.COPY_ATTRIBUTES);
-            }
-            tempFile.delete();
+            Files.createDirectories(path.getParent());
+            Files.write(path, content);
         } catch (IOException e) {
             throw new RuntimeException("Failed to render file: " + output, e);
         }

@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import net.swumeta.cli.model.Event;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.impl.factory.Lists;
@@ -50,6 +52,10 @@ public class EventService {
     private final AppConfig config;
     private final RestClient client;
     private final ObjectMapper objectMapper;
+    // Site generation walks the event list several times, and checking whether an event is
+    // complete means loading all its decks: both are memoized for the lifetime of a command.
+    private final LoadingCache<File, Event> eventCache = Caffeine.newBuilder().build(this::load);
+    private final LoadingCache<Event, Boolean> eventCompleteCache = Caffeine.newBuilder().build(this::computeEventComplete);
 
     EventService(DeckService deckService, AppConfig config, RestClient client) {
         this.deckService = deckService;
@@ -67,7 +73,7 @@ public class EventService {
 
     public ImmutableList<Event> list(Predicate<Event> filter) {
         final var f = filter == null ? NULL_FILTER : filter;
-        final var events = Lists.immutable.fromStream(getEventFiles().stream().map(this::load).filter(f));
+        final var events = Lists.immutable.fromStream(getEventFiles().stream().map(eventCache::get).filter(f));
         if (logger.isTraceEnabled()) {
             logger.trace("Found events: {}", events.stream().map(Event::name).toList());
         }
@@ -83,6 +89,10 @@ public class EventService {
     }
 
     public boolean isEventComplete(Event e) {
+        return eventCompleteCache.get(e);
+    }
+
+    private boolean computeEventComplete(Event e) {
         if (e.players() == 0) {
             return false;
         }
@@ -239,7 +249,7 @@ public class EventService {
 
         File eventFile = null;
         for (final var fileCandidate : getEventFiles()) {
-            final var eventCandidate = load(fileCandidate);
+            final var eventCandidate = eventCache.get(fileCandidate);
             if (eventCandidate.melee() != null && eventCandidate.melee().equals(event.melee())) {
                 eventFile = fileCandidate;
                 break;
@@ -254,6 +264,8 @@ public class EventService {
         } catch (IOException e) {
             throw new AppException("Failed to save event to file: " + eventFile, e);
         }
+        eventCache.put(eventFile, newEvent);
+        eventCompleteCache.invalidate(event);
 
         return newEvent;
     }

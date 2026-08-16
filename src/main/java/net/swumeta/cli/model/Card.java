@@ -95,7 +95,10 @@ public record Card(
     }
 
     public static final class Id implements Comparable<Id> {
-        private static final LoadingCache<String, Id> CACHE = Caffeine.newBuilder().weakKeys().weakValues().build(Id::new);
+        // Plain (strong) keys on purpose: weakKeys() would switch Caffeine to identity
+        // comparison, and card ids are looked up with freshly parsed strings, which never
+        // match by identity. The set of card ids is bounded by the card database anyway.
+        private static final LoadingCache<String, Id> CACHE = Caffeine.newBuilder().build(Id::new);
         private final Set set;
         private final int number;
 
@@ -139,9 +142,15 @@ public record Card(
             return number == id.number && set == id.set;
         }
 
+        /**
+         * Hashing the set ordinal rather than the enum constant itself: {@link Enum#hashCode()}
+         * is an identity hash, which changes on every JVM run. Card ids end up in bags whose
+         * iteration order decides how ties are broken in the generated statistics, so an
+         * unstable hash makes the website content differ between two identical builds.
+         */
         @Override
         public int hashCode() {
-            return Objects.hash(set, number);
+            return Objects.hash(set.ordinal(), number);
         }
 
         @Override

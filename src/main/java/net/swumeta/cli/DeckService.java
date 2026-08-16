@@ -53,6 +53,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -61,6 +62,12 @@ public class DeckService {
     private static final int CURRENT_VERSION = 2;
     private static final int FETCH_ATTEMPTS = 5;
     private static final Duration FETCH_RETRY_DELAY = Duration.ofSeconds(2);
+    /**
+     * Site generation renders events in parallel, but the deck sources are shared third-party
+     * sites: this caps how many downloads may be in flight, no matter how many threads ask.
+     */
+    private static final int MAX_CONCURRENT_FETCHES = 4;
+    private static final int MAX_CACHED_DECKS = 50_000;
     private static final Pattern SCORE_PATTERN = Pattern.compile("(\\d+)-(\\d+)-(\\d+)");
     private static final Pattern SCORE_PATTERN2 = Pattern.compile("(\\d+)-(\\d+)");
     private static final Map<Card.Id, String> CARD_NAME_ALIASES = Map.of(
@@ -78,8 +85,14 @@ public class DeckService {
     private final AppConfig config;
     private final ObjectMapper objectMapper;
     private final ObjectMapper yamlObjectMapper;
-    private final LoadingCache<URI, Deck> deckCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::doLoad);
-    private final LoadingCache<URI, DeckArchetype> deckArchetypeCache = Caffeine.newBuilder().weakKeys().weakValues().build(this::createArchetype);
+    // Plain (strong) keys on purpose: weakKeys() would switch Caffeine to identity comparison,
+    // and deck URIs are rebuilt from YAML on every event load, so nothing would ever hit.
+    private final LoadingCache<URI, Deck> deckCache =
+            Caffeine.newBuilder().maximumSize(MAX_CACHED_DECKS).build(this::doLoad);
+    private final LoadingCache<URI, DeckArchetype> deckArchetypeCache =
+            Caffeine.newBuilder().maximumSize(MAX_CACHED_DECKS).build(this::createArchetype);
+    private final LoadingCache<Integer, Integer> roundIdCache = Caffeine.newBuilder().build(this::fetchRoundId);
+    private final Semaphore fetchPermits = new Semaphore(MAX_CONCURRENT_FETCHES);
 
     DeckService(CardDatabaseService cardDatabaseService, RestClient client, AppConfig config) {
         this.cardDatabaseService = cardDatabaseService;
@@ -101,6 +114,8 @@ public class DeckService {
             if (deckUri == null) {
                 continue;
             }
+            deckCache.invalidate(deckUri);
+            deckArchetypeCache.invalidate(deckUri);
             final var deckFile = toCachedFile(deckUri);
             if (deckFile.exists()) {
                 deckFile.delete();
@@ -592,7 +607,15 @@ public class DeckService {
         );
     }
 
+    /**
+     * The last completed round of a tournament, looked up once per tournament: every match of
+     * every deck of that tournament needs it, and it costs a full page download.
+     */
     private int findRoundId(int tournamentId) {
+        return roundIdCache.get(tournamentId);
+    }
+
+    private int fetchRoundId(int tournamentId) {
         final var uri = UriComponentsBuilder.fromUriString("https://melee.gg/Tournament/View/").path(String.valueOf(tournamentId)).toUriString();
         final var meleePage = client.get().uri(uri).retrieve().body(String.class);
         final var meleeDoc = Jsoup.parse(meleePage);
@@ -694,30 +717,42 @@ public class DeckService {
     /**
      * Fetches a deck, retrying on network failures: sites such as melee.gg reset
      * connections when too many decks are downloaded in a row, and losing a deck
-     * over that would leave a hole in the generated event page.
+     * over that would leave a hole in the generated event page. No more than
+     * {@link #MAX_CONCURRENT_FETCHES} downloads run at once, so that rendering events
+     * in parallel does not turn into a burst of requests on those sites.
      */
     private Deck loadWithRetry(URI uri, Function<URI, Deck> loader) {
-        RestClientException lastError = null;
-        for (int attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
-            try {
-                return loader.apply(uri);
-            } catch (RestClientException e) {
-                lastError = e;
-                if (attempt == FETCH_ATTEMPTS) {
-                    break;
-                }
-                final var delay = FETCH_RETRY_DELAY.multipliedBy(1L << (attempt - 1));
-                logger.debug("Failed to fetch deck {} (attempt {}/{}): retrying in {}",
-                        uri, attempt, FETCH_ATTEMPTS, delay, e);
+        try {
+            fetchPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AppException("Interrupted while fetching deck: " + uri, e);
+        }
+        try {
+            RestClientException lastError = null;
+            for (int attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
                 try {
-                    Thread.sleep(delay);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
+                    return loader.apply(uri);
+                } catch (RestClientException e) {
+                    lastError = e;
+                    if (attempt == FETCH_ATTEMPTS) {
+                        break;
+                    }
+                    final var delay = FETCH_RETRY_DELAY.multipliedBy(1L << (attempt - 1));
+                    logger.debug("Failed to fetch deck {} (attempt {}/{}): retrying in {}",
+                            uri, attempt, FETCH_ATTEMPTS, delay, e);
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
+            throw lastError;
+        } finally {
+            fetchPermits.release();
         }
-        throw lastError;
     }
 
     private void markAsSkipped(File skipMarkerFile, URI uri) {
