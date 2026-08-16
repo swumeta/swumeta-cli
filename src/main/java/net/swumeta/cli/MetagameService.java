@@ -147,7 +147,7 @@ public class MetagameService {
      * no format is Premier, which is what most events are.
      */
     boolean isPremierEvent(Event event) {
-        final var format = event.format() == null ? Format.PREMIER : event.format();
+        final var format = event.formatOrDefault();
         if (!Format.PREMIER.equals(format)) {
             logger.debug("Skipping {} event: {}", format, event);
             return false;

@@ -47,6 +47,10 @@ public record Event(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
         List<DeckEntry> decks
 ) implements Comparable<Event> {
+    public Format formatOrDefault() {
+        return format == null ? Format.PREMIER : format;
+    }
+
     @Override
     public int compareTo(Event o) {
         if (!date.equals(o.date)) {

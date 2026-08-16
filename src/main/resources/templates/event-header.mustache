@@ -16,7 +16,7 @@
     </div>
     <div>
       <dt class="text-secondary">Type:</dt>
-      <dd><span class="fw-bold">{{event.type}}</span> / {{event.players}} players</dd>
+      <dd><span class="fw-bold">{{event.type}}</span> / {{event.formatOrDefault}} / {{event.players}} players</dd>
     </div>
     {{#event.melee}}
       <div>
@@ -41,6 +41,11 @@
       <div class="hstack">
         <i class="bi bi-trophy-fill me-2"></i>
         {{event.type}}
+      </div>
+      <div class="vr"></div>
+      <div class="hstack">
+        <i class="bi bi-tags-fill me-2"></i>
+        {{event.formatOrDefault}}
       </div>
       <div class="vr"></div>
       <div class="hstack">

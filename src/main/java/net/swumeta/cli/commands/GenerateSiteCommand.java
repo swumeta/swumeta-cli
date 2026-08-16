@@ -687,7 +687,7 @@ class GenerateSiteCommand {
     }
 
     @JStacheFormatter
-    @JStacheFormatterTypes(types = {Location.class, Event.Type.class, LocalDate.class, ZonedDateTime.class, Card.Aspect.class, net.swumeta.cli.model.Set.class, CharSequence.class})
+    @JStacheFormatterTypes(types = {Location.class, Event.Type.class, Format.class, LocalDate.class, ZonedDateTime.class, Card.Aspect.class, net.swumeta.cli.model.Set.class, CharSequence.class})
     static class CustomFormatter {
         public static Function<Object, String> provider() {
             return o -> {
@@ -705,6 +705,13 @@ class GenerateSiteCommand {
                         case Event.Type.SQ -> "Sector Qualifier";
                         case Event.Type.MAJOR -> "Major Tournament";
                         case Event.Type.MINOR -> "Minor Tournament";
+                    };
+                }
+                if (o instanceof Format format) {
+                    return switch (format) {
+                        case Format.PREMIER -> "Premier";
+                        case Format.TWIN_SUNS -> "Twin Suns";
+                        case Format.ETERNAL -> "Eternal";
                     };
                 }
                 if (o instanceof LocalDate d) {
