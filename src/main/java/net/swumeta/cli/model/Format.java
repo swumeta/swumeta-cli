@@ -20,5 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum Format {
     @JsonProperty("premier") PREMIER,
-    @JsonProperty("twin-suns") TWIN_SUNS
+    @JsonProperty("twin-suns") TWIN_SUNS,
+    @JsonProperty("eternal") ETERNAL
 }

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.swumeta.cli.model.Card;
 import net.swumeta.cli.model.Deck;
+import net.swumeta.cli.model.Format;
 import org.eclipse.collections.api.factory.Bags;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -154,8 +155,45 @@ class DeckServiceTests {
 
     @Test
     void testLoadMelee() throws IOException {
-        final var meleeRes = new ClassPathResource("/melee-deck.html");
-        stubFor(get(urlEqualTo("/melee")).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE).withBody(meleeRes.getContentAsByteArray())));
+        final var deck = svc.load(stubMeleeDeck("melee", "/melee-deck.html"));
+        assertThat(deck.format()).isEqualTo(Format.PREMIER);
+        assertThat(deck.leader()).isEqualTo(Card.Id.valueOf("JTL-009"));
+        assertThat(deck.base()).isEqualTo(Card.Id.valueOf("JTL-021"));
+        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(3);
+        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(1);
+        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("SOR-225"))).isEqualTo(2);
+        assertThat(deck.sideboard().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(2);
+
+        final var deck2 = svc.load(deck.source());
+        assertThat(deck2.main()).isEqualTo(deck.main());
+        assertThat(deck2.sideboard()).isEqualTo(deck.sideboard());
+    }
+
+    @Test
+    void testLoadMeleeEternalFormat() throws IOException {
+        final var deck = svc.load(stubMeleeDeck("melee-eternal", "/melee-deck-eternal.html"));
+        assertThat(deck.format()).isEqualTo(Format.ETERNAL);
+    }
+
+    /**
+     * The format is also advertised at the end of the page description: that fallback keeps
+     * working if melee.gg reshuffles the decklist details row.
+     */
+    @Test
+    void testLoadMeleeFormatFromDescription() throws IOException {
+        final var deck = svc.load(stubMeleeDeck("melee-twin-suns", "/melee-deck-twin-suns.html"));
+        assertThat(deck.format()).isEqualTo(Format.TWIN_SUNS);
+    }
+
+    @Test
+    void testLoadMeleeWithoutFormat() throws IOException {
+        final var deck = svc.load(stubMeleeDeck("melee-no-format", "/melee-deck-no-format.html"));
+        assertThat(deck.format()).isEqualTo(Format.PREMIER);
+    }
+
+    private URI stubMeleeDeck(String path, String meleePage) throws IOException {
+        final var meleeRes = new ClassPathResource(meleePage);
+        stubFor(get(urlEqualTo("/" + path)).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE).withBody(meleeRes.getContentAsByteArray())));
 
         final var om = new ObjectMapper();
         final var meleeDeckDetails = """
@@ -200,20 +238,9 @@ class DeckServiceTests {
                   "Redirect": null
                 }
                 """.formatted(om.writeValueAsString(meleeDeckDetails.trim()));
-        stubFor(get(urlEqualTo("/Decklist/GetTournamentViewData/melee")).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).withBody(meleeDeckWrapper)));
+        stubFor(get(urlEqualTo("/Decklist/GetTournamentViewData/" + path)).willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).withBody(meleeDeckWrapper)));
 
-        final var meleeUri = URI.create("http://melee.127.0.0.1.nip.io:" + wiremockPort + "/melee");
-        final var deck = svc.load(meleeUri);
-        assertThat(deck.leader()).isEqualTo(Card.Id.valueOf("JTL-009"));
-        assertThat(deck.base()).isEqualTo(Card.Id.valueOf("JTL-021"));
-        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-045"))).isEqualTo(3);
-        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(1);
-        assertThat(deck.main().occurrencesOf(Card.Id.valueOf("SOR-225"))).isEqualTo(2);
-        assertThat(deck.sideboard().occurrencesOf(Card.Id.valueOf("JTL-143"))).isEqualTo(2);
-
-        final var deck2 = svc.load(meleeUri);
-        assertThat(deck2.main()).isEqualTo(deck.main());
-        assertThat(deck2.sideboard()).isEqualTo(deck.sideboard());
+        return URI.create("http://melee.127.0.0.1.nip.io:" + wiremockPort + "/" + path);
     }
 
     @Test

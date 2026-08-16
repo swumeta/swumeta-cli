@@ -29,6 +29,7 @@ import org.eclipse.collections.api.bag.ImmutableBag;
 import org.eclipse.collections.api.block.procedure.primitive.ObjectIntProcedure;
 import org.eclipse.collections.api.factory.Bags;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -50,6 +51,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -63,6 +65,12 @@ public class DeckService {
     private static final Pattern SCORE_PATTERN2 = Pattern.compile("(\\d+)-(\\d+)");
     private static final Map<Card.Id, String> CARD_NAME_ALIASES = Map.of(
             Card.Id.valueOf("SOR-022"), "ECL"
+    );
+    private static final String MELEE_GAME_NAME = "STAR WARS: Unlimited";
+    private static final Map<String, Format> MELEE_FORMATS = Map.of(
+            "premier", Format.PREMIER,
+            "twin suns", Format.TWIN_SUNS,
+            "eternal", Format.ETERNAL
     );
     private final Logger logger = LoggerFactory.getLogger(DeckService.class);
     private final CardDatabaseService cardDatabaseService;
@@ -443,7 +451,7 @@ public class DeckService {
         return new Deck(
                 uri,
                 player,
-                Format.PREMIER,
+                findMeleeFormat(meleeDoc, uri),
                 leader,
                 base,
                 main.toImmutableBag(),
@@ -453,7 +461,53 @@ public class DeckService {
         );
     }
 
+    /**
+     * Reads the format melee.gg advertises on a decklist page. An unknown or missing format
+     * falls back to {@link Format#PREMIER} rather than failing the deck: a deck filed under
+     * the wrong format is still better than a hole in the event page.
+     */
+    private Format findMeleeFormat(Document meleeDoc, URI uri) {
+        final var label = findMeleeFormatLabel(meleeDoc);
+        if (label == null) {
+            logger.warn("No format found in melee.gg deck, assuming {}: {}", Format.PREMIER, uri);
+            return Format.PREMIER;
+        }
+        final var format = MELEE_FORMATS.get(label.toLowerCase(Locale.ROOT));
+        if (format == null) {
+            logger.warn("Unsupported format \"{}\" in melee.gg deck, assuming {}: {}", label, Format.PREMIER, uri);
+            return Format.PREMIER;
+        }
+        logger.debug("Melee.gg deck format: {} -> {}", uri, format);
+        return format;
+    }
 
+    /**
+     * The format sits right after the game name, both in the decklist details row and at the
+     * end of the page description: the details row is preferred, the description is a fallback
+     * in case melee.gg reshuffles its markup.
+     */
+    private static String findMeleeFormatLabel(Document meleeDoc) {
+        for (final var group : meleeDoc.select(".decklist-details-row span")) {
+            final var items = group.select("span.text-nowrap");
+            if (items.size() == 2 && MELEE_GAME_NAME.equalsIgnoreCase(items.get(0).text().trim())) {
+                final var label = items.get(1).text().trim();
+                if (!label.isEmpty()) {
+                    return label;
+                }
+            }
+        }
+
+        final var description = meleeDoc.select("meta[name=description]").attr("content");
+        final var gameMarker = MELEE_GAME_NAME + " - ";
+        final var markerIndex = description.lastIndexOf(gameMarker);
+        if (markerIndex != -1) {
+            final var label = description.substring(markerIndex + gameMarker.length()).trim();
+            if (!label.isEmpty()) {
+                return label;
+            }
+        }
+        return null;
+    }
 
     private Deck loadSwudbDeck(URI uri) {
         logger.info("Loading deck from swudb.com: {}", uri);
