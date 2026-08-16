@@ -19,6 +19,7 @@ package net.swumeta.cli;
 import net.swumeta.cli.model.Deck;
 import net.swumeta.cli.model.DeckArchetype;
 import net.swumeta.cli.model.Event;
+import net.swumeta.cli.model.Format;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ImmutableList;
@@ -59,7 +60,9 @@ public class MetagameService {
         final Predicate<Event> eventFilter = config.metagameMonths() < 1 ? null : new EventFilter(config.metagameMonths(), config.metagameLimit());
 
         final var events = Lists.immutable.fromStream(
-                eventService.list(eventFilter).stream().filter(eventService::isEventComplete)
+                eventService.list(eventFilter).stream()
+                        .filter(this::isPremierEvent)
+                        .filter(eventService::isEventComplete)
         );
         if (events.isEmpty()) {
             throw new AppException("No events found");
@@ -136,6 +139,20 @@ public class MetagameService {
                     && (event.date().isBefore(now) || event.date().isEqual(now))
                     && (event.date().isAfter(limitDate) || event.date().isEqual(limitDate));
         }
+    }
+
+    /**
+     * The metagame only covers the Premier format: any other format is played with a different
+     * card pool, so counting its decks would skew every archetype share. An event that declares
+     * no format is Premier, which is what most events are.
+     */
+    boolean isPremierEvent(Event event) {
+        final var format = event.format() == null ? Format.PREMIER : event.format();
+        if (!Format.PREMIER.equals(format)) {
+            logger.debug("Skipping {} event: {}", format, event);
+            return false;
+        }
+        return true;
     }
 
     private static boolean hasDecks(Event e) {

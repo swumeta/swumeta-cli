@@ -17,12 +17,14 @@
 package net.swumeta.cli;
 
 import net.swumeta.cli.model.Event;
+import net.swumeta.cli.model.Format;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +33,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MetagameServiceTests {
     @Autowired
     private MetagameService svc;
+    @Autowired
+    private TestHelper helper;
+
+    @Test
+    void testIsPremierEvent() {
+        assertThat(svc.isPremierEvent(createEvent(Format.PREMIER))).isTrue();
+        assertThat(svc.isPremierEvent(createEvent(Format.ETERNAL))).isFalse();
+        assertThat(svc.isPremierEvent(createEvent(Format.TWIN_SUNS))).isFalse();
+    }
+
+    /**
+     * Most events declare no format at all: those are Premier events.
+     */
+    @Test
+    void testIsPremierEventWithoutFormat() {
+        assertThat(svc.isPremierEvent(createEvent(null))).isTrue();
+    }
+
+    private Event createEvent(Format format) {
+        return helper.createEvent("Event", LocalDate.of(2025, 4, 13), format, List.of());
+    }
 
     //@Test
     void testGetMetagame() {
