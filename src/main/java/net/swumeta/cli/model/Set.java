@@ -25,5 +25,6 @@ public enum Set {
     SEC,
     IBH,
     LAW,
-    ASH
+    ASH,
+    TS26
 }
