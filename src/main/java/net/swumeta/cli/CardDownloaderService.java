@@ -143,6 +143,7 @@ public class CardDownloaderService {
             case 93 -> Optional.of(Set.LAW);
             case 103 -> Optional.of(Set.TS26);
             case 108 -> Optional.of(Set.ASH);
+            case 128 -> Optional.of(Set.HMW);
             default -> Optional.empty();
         };
     }
